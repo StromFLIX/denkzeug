@@ -125,7 +125,7 @@ async function exercisePi (selection, api = 'openai-completions') {
       cwd, env: { ...process.env, PI_CODING_AGENT_DIR: cwd, PI_OFFLINE: '1', PI_TELEMETRY: '0',
         AGENTGATEWAY_URL: gateway, MCP_URL: `${gateway}/mcp`, AGENT_MODEL: 'test/model',
         NAUTIONETTE_MODEL_API: api, NAUTIONETTE_TOOLS_JSON: JSON.stringify(selection),
-        NAUTIONETTE_OUTPUT_GRANT_FILE: config }, stdio: ['pipe', 'pipe', 'pipe']
+        NAUTIONETTE_OUTPUT_GRANT_FILE: config, NAUTIONETTE_TURN_ID: 'fixture-live-turn' }, stdio: ['pipe', 'pipe', 'pipe']
     })
     child.stderr.on('data', chunk => { stderr += chunk })
     let buffer = ''
