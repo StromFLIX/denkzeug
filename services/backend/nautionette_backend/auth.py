@@ -184,9 +184,7 @@ def create_session(user: dict, request: Request, response: Response, native: boo
     device = request.headers.get("user-agent", "Unknown device")[:250]
     with store().transaction() as conn:
         # Recheck after password verification; suspension/password changes can race Argon2.
-        current = conn.execute(
-            "SELECT * FROM auth_users WHERE id=?", (user["id"],)
-        ).fetchone()
+        current = conn.execute("SELECT * FROM auth_users WHERE id=?", (user["id"],)).fetchone()
         if not current or current["status"] != "active" or current["password_hash"] != user["password_hash"]:
             fail(401, "account_changed", "Please sign in again.")
         user = dict(current)

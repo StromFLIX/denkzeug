@@ -86,8 +86,8 @@ async def test_stream_runner_passes_the_correct_timeout_to_broker(live, monkeypa
     assert outgoing.pop("mcp_targets") is None
     assert "mcp_targets" not in job
     assert "artcraft" not in job
-    assert outgoing.pop('member_mode') is False
-    assert 'member_mode' not in job
+    assert outgoing.pop("member_mode") is False
+    assert "member_mode" not in job
     assert outgoing == job  # Private configuration and resolved account policy never mutate the saved job.
     # Workflow budgets are not affected even if the flag is accidentally copied.
     job["mode"] = "workflow"
