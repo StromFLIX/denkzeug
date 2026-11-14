@@ -35,6 +35,8 @@ for (const existing of [[], ['RECORD_AUDIO'], ['MODIFY_AUDIO_SETTINGS'], ['RECOR
       await writeFile(manifestPath, `<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n${application}\n    <uses-permission android:name="android.permission.INTERNET" />\n${existing.map(p => `    <uses-permission android:name="android.permission.${p}" />\n`).join('')}</manifest>\n`)
       const sync = () => execFileSync(process.execPath, [join(root, 'scripts/sync-android.mjs')])
       sync()
+      const gradle = await readFile(join(root, 'android/app/build.gradle'), 'utf8')
+      assert.equal(gradle.split("implementation 'androidx.webkit:webkit:1.14.0'").length - 1, 1)
       const manifest = await readFile(manifestPath, 'utf8')
       for (const permission of ['RECORD_AUDIO', 'MODIFY_AUDIO_SETTINGS', 'INTERNET']) {
         assert.equal(manifest.split(`android.permission.${permission}`).length - 1, 1)
@@ -66,6 +68,7 @@ for (const existing of [[], ['RECORD_AUDIO'], ['MODIFY_AUDIO_SETTINGS'], ['RECOR
       }
       for (const name of names) assert.equal(await readFile(join(root, native, name), 'utf8'), await readFile(new URL(`../native/android/${name}`, import.meta.url), 'utf8'))
       sync()
+      assert.equal(await readFile(join(root, 'android/app/build.gradle'), 'utf8'), gradle, 'native vault dependency stays idempotent')
       assert.equal(await readFile(backgroundPath, 'utf8'), background)
       assert.equal(await readFile(manifestPath, 'utf8'), manifest, 'repeated sync must not duplicate permissions')
       assert.equal(await readFile(stringsPath, 'utf8'), strings)

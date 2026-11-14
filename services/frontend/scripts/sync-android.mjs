@@ -6,6 +6,16 @@ import { configureAndroidStrings } from './native-brand.mjs'
 const root = new URL('../', import.meta.url)
 const config = JSON.parse(await readFile(new URL('capacitor.config.json', root), 'utf8'))
 if (config.appId !== 'dev.nautionette.app') throw new Error('Update the native Java package when changing appId.')
+// Capacitor consumes WebKit as an implementation dependency, not an API export.
+// Our app-owned main-frame vault plugin needs its own compile dependency too.
+const gradlePath = new URL('android/app/build.gradle', root)
+let gradle = await readFile(gradlePath, 'utf8')
+const webkitDependency = "implementation 'androidx.webkit:webkit:1.14.0'"
+if (!gradle.includes(webkitDependency)) {
+  if (!gradle.includes('dependencies {')) throw new Error('Android app dependency block is missing.')
+  gradle = gradle.replace('dependencies {', `dependencies {\n    ${webkitDependency}`)
+  await writeFile(gradlePath, gradle)
+}
 for (const name of ['MainActivity.java', 'NautionetteSystemBarsPlugin.java', 'NautionetteDownloadsPlugin.java', 'DenkzeugAccountStorePlugin.java']) {
   await copyFile(new URL(`native/android/${name}`, root), new URL(`android/app/src/main/java/dev/nautionette/app/${name}`, root))
 }
