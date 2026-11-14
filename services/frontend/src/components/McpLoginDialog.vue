@@ -62,13 +62,14 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { api, auth, server } from '../api'
+import { api, server } from '../api'
+import { account } from '../auth-session.js'
 import { actions, store } from '../store'
 import { desktopOAuth, oauthClientMessage, oauthConnection } from '../mcp-oauth.js'
 
 const $q = useQuasar()
 const selected = computed(() => store.mcpAuth.prompt)
-const visible = computed(() => Boolean(selected.value) && !store.needsServer && !store.needsToken)
+const visible = computed(() => Boolean(selected.value) && account.user?.role === 'admin')
 const supported = () => Boolean(desktopOAuth())
 const busy = ref(false),
   stage = ref(''),
@@ -89,7 +90,7 @@ watch(selected, value => {
 let controller = null,
   attempt = 0,
   activeName = ''
-const context = () => `${server.url}|${auth.token}`
+const context = () => `${server.url}|${account.user?.id}|${account.sessionId}`
 
 async function login() {
   const name = selected.value.name,

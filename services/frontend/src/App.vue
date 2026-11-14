@@ -2,16 +2,18 @@
   <div class="app-frame" :class="{ 'app-frame--desktop-overlay': desktopOverlay }">
     <div v-if="desktopOverlay" class="desktop-titlebar" aria-hidden="true" />
     <EnvironmentBanner />
-    <div v-if="['reconnecting', 'failed'].includes(store.liveStatus) && !store.needsToken" class="connection-notice" role="status" aria-label="Live connection">
+    <AccountGate v-if="gate" :fragment="authFragment" @done="authFragment = null" />
+    <ReauthDialog />
+    <div v-if="!gate && ['reconnecting', 'failed'].includes(store.liveStatus)" class="connection-notice" role="status" aria-label="Live connection">
       {{ store.liveStatus === 'failed' ? 'Live updates are disconnected.' : 'Connection interrupted. Reconnecting automatically…' }}
       <button v-if="store.liveStatus === 'failed'" class="btn" @click="actions.connect()">Reconnect</button>
     </div>
-  <div class="shell" data-skin-part="shell" :class="{ 'shell--detail': hasSelection, 'shell--full': fullPage, 'shell--collapsed': sideCollapsed, 'shell--agents': showAgentRail }">
+  <div v-if="!gate" :key="account.user.id" class="shell" data-skin-part="shell" :class="{ 'shell--detail': hasSelection, 'shell--full': fullPage, 'shell--collapsed': sideCollapsed, 'shell--agents': showAgentRail }">
     <NavRail ref="navRail" class="shell__rail" :sidebar-collapsed="sideCollapsed" @open-sidebar="openSidebar" />
     <AgentRail v-if="showAgentRail" v-show="!sideCollapsed" class="shell__agents" />
     <template v-if="!fullPage">
       <aside v-show="!sideCollapsed" data-skin-part="sidebar" id="shell-sidebar" class="shell__side" :style="{ width: `${sideWidth}px` }">
-        <SidePanel ref="sidePanel" :show-collapse-button="!mobile" :show-pinned-apps="!detailPins && !(mobile && route.name === 'apps')" :is-chat-active="isChatActive" @collapse-sidebar="collapseSidebar" @open-search="openSearch" />
+        <SidePanel ref="sidePanel" :show-collapse-button="!mobile" :show-pinned-apps="account.user?.role === 'admin' && !detailPins && !(mobile && route.name === 'apps')" :is-chat-active="isChatActive" @collapse-sidebar="collapseSidebar" @open-search="openSearch" />
         <div
           class="shell__grip"
           :class="{ 'shell__grip--active': dragging }"
@@ -31,30 +33,6 @@
     <CommandPalette v-model="searchOpen" :initial-query="searchQuery" />
     <McpLoginDialog />
 
-    <q-dialog v-model="gate" persistent>
-      <q-card class="token-card">
-        <div class="token-card__brand"><BrandMark /><span>{{ brand.name }}</span></div>
-        <h1 class="token-card__title">Connect to your workspace</h1>
-        <p class="caption muted">
-          {{ isNative
-            ? 'Point the app at your instance, then paste its access token.'
-            : 'This instance is protected. Paste the token from your deployment settings.' }}
-        </p>
-        <input
-          v-if="isNative" v-model="serverUrl" class="field" style="margin-bottom: 8px"
-          type="url" inputmode="url" placeholder="https://denkzeug.example.com"
-        />
-        <input
-          v-model="token" class="field" type="password" placeholder="access token" aria-label="Access token"
-          autofocus @keydown.enter="connect"
-        />
-        <div class="row token-card__actions">
-          <button class="btn btn--primary" :disabled="isNative && !serverUrl.trim()" @click="connect">
-            Connect
-          </button>
-        </div>
-      </q-card>
-    </q-dialog>
   </div>
   </div>
 </template>
@@ -64,15 +42,16 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EnvironmentBanner from './components/EnvironmentBanner.vue'
 import NavRail from './components/NavRail.vue'
-import BrandMark from './components/BrandMark.vue'
-import { brand } from './brand'
+import AccountGate from './components/AccountGate.vue'
+import ReauthDialog from './components/ReauthDialog.vue'
+import { account, initialAuthFragment } from './auth-session.js'
+import { accountApi, canOpenRoute } from './account.js'
 import AgentRail from './components/AgentRail.vue'
 import PinnedApps from './components/PinnedApps.vue'
 import SidePanel from './components/SidePanel.vue'
 import CommandPalette from './components/CommandPalette.vue'
 import McpLoginDialog from './components/McpLoginDialog.vue'
 import { actions, store } from './store'
-import { auth, isNative, server } from './api'
 import { currentTokens, preferences } from './preferences'
 import { syncSystemBars } from './system-bars'
 import { useChatActivity } from './chat-activity'
@@ -89,9 +68,8 @@ const searchOpen = ref(false)
 const searchQuery = ref('')
 const sideWidth = computed({ get: () => preferences.sideWidth, set: value => { preferences.sideWidth = value } })
 const dragging = ref(false)
-const gate = ref(store.needsServer)
-const token = ref(auth.token)
-const serverUrl = ref(server.url)
+const authFragment = ref(initialAuthFragment)
+const gate = computed(() => !account.ready || !account.user || account.user.must_change_password || Boolean(authFragment.value))
 
 const welcomeOpen = computed(() => route.name === 'chats' && !route.params.id && route.query.welcome === '1')
 const hasSelection = computed(() => Boolean(route.params.id || route.params.name) || welcomeOpen.value)
@@ -103,10 +81,10 @@ const updateMobile = event => { mobile.value = event.matches }
 // Keep the desktop preference without hiding the list on narrow screens.
 const sideCollapsed = computed(() => !mobile.value && preferences.sideCollapsed)
 // Chats and Apps share one rail position, including the mobile safe-area inset.
-const showAgentRail = computed(() => ['chats', 'apps'].includes(route.name))
+const showAgentRail = computed(() => account.user?.role === 'admin' && ['chats', 'apps'].includes(route.name))
 // Mobile detail headers own the safe-area inset. Shortcuts belong in the list,
 // never above an open chat/app; collapsed desktop lists still need shortcuts.
-const detailPins = computed(() => ['chats', 'apps'].includes(route.name) &&
+const detailPins = computed(() => account.user?.role === 'admin' && ['chats', 'apps'].includes(route.name) &&
   !(route.name === 'chats' && hasSelection.value) && sideCollapsed.value)
 
 function openSidebar () {
@@ -179,22 +157,21 @@ function shortcuts (event) {
     else openSearch()
   } else if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key === ',') {
     event.preventDefault()
-    router.push('/settings/general')
+    router.push('/settings/account')
   }
 }
 
-function connect () {
-  if (isNative) actions.setServer(serverUrl.value).catch(() => {})
-  actions.setToken(token.value.trim()).catch(() => {})
-  gate.value = false
-}
-
-watch(() => store.needsToken || store.needsServer, (needed) => { if (needed) gate.value = true })
+watch([gate, () => account.epoch], ([blocked]) => {
+  actions.resetAccount()
+  if (!blocked) { actions.connect(); actions.refreshAll().catch(() => {}) }
+})
+watch([() => route.fullPath, () => account.user?.role, gate], () => {
+  if (!gate.value && !canOpenRoute(route)) router.replace('/chats')
+}, { immediate: true })
 
 onMounted(() => {
   mobileMedia.addEventListener('change', updateMobile)
-  actions.connect()
-  actions.refreshAll().catch(() => {})
+  accountApi.initialize()
   window.addEventListener('keydown', shortcuts)
 })
 onUnmounted(() => {
@@ -289,29 +266,6 @@ onUnmounted(() => {
   background: var(--surface-app);
 }
 
-.token-card {
-  width: 380px;
-  max-width: 92vw;
-  padding: 28px;
-}
-.token-card__brand { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; font-size: 1.25rem; font-weight: 600; letter-spacing: -.055em; }
-.token-card__brand :deep(.brand-mark) { width: 32px; height: 32px; }
-
-.token-card__title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.token-card p {
-  margin: 0 0 14px;
-}
-
-.token-card__actions {
-  justify-content: flex-end;
-  margin-top: 16px;
-}
-
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;
@@ -370,10 +324,5 @@ onUnmounted(() => {
     grid-row: 2;
   }
 
-  .token-card {
-    width: min(380px, 100%);
-    max-width: 100%;
-    padding: 18px;
-  }
 }
 </style>

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, protocol, net, session, shell, ipcMain } = require('electron')
+const { app, BrowserWindow, Menu, protocol, net, session, shell, ipcMain, safeStorage } = require('electron')
 const path = require('node:path')
 const brand = require('./brand.json')
 const { existsSync, mkdirSync } = require('node:fs')
@@ -42,6 +42,14 @@ function oauthOwner (event) {
   if (event.senderFrame !== event.sender.mainFrame || !trustedRenderer(event.senderFrame.url) ||
       !trustedRenderer(event.sender.getURL())) throw new Error('Untrusted OAuth caller')
   return event.sender.id
+}
+const { createAccountStore } = require('./account-store.cjs')
+const accountStore = createAccountStore({ safeStorage, file: path.join(dataPath, 'account-sessions.json') })
+for (const operation of ['get', 'set', 'remove']) {
+  ipcMain.handle(`account-store:${operation}`, (event, payload) => {
+    oauthOwner(event) // Same bundled top-level renderer boundary as OAuth.
+    return accountStore[operation](payload)
+  })
 }
 ipcMain.handle('oauth:prepare', (event, redirect) => oauth.prepare(oauthOwner(event), redirect))
 ipcMain.handle('oauth:authorize', (event, payload) => oauth.authorize(oauthOwner(event), payload))

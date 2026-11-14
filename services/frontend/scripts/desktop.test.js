@@ -41,7 +41,7 @@ test('sandboxed preload exposes only read-only chrome state and handles fullscre
       } } } }
     })
     assert.equal(bridge.windowControlsOverlay, platform !== 'darwin')
-    assert.deepEqual(Object.keys(bridge).sort(), ['oauth', 'windowControlsOverlay'])
+    assert.deepEqual(Object.keys(bridge).sort(), ['accountStore', 'oauth', 'windowControlsOverlay'])
     listener({}, true)
     assert.equal(fullscreenClass, true)
     listener({}, false)

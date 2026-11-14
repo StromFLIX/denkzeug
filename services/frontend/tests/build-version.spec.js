@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 import { brand } from '../src/brand.js'
 import { mockDesign } from './design-fixture.js'
 import { clientBuildInfo } from '../scripts/client-build-info.js'

@@ -7,6 +7,12 @@ ipcRenderer.on('window:fullscreen', (_event, fullscreen) => {
 })
 const bridge = {
   windowControlsOverlay: process.platform !== 'darwin',
+  accountStore: {
+    version: 1,
+    get: payload => ipcRenderer.invoke('account-store:get', payload),
+    set: payload => ipcRenderer.invoke('account-store:set', payload),
+    remove: payload => ipcRenderer.invoke('account-store:remove', payload)
+  },
   oauth: {
     version: 1,
     prepare: redirect => ipcRenderer.invoke('oauth:prepare', redirect),

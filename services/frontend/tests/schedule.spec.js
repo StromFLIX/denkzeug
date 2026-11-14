@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './account-fixture.js'
 
 const nextRun = '2026-09-08T05:30:00+00:00'
 
@@ -22,6 +22,7 @@ async function mockApi (page, initialSchedule = null) {
   })
 
   await page.route('**/api/**', async (route) => {
+    if (new URL(route.request().url()).pathname.startsWith('/api/auth/')) return route.fallback()
     const request = route.request()
     const path = new URL(request.url()).pathname
     let data = {}

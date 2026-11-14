@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 import { createSSEFixture, snapshotFrame } from './sse-fixture.js'
 import { readFile } from 'node:fs/promises'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
@@ -131,7 +131,7 @@ for (const width of [1440, 390]) {
     expect(download.suggestedFilename()).toBe('bracket.pdf')
     expect(await readFile(await download.path())).toEqual(pdf)
     await expect(panel.getByText('Editable source ·', { exact: false })).toBeVisible()
-    expect(state.files.every(file => file.authorization === 'Bearer output-test-token')).toBe(true)
+    expect(state.files.every(file => file.authorization === undefined)).toBe(true)
     expect(state.files.filter(file => !file.preview)).toHaveLength(1)
     await expect(page.locator('iframe, canvas')).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
@@ -168,7 +168,7 @@ for (const width of [1440, 390, 320]) {
         expect(image.height).toBeLessThanOrEqual(44)
         expect(image.width).toBeLessThanOrEqual(54)
         expect(state.files).toHaveLength(1)
-        expect(state.files[0].authorization).toBe('Bearer output-test-token')
+        expect(state.files[0].authorization).toBeUndefined()
         expect(state.files[0].preview).toBe(true)
       } else {
         await expect(row.locator('img')).toHaveCount(0)
@@ -286,7 +286,7 @@ test('Android saves authenticated output bytes with the native picker and waits 
   await page.evaluate(() => window.finishSave({ cancelled: false }))
   await expect(panel.getByRole('status')).toHaveText('Saved bracket.pdf to your selected location.')
   await expect(download).toBeEnabled()
-  expect(state.files.find(file => !file.preview).authorization).toBe('Bearer output-test-token')
+  expect(state.files.find(file => !file.preview).authorization).toBe('Bearer fixture-native-access')
   // Editable source and preview files must use the same path, not navigate/open in WebView.
   await page.evaluate(() => { window.saveOutcome = 'saved' })
   await panel.getByRole('button', { name: 'Download bracket.dxf', exact: true }).click()

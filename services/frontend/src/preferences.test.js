@@ -160,9 +160,10 @@ test('settings search is normalized, spans categories and preserves device/insta
   assert.ok(searchSettings('--syntax-comment').some(entry => entry.id === 'token-syntax-comment'))
   assert.ok(searchSettings('font').every(entry => entry.section.key === 'appearance'))
   assert.ok(searchSettings('timezone').some(entry => entry.scope === 'Per workflow'))
-  const connection = searchSettings('access token').find(entry => entry.id === 'access-token')
-  assert.equal(connection.scope, 'This device')
-  assert.equal(connection.section.key, 'general')
+  assert.equal(searchSettings('access token').some(entry => entry.id === 'access-token'), false)
+  const security = searchSettings('devices sessions').find(entry => entry.id === 'account-sessions')
+  assert.equal(security.scope, 'Your account')
+  assert.equal(security.section.key, 'account')
 })
 
 test('new settings contributions work without hard-coded search or navigation logic', () => {

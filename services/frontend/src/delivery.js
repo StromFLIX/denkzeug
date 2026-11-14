@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { api, server } from './api'
+import { api } from './api'
 import { createOutbox } from './outbox'
 import { chatCache, chatCacheScope } from './chat-cache'
 
@@ -27,8 +27,11 @@ export const delivery = {
     const scope = chatCacheScope()
     const current = createOutbox({
       storage: localStorage,
-      prefix: `nautionette.outbox.${encodeURIComponent(server.url || location.origin)}.`,
-      send: (item) => api.sendMessage(item.chatId, item.text, item.id, item.projectIds, item.attachments),
+      prefix: `nautionette.outbox.${encodeURIComponent(scope)}.`,
+      send: (item) => {
+        if (outbox !== current || scope !== chatCacheScope()) throw Object.assign(new Error('Account changed.'), { status: 401 })
+        return api.sendMessage(item.chatId, item.text, item.id, item.projectIds, item.attachments)
+      },
       changed: (items) => { if (outbox === current) pendingMessages.value = items },
       accepted: async (message) => {
         await chatCache.accept(message, scope)

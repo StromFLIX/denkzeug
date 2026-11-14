@@ -1,5 +1,5 @@
 import { createServer } from 'node:http'
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 import { mockDesign } from './design-fixture.js'
 
 // Real, persistent HTTP/SSE responses: route.fulfill closes the response and
@@ -27,10 +27,9 @@ async function liveBackend (context) {
   })
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   const url = `http://127.0.0.1:${server.address().port}`
-  await context.addInitScript(url => localStorage.setItem('nautionette.server', url), url)
   await context.route('**/api/**', route => {
     const path = new URL(route.request().url()).pathname
-    return path === '/api/events' || path.endsWith('/stream') ? route.continue() : route.fallback()
+    return path === '/api/events' || path.endsWith('/stream') ? route.continue({ url: `${url}${path}` }) : route.fallback()
   })
   return {
     state, requests, clients,
@@ -101,7 +100,7 @@ test('stalled OPEN streams recover when the watchdog expires', async ({ context,
   } finally { await context.close(); await backend.close() }
 })
 
-test('HTTP 401 stops both loops and asks for credentials; saving a new token reconnects both', async ({ context, page }) => {
+test('HTTP 401 closes private views; signing in reconnects both streams', async ({ context, page }) => {
   const backend = await liveBackend(context)
   try {
     await page.clock.install()
@@ -111,17 +110,18 @@ test('HTTP 401 stops both loops and asks for credentials; saving a new token rec
     backend.disconnect()
     await expect(notice(page)).toBeVisible()
     await page.clock.fastForward(1100)
-    const token = page.getByPlaceholder('access token', { exact: true })
-    await expect(token).toBeVisible()
-    await expect.poll(() => backend.requests.filter(request => request.method === 'HEAD').length).toBe(2)
+    const username = page.getByLabel('Username', { exact: true })
+    await expect(username).toBeVisible()
+    await expect.poll(() => backend.requests.filter(request => request.method === 'HEAD').length).toBeGreaterThanOrEqual(1)
     const count = backend.requests.length
     await page.clock.fastForward(300_000)
     await page.evaluate(() => { window.dispatchEvent(new Event('focus')); window.dispatchEvent(new Event('online')) })
     expect(backend.requests.length).toBe(count)
     backend.status = 200
-    await token.fill('replacement-test-token')
-    await page.getByRole('button', { name: 'Connect', exact: true }).click()
-    await expect(token).toHaveCount(0)
+    await username.fill('admin')
+    await page.getByLabel('Password', { exact: true }).fill('replacement-password-123')
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(username).toHaveCount(0)
     await expect.poll(() => backend.clients.size).toBe(2)
     await expect(notice(page)).toHaveCount(0)
     await expect(page.locator('.pane-head')).not.toContainText('Reconnecting')

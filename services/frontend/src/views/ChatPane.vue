@@ -171,6 +171,7 @@ import { avatarStyle, initials } from '../format'
 import { backTo, chatLocation } from '../router'
 import { actions, chatSettings, draftCount, onLiveEvent, store } from '../store'
 import { api, chatStream } from '../api'
+import { clearAccount } from '../auth-session.js'
 import { delivery, onDelivery, pendingMessages } from '../delivery'
 import { latestContext } from '../context'
 import { cacheError, chatCache, chatCacheScope } from '../chat-cache'
@@ -356,7 +357,6 @@ function connectChat () {
     }
   }).catch((error) => {
     if (version !== generation) return
-    if (error.status === 401) store.needsToken = true
     if (error.status === 404) {
       chatCache.remove(id, scope)
       router.replace(chatLocation())
@@ -378,7 +378,7 @@ function connectChat () {
     streamReceived = false
     reconnecting.value = true
     connectionError.value = error.permanent ? error.message : ''
-    if ([401, 403].includes(error.status)) store.needsToken = true
+    if (error.status === 401) clearAccount()
     if (error.status === 404 || error.status === 410) {
       chatCache.remove(id, scope)
       router.replace(chatLocation())
@@ -448,7 +448,6 @@ async function createNewChat () {
   } catch (error) {
     if (currentCreation(request)) {
       creationError.value = `Could not create chat: ${error.message}`
-      if (error.status === 401) store.needsToken = true
     }
   } finally {
     if (creation === request) { creation = null; starting.value = false }

@@ -33,7 +33,7 @@
           <span class="material-icons">refresh</span>
         </button>
         <RouterLink
-          class="btn btn--icon side__cog" :to="`/settings/${health === 'degraded' ? 'system' : 'general'}`"
+          class="btn btn--icon side__cog" :to="`/settings/${account.user?.role === 'admin' && health === 'degraded' ? 'system' : 'account'}`"
           :title="health === 'degraded' ? 'Settings — something needs attention' : 'Settings'"
           aria-label="Settings"
         >
@@ -199,6 +199,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { RUN_TONE, scheduleTime, shortTime } from '../format'
 import { actions, health, store } from '../store'
+import { account } from '../auth-session.js'
 import { api } from '../api'
 import ChatTree from './ChatTree.vue'
 import AppAvatar from './AppAvatar.vue'

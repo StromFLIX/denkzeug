@@ -64,7 +64,7 @@
               <span class="settings__scope">{{ item.scope }}</span>
               <span class="material-icons settings__result-arrow" aria-hidden="true">arrow_forward</span>
             </RouterLink>
-            <PackageSearch v-if="query.trim().length >= 2" :query="query" @select="choosePackage" />
+            <PackageSearch v-if="account.user?.role === 'admin' && query.trim().length >= 2" :query="query" @select="choosePackage" />
           </section>
           <!-- Search never discards the current pane's in-progress form. -->
           <div v-show="!searching" class="settings__pane">
@@ -82,7 +82,9 @@ import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, 
 import { useRoute, useRouter } from 'vue-router'
 import { health, store } from '../store'
 import { brand } from '../brand'
-import { SETTINGS_GROUPS, SETTINGS_SECTIONS, searchSettings } from '../settings-registry'
+import { SETTINGS_SECTIONS, searchSettings } from '../settings-registry'
+import { account } from '../auth-session.js'
+import { memberSettingKeys } from '../account.js'
 import PackageSearch from '../components/settings/PackageSearch.vue'
 import BuildVersionPill from '../components/BuildVersionPill.vue'
 
@@ -94,12 +96,14 @@ const searchInput = ref(null)
 const body = ref(null)
 const pane = ref(null)
 const panes = Object.fromEntries(SETTINGS_SECTIONS.map(item => [item.key, defineAsyncComponent(item.load)]))
-const section = computed(() => SETTINGS_SECTIONS.find(item => item.key === route.params.tab) || SETTINGS_SECTIONS[0])
+const visibleSections = computed(() => SETTINGS_SECTIONS.filter(item => account.user?.role === 'admin' || memberSettingKeys.has(item.key)))
+const SETTINGS_GROUPS = computed(() => [...new Set(visibleSections.value.map(item => item.group))])
+const section = computed(() => visibleSections.value.find(item => item.key === route.params.tab) || visibleSections.value[0])
 const tab = computed(() => section.value.key)
 const scopeNote = computed(() => section.value.scopeNote || 'Shared across this instance, independent of this device.')
 const searching = computed(() => Boolean(query.value.trim()))
-const results = computed(() => searchSettings(query.value))
-const sectionsIn = group => SETTINGS_SECTIONS.filter(item => item.group === group)
+const results = computed(() => searchSettings(query.value, visibleSections.value))
+const sectionsIn = group => visibleSections.value.filter(item => item.group === group)
 const resultCount = key => results.value.filter(item => item.section.key === key).length
 
 function back () {

@@ -28,7 +28,7 @@ for (const existing of [[], ['RECORD_AUDIO'], ['MODIFY_AUDIO_SETTINGS'], ['RECOR
       for (const name of ['ic_launcher.png', 'ic_launcher_foreground.png']) await copyFile(new URL(`../native/icons/${name}`, import.meta.url), join(root, 'native/icons', name))
       await writeFile(join(root, 'android/app/src/main/res/mipmap-mdpi/ic_launcher.png'), 'stock-icon')
       await writeFile(join(root, 'android/app/src/main/res/mipmap-mdpi/custom.png'), 'custom-icon')
-      const names = ['MainActivity.java', 'NautionetteSystemBarsPlugin.java', 'NautionetteDownloadsPlugin.java']
+      const names = ['MainActivity.java', 'NautionetteSystemBarsPlugin.java', 'NautionetteDownloadsPlugin.java', 'DenkzeugAccountStorePlugin.java']
       for (const name of names) await copyFile(new URL(`../native/android/${name}`, import.meta.url), join(root, 'native/android', name))
       const manifestPath = join(root, 'android/app/src/main/AndroidManifest.xml')
       const application = '    <application android:label="@string/app_name" />'
@@ -39,7 +39,8 @@ for (const existing of [[], ['RECORD_AUDIO'], ['MODIFY_AUDIO_SETTINGS'], ['RECOR
       for (const permission of ['RECORD_AUDIO', 'MODIFY_AUDIO_SETTINGS', 'INTERNET']) {
         assert.equal(manifest.split(`android.permission.${permission}`).length - 1, 1)
       }
-      assert.ok(manifest.includes(application))
+      assert.ok(manifest.includes('android:label="@string/app_name"'))
+      assert.ok(manifest.includes('android:allowBackup="false"'))
       const strings = await readFile(stringsPath, 'utf8')
       assert.ok(strings.includes(`<string name="app_name">${brand.name}</string>`))
       assert.ok(strings.includes(`<string name="title_activity_main">${brand.name}</string>`))

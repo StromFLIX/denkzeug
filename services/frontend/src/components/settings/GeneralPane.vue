@@ -48,26 +48,7 @@
     <button class="btn btn--primary" :disabled="saving || !loaded" @click="saveSettings">{{ saving ? 'Saving…' : 'Save' }}</button>
   </div>
 
-  <section class="setting general-connection" aria-labelledby="connection-title">
-    <div class="row"><h3 id="connection-title" class="setting__label grow">Connection</h3><span class="caption dim">This device</span></div>
-    <p class="caption dim">Connect this browser or app to your instance. These credentials do not change anyone else’s connection.</p>
-    <div class="general-detail">
-      <section id="server" class="setting">
-        <label for="server-url" class="setting__label">Server</label>
-        <div class="row">
-          <input id="server-url" v-model="serverUrl" class="field" type="url" inputmode="url" :placeholder="isNative ? 'https://nautionette.example.com' : origin" />
-          <button class="btn btn--outline" aria-label="Save server" @click="saveServer">Save</button>
-        </div>
-      </section>
-      <section id="access-token" class="setting">
-        <label for="connection-token" class="setting__label">Access token</label>
-        <div class="row">
-          <input id="connection-token" v-model="token" class="field" type="password" placeholder="Access token" autocomplete="off" />
-          <button class="btn btn--outline" aria-label="Save access token" @click="saveToken">Save</button>
-        </div>
-      </section>
-    </div>
-  </section>
+  <p class="caption dim">Manage your identity and signed-in devices in <RouterLink to="/settings/account">Profile &amp; security</RouterLink>.</p>
 </template>
 
 <script setup>
@@ -77,12 +58,9 @@ import AgentConfigFields from './AgentConfigFields.vue'
 import AgentPicker from '../AgentPicker.vue'
 import { DEFAULT_CONFIG_KEYS as CONFIG_KEYS, globalChatConfig } from '../../agent-config'
 import { actions, store } from '../../store'
-import { api, auth, isNative, server } from '../../api'
+import { api } from '../../api'
 
 const $q = useQuasar()
-const origin = window.location.origin
-const token = ref(auth.token)
-const serverUrl = ref(server.url)
 const saving = ref(false)
 const loaded = ref(false)
 const loadError = ref('')
@@ -95,11 +73,6 @@ function apply (data) {
   }
   config.value = globalChatConfig(data.settings || {})
   configDefaults.value = globalChatConfig(data.defaults || {})
-}
-function saveToken () { actions.setToken(token.value.trim()); $q.notify({ type: 'positive', message: 'Token saved' }) }
-function saveServer () {
-  actions.setServer(serverUrl.value)
-  $q.notify({ type: 'positive', message: serverUrl.value.trim() ? 'Server saved' : 'Using this origin' })
 }
 async function persist (payload) {
   saving.value = true

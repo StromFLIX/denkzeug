@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 
 function sample () {
   return {
@@ -21,6 +21,7 @@ async function mockApi (page, statistics, { live = false, expired = false } = {}
   const state = { reads: 0, statistics }
   const run = { workflow_id: 'wf', workflow: 'digest', status: live ? 'running' : 'completed', input: {}, result: {}, created_at: 1767225600, trigger: 'manual' }
   await page.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname.startsWith('/api/auth/')) return route.fallback()
     const path = new URL(route.request().url()).pathname
     if (path === '/api/events') return route.fulfill({ contentType: 'text/event-stream', body: ': connected\n\n' })
     let data = {}

@@ -336,7 +336,8 @@ import { useQuasar } from 'quasar'
 import DeclaredField from './DeclaredField.vue'
 import { credentialLabel, draftIsValid, resetDraft } from './fields'
 import { actions, store } from '../../store'
-import { api, auth, server as instance } from '../../api'
+import { api, server as instance } from '../../api'
+import { account } from '../../auth-session.js'
 import { oauthConnection } from '../../mcp-oauth.js'
 const $q = useQuasar()
 const state = reactive({ servers: [], fields: [], stdio_fields: [], oauth_connections: {}, writable: false })
@@ -364,7 +365,7 @@ const argsText = ref('[]'),
 let nextVariable = 0,
   controller = null,
   attempt = 0
-const context = () => `${instance.url}|${auth.token}`
+const context = () => `${instance.url}|${account.user?.id}|${account.sessionId}`
 const basicFields = computed(() =>
   transport.value === 'stdio' ? state.stdio_fields : state.fields.filter((field) => field.key !== 'token'),
 )

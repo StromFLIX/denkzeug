@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 
 const defaults = {
   default_model: '', default_agent_set: 'default', history_chars: 0,

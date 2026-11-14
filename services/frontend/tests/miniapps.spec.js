@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 import { mockAgents } from './agent-fixture.js'
 
 async function mockApps (context, js) {
@@ -201,7 +201,7 @@ test('opaque frame cannot read host credentials, forge host requests, load exter
   // Chromium throws for opaque cookies; WebKit exposes an empty cookie jar.
   expect(checks).toEqual({ parentToken: 'denied', ownStorage: 'denied', parentDOM: 'denied', cookie: expect.stringMatching(/^(denied)?$/), popup: true, badPath: 'denied', nonJSON: 'denied', cyclic: 'denied', result: { value: 0 } })
   expect(calls).toHaveLength(1)
-  expect(calls[0].headers.authorization).toBe('Bearer host-secret-for-isolation-test')
+  expect(calls[0].headers.authorization).toBeUndefined()
   expect(JSON.stringify(checks)).not.toContain('host-secret-for-isolation-test')
   expect(network).toEqual([])
   await expect(page.locator('iframe')).toHaveAttribute('sandbox', 'allow-scripts')

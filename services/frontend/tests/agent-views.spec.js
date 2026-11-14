@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 import { mockAgents } from './agent-fixture.js'
 import { openChatConfiguration, closeChatConfiguration } from './helpers.js'
 import { THEMES, resolveTheme, contrastRatio } from '../src/themes.js'

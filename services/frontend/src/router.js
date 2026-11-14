@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { account } from './auth-session.js'
+import { canOpenRoute } from './account.js'
 
 const routes = [
   // Keep /chats as the mobile list/back destination; launch into the composer.
@@ -14,6 +16,10 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach(to => {
+  if (account.user && !canOpenRoute(to)) return '/chats'
 })
 
 // The list a view sits on top of, and so the place its back button belongs.

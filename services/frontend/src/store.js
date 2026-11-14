@@ -3,7 +3,8 @@
  * event stream is what keeps them fresh, so nothing polls.
  */
 import { computed, reactive } from 'vue'
-import { api, auth, isNative, liveEvents, server } from './api'
+import { api, liveEvents, server } from './api'
+import { account, clearAccount } from './auth-session.js'
 import { delivery } from './delivery'
 import { chatCache, chatCacheScope, warmChatCache } from './chat-cache'
 import { agentConfig, globalChatConfig, resolveAgentConfig } from './agent-config'
@@ -21,10 +22,7 @@ const state = reactive({
   ready: false,
   catalogLoaded: false,
   catalogError: '',
-  needsToken: false,
   liveStatus: 'connecting',
-  // The app ships without a backend, so it cannot start until it is told where one is.
-  needsServer: isNative && !server.url,
   system: { components: [], agent_sets: [] },
   catalog: emptyCatalog(),
   agentNavigation: agentNavigation.state,
@@ -70,7 +68,7 @@ async function guard (loader) {
   try {
     return await loader()
   } catch (error) {
-    if (error.status === 401) state.needsToken = true
+    if (error.status === 401) clearAccount()
     else if (!error.status) return null
     else throw error
     return null
@@ -164,7 +162,7 @@ export const actions = {
   },
 
   async loadMcpAuth () {
-    if (state.needsServer || state.needsToken) return
+    if (!account.user || account.user.role !== 'admin') return
     try { await mcpAuth.refresh(); state.mcpAuth.error = '' } catch (error) { state.mcpAuth.error = error.message }
   },
   openMcpLogin: item => mcpAuth.open(item),
@@ -182,8 +180,11 @@ export const actions = {
   },
 
   async refreshAll () {
-    if (state.needsServer) return
+    if (!account.user) return
+    const common = [actions.loadCatalog(), actions.loadChats()]
+    if (account.user.role !== 'admin') { await Promise.all(common); state.ready = true; return }
     await Promise.all([
+      ...common,
       actions.loadSystem(),
       actions.loadAgents(),
       actions.loadCatalog(),
@@ -197,39 +198,28 @@ export const actions = {
     state.ready = true
   },
 
-  openSettings (tab = 'general') {
+  openSettings (tab = 'account') {
     return router.push(`/settings/${tab}`)
   },
 
-  setServer (value) {
-    state.catalogError = ''
-    state.catalogLoaded = false
+  resetAccount () {
+    actions.disconnect()
+    catalogRequest++
+    chatsRequest++
+    state.ready = state.catalogLoaded = false
+    state.catalogError = state.appsError = ''
     state.catalog = emptyCatalog()
+    state.system = { components: [], agent_sets: [] }
+    state.chats = []; state.chatActivity = null; state.projects = []; state.apps = []
+    state.workflows = []; state.drafts = []; state.runs = []; state.events = []
     agentNavigation.clear()
-    server.url = value
     mcpAuth.clear()
-    agentNavigation.clear()
-    state.needsServer = isNative && !server.url
-    actions.connect()
-    return actions.refreshAll()
-  },
-
-  setToken (value) {
-    state.catalogError = ''
-    state.catalogLoaded = false
-    state.catalog = emptyCatalog()
-    agentNavigation.clear()
-    auth.token = value
-    mcpAuth.clear()
-    state.needsToken = false
-    actions.connect()
-    return actions.refreshAll()
   },
 
   connect () {
     source?.close()
     source = null
-    if (state.needsServer) return
+    if (!account.user) return
     state.liveStatus = 'connecting'
     const scope = chatCacheScope()
     chatsRequest++
@@ -247,6 +237,7 @@ export const actions = {
       state.events = state.events.slice(0, 200)
       const kind = event.kind || ''
       if (kind === 'connected') actions.refreshAll().catch(() => {})
+      if (account.user?.role !== 'admin' && !kind.startsWith('chat.')) return
       if (kind.startsWith('run.')) actions.loadRuns().catch(() => {})
       if (kind.startsWith('workflow.') || kind.startsWith('promote.')) actions.loadWorkflows().catch(() => {})
       if (kind.startsWith('chat.')) actions.loadChats().catch(() => {})
@@ -258,7 +249,7 @@ export const actions = {
       emit(event)
     }, error => {
       state.liveStatus = error.permanent ? 'failed' : 'reconnecting'
-      if ([401, 403].includes(error.status)) state.needsToken = true
+      if (error.status === 401) clearAccount()
     }, () => { state.liveStatus = 'connected' })
   },
 

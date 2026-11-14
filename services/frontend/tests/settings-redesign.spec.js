@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 import { mockDesign } from './design-fixture.js'
 import { SETTINGS_GROUPS, SETTINGS_SECTIONS } from '../src/settings-registry.js'
 import { THEMES } from '../src/themes.js'
 
 const groups = [
+  ['Account & workspace', ['account', 'users', 'invitations', 'access']],
   ['Your experience', ['general', 'appearance', 'workspace']],
   ['Build & connect', ['agents', 'packages', 'creative-apps', 'mcp', 'projects', 'git']],
   ['Run & manage', ['automation', 'app-runtimes', 'storage', 'system', 'activity']]
@@ -24,7 +25,7 @@ for (const width of [1440, 320]) {
     await expect(page.getByRole('heading', { name: 'General', exact: true })).toBeVisible()
     const scope = page.locator('.settings__scope-line')
     await expect(scope).toContainText('Instance')
-    await expect(scope).toContainText('Connection credentials below stay on this device')
+    await expect(scope).toContainText('Chat defaults are shared across this instance')
     if (width > 760) {
       const nav = page.getByRole('navigation', { name: 'Settings categories' })
       for (const [label, keys] of groups) {
@@ -56,16 +57,12 @@ for (const width of [1440, 320]) {
     await expect(depth).toBeEnabled()
     await depth.fill('7')
     const search = page.getByRole('searchbox', { name: 'Search settings' })
-    await search.fill('access token')
-    await expect(page.getByRole('region', { name: 'Settings search results' })).toContainText('This device')
+    await search.fill('devices sessions')
+    await expect(page.getByRole('region', { name: 'Settings search results' })).toContainText('Your account')
     await search.press('Escape')
     await expect(depth).toHaveValue('7')
     await search.fill('access token')
-    await page.getByRole('link', { name: /Access token/ }).click()
-    await expect(page).toHaveURL('/settings/general#access-token')
-    await expect(page.locator('#access-token')).toBeFocused()
-    await expect(page.getByLabel('Access token', { exact: true })).toBeVisible()
-    await expect(depth).toHaveValue('7')
+    await expect(page.getByRole('link', { name: /Access token/ })).toHaveCount(0)
     await search.fill('conversation memory')
     await page.getByRole('link', { name: /Conversation memory/ }).click()
     await expect(page.locator('#history')).toHaveAttribute('open', '')
@@ -102,10 +99,10 @@ for (const mode of ['light', 'dark']) {
 
 test.describe('touch settings', () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
-  test('search and connection fields avoid input zoom and category control has a touch target', async ({ page, context }) => {
+  test('search and account fields avoid input zoom and category control has a touch target', async ({ page, context }) => {
     await mockDesign(context)
-    await page.goto('/settings/general#access-token')
-    for (const field of [page.getByRole('searchbox', { name: 'Search settings' }), page.getByLabel('Access token', { exact: true })]) {
+    await page.goto('/settings/account#account-password')
+    for (const field of [page.getByRole('searchbox', { name: 'Search settings' }), page.getByLabel('New password', { exact: true })]) {
       await expect(field).toBeVisible()
       expect(await field.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16)
     }

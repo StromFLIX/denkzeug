@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -63,6 +63,7 @@ async function mockApi (page, options = {}) {
   const run = { workflow_id: 'digest-run', workflow: 'url_digest', status: 'running', input: { url: 'https://pi.dev' }, created_at: start / 1000, trigger: 'manual' }
   const workflow = { name: 'url_digest', title: 'URL digest', description: 'Fetch a page, summarize it, and save the result.', code: source, graph: state.definition || original, manifest: { inputs: {} }, runs: [run], settings: {} }
   await page.route('**/api/**', async (route) => {
+    if (new URL(route.request().url()).pathname.startsWith('/api/auth/')) return route.fallback()
     const path = new URL(route.request().url()).pathname
     let data = {}
     if (path === '/api/events') return route.fulfill({ contentType: 'text/event-stream', body: ': connected\n\n' })

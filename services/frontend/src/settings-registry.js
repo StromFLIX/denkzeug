@@ -6,8 +6,19 @@ const entry = (id, label, description, keywords = '') => ({ id, label, descripti
 /** A settings contribution supplies one pane and its search entries. No shell edits needed. */
 export const SETTINGS_SECTIONS = [
   {
+    key: 'account', label: 'Profile & security', icon: 'account_circle', group: 'Account & workspace', scope: 'Your account',
+    scopeNote: 'Your profile, password and signed-in devices. Changes apply to your account only.',
+    load: () => import('./components/settings/AccountPane.vue'),
+    entries: [entry('account-profile', 'Profile', 'Your display name and verified email.', 'account username identity'), entry('account-password', 'Password', 'Change your password.', 'security'), entry('account-sessions', 'Devices & sessions', 'End sessions and sign out.', 'logout security')]
+  },
+  ...[
+    ['users', 'Users', 'group', 'account-users', 'Manage administrator and member accounts.'],
+    ['invitations', 'Invitations', 'mail', 'account-invitations', 'Invite people and revoke unused invitations.'],
+    ['access', 'Access policies', 'admin_panel_settings', 'account-policy', 'Pause registrations or allow invited people to join.']
+  ].map(([key, label, icon, id, description]) => ({ key, label, icon, group: 'Account & workspace', scope: 'Workspace administrators', load: () => import('./components/settings/AccountPane.vue'), entries: [entry(id, label, description, 'account security access admin')] })),
+  {
     key: 'general', label: 'General', icon: 'tune', group: 'Your experience', scope: 'Instance',
-    scopeNote: 'Chat defaults are shared across this instance. Connection credentials below stay on this device.',
+    scopeNote: 'Chat defaults are shared across this instance.',
     load: () => import('./components/settings/GeneralPane.vue'),
     entries: [
       entry('default-chat-agent', 'Default agent', 'Start new chats with global defaults or a saved agent.', 'profile configuration preset'),
@@ -18,8 +29,6 @@ export const SETTINGS_SECTIONS = [
       entry('default-projects', 'Default projects', 'Writable projects selected for new chats.', 'repositories git workspace'),
       entry('subagent-limits', 'Agent delegation limits', 'Instance-wide call tree depth, width and parallel calls.', 'subagents concurrency nested children recursion'),
       entry('history', 'Conversation memory', 'Native Pi sessions, persistent tools and automatic compaction.', 'context tokens history compact memory'),
-      { ...entry('server', 'Server', 'Connect this device to an instance.', 'URL address connection endpoint'), scope: 'This device' },
-      { ...entry('access-token', 'Access token', 'Authentication for this device.', 'password security credentials login'), scope: 'This device' }
     ]
   },
   {

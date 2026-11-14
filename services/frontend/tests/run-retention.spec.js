@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 
 const note = 'Detailed execution history has expired or was removed from Temporal. Saved run status, input, and output are still available.'
 async function mockApi (page, status = 'completed') {
@@ -7,6 +7,7 @@ async function mockApi (page, status = 'completed') {
   const graph = { mode: 'execution', status, history_status: 'expired', nodes: [{ id: 'workflow', label: 'digest', kind: 'workflow', status }], edges: [], warnings: [note] }
   const workflow = { name: 'digest', title: 'Digest', graph, code: '', manifest: { inputs: {} }, runs: [run], settings: {} }
   await page.route('**/api/**', async (route) => {
+    if (new URL(route.request().url()).pathname.startsWith('/api/auth/')) return route.fallback()
     const path = new URL(route.request().url()).pathname
     if (path === '/api/events') return route.fulfill({ contentType: 'text/event-stream', body: ': connected\n\n' })
     let data = {}

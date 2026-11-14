@@ -43,6 +43,7 @@ import BrandMark from './BrandMark.vue'
 import { brand } from '../brand'
 import { actions, chatSettings, store } from '../store'
 import { preferences } from '../preferences'
+import { account } from '../auth-session.js'
 import { agentConfig, copyConfig, defaultChatConfig, resolveAgentConfig } from '../agent-config'
 import { reusableChatSettings } from '../new-chat-settings'
 import { chatCacheScope } from '../chat-cache'
@@ -59,12 +60,12 @@ const route = useRoute(), router = useRouter()
 const composer = ref(null)
 async function focusWelcome () {
   // /chats itself is the list on mobile: never focus its hidden composer.
-  if (route.query.welcome !== '1' || store.needsToken || store.needsServer) return
+  if (route.query.welcome !== '1' || !account.user) return
   await nextTick()
   composer.value?.focus()
 }
 onMounted(focusWelcome)
-watch(() => [route.query.welcome, store.needsToken, store.needsServer], focusWelcome)
+watch(() => [route.query.welcome, account.user], focusWelcome)
 const selectedAgent = ref(typeof route.query.agent === 'string' ? route.query.agent : undefined)
 const overrides = ref({})
 const customized = ref(false)

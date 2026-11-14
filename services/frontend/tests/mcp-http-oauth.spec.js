@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, fulfillAccount } from './account-fixture.js'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 const url = 'https://workiq.svc.cloud.microsoft/mcp'
 const config = { transport: 'http', url, client_id: 'public-client', scope: 'read offline_access',
@@ -10,6 +10,7 @@ const fields = [{ key: 'name', label: 'Name', pattern: '[a-z0-9][a-z0-9-]{0,23}'
 async function mock (context) {
   const state = { starts: [], prepares: [], connects: [], callbacks: [], servers: [], profiles: {}, dismissed: [], demand: true, failConnect: false, failLogin: false, clientRequired: false }
   await context.route('**/api/**', route => {
+    if (new URL(route.request().url()).pathname.startsWith('/api/auth/')) return fulfillAccount(route)
     const path = new URL(route.request().url()).pathname, method = route.request().method()
     if (path === '/api/mcp-oauth/status') return route.fulfill({ json: {
       connections: Object.entries(state.profiles).map(([name, item]) => ({ name, ...item })),

@@ -19,7 +19,7 @@
 
     <RouterLink
       class="rail__item rail__settings" :class="{ 'rail__item--active': active === 'settings' }"
-      :aria-current="active === 'settings' ? 'page' : undefined" :to="`/settings/${health === 'degraded' ? 'system' : 'general'}`"
+      :aria-current="active === 'settings' ? 'page' : undefined" :to="`/settings/${account.user?.role === 'admin' && health === 'degraded' ? 'system' : 'account'}`"
       :title="health === 'degraded' ? 'Settings — something needs attention' : 'Settings'"
       aria-label="Settings"
     >
@@ -27,6 +27,7 @@
       <span class="rail__label">Settings</span>
       <span v-if="health !== 'ok'" class="dot rail__settings-dot" :class="{ 'dot--bad': health === 'degraded' }" />
     </RouterLink>
+    <AccountMenu />
   </nav>
 </template>
 
@@ -35,6 +36,8 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { draftCount, health } from '../store'
 import BrandMark from './BrandMark.vue'
+import AccountMenu from './AccountMenu.vue'
+import { account } from '../auth-session.js'
 import { brand } from '../brand'
 import { chatLocation } from '../router'
 
@@ -57,7 +60,7 @@ const items = computed(() => [
   { name: 'workflows', label: 'Workflows', icon: 'account_tree', tone: 'var(--workflow-color)', to: '/workflows', badge: draftCount.value || 0 },
   { name: 'runs', label: 'Runs', icon: 'history', tone: 'var(--workflow-color)', to: '/runs' },
   { name: 'apps', label: 'Apps', icon: 'apps', tone: 'var(--session-color)', to: { path: '/apps', query: route.query.agent ? { agent: route.query.agent } : {} } }
-])
+].filter(item => account.user?.role === 'admin' || item.name === 'chats'))
 </script>
 
 <style scoped>

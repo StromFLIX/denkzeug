@@ -1,18 +1,28 @@
 import { liveConnection } from './live-connection.js'
 import { connectSpeechStream } from './speech-stream.js'
+import { account, auth, clearAccount, isNative } from './auth-session.js'
+import { BearerEventSource } from './bearer-events.js'
+export { auth, isNative } from './auth-session.js'
 
-const TOKEN_KEY = 'nautionette.token'
+let reauthenticate = null
+let refreshSession = null
+export function setReauthHandler (handler) { reauthenticate = handler }
+export function setRefreshHandler (handler) { refreshSession = handler }
+
 const SERVER_KEY = 'nautionette.server'
-
-/** The packaged app is served from its own webview origin and has no backend. */
-export const isNative = Boolean(globalThis.denkzeugDesktop || globalThis.nautionetteDesktop || globalThis.Capacitor?.isNativePlatform?.())
 
 export const server = {
   get url () {
-    return localStorage.getItem(SERVER_KEY) || ''
+    return isNative ? localStorage.getItem(SERVER_KEY) || '' : ''
   },
   set url (value) {
-    const trimmed = (value || '').trim().replace(/\/+$/, '')
+    if (!isNative) return
+    let trimmed = (value || '').trim().replace(/\/+$/, '')
+    if (trimmed) {
+      const url = new URL(trimmed)
+      if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new Error('Use an HTTPS server origin, without a path or credentials.')
+      trimmed = url.origin
+    }
     if (trimmed) localStorage.setItem(SERVER_KEY, trimmed)
     else localStorage.removeItem(SERVER_KEY)
   }
@@ -23,19 +33,9 @@ export function endpoint (path) {
   return `${server.url}${path}`
 }
 
-export const auth = {
-  get token () {
-    return localStorage.getItem(TOKEN_KEY) || ''
-  },
-  set token (value) {
-    if (value) localStorage.setItem(TOKEN_KEY, value)
-    else localStorage.removeItem(TOKEN_KEY)
-  }
-}
-
 function headers (extra = {}) {
   const out = { ...extra }
-  if (auth.token) out.Authorization = `Bearer ${auth.token}`
+  if (isNative && auth.token) out.Authorization = `Bearer ${auth.token}`
   return out
 }
 
@@ -47,24 +47,43 @@ export class ApiError extends Error {
   }
 }
 
-async function request (path, options = {}) {
+export async function request (path, options = {}, retried = 0) {
+  const epoch = account.epoch
+  const origin = endpoint('')
+  const method = options.method || 'GET'
+  const csrf = !isNative && !['GET', 'HEAD', 'OPTIONS'].includes(method) ? { 'X-CSRF-Token': account.csrf } : {}
   const response = await fetch(endpoint(path), {
+    credentials: isNative ? 'omit' : 'same-origin',
     ...options,
-    headers: headers(options.body ? { 'Content-Type': 'application/json', ...options.headers } : options.headers)
+    headers: headers({ ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...csrf, ...options.headers })
   })
+  if (epoch !== account.epoch || origin !== endpoint('')) throw new ApiError('Account changed. Please try again.', 409)
+  if (response.status === 401 && isNative && auth.token && !(retried & 1) && refreshSession && !/^\/api\/auth\/(refresh|login|bootstrap|register|forgot-password|reset-password|verify-email)(?:\?|$)/.test(path)) {
+    await refreshSession()
+    return request(path, options, retried | 1)
+  }
   if (!response.ok) {
     let detail = `${response.status} ${response.statusText}`, structured = null
     try {
       const body = await response.json()
       if (body?.detail) {
         structured = body.detail
-        detail = typeof body.detail === 'string' ? body.detail : body.detail.message || JSON.stringify(body.detail)
+        detail = typeof body.detail === 'string' ? body.detail : Array.isArray(body.detail) ? body.detail.map(item => item.msg || 'Invalid request.').join(' ') : body.detail.message || 'The request could not be completed.'
       }
     } catch { /* keep the status line */ }
+    if (epoch !== account.epoch || origin !== endpoint('')) throw new ApiError('Account changed. Please try again.', 409)
+    if (response.status === 403 && structured?.code === 'reauthentication_required' && reauthenticate && !(retried & 2)) {
+      await reauthenticate()
+      if (epoch !== account.epoch || origin !== endpoint('')) throw new ApiError('Account changed.', 409)
+      return request(path, options, retried | 2)
+    }
+    if (response.status === 401 && account.user && !/^\/api\/auth\/(reauth|refresh)(?:\?|$)/.test(path)) clearAccount()
     throw new ApiError(detail, response.status, structured)
   }
   if (response.status === 204) return null
-  return options.responseType === 'blob' ? response.blob() : response.json()
+  const data = await (options.responseType === 'blob' ? response.blob() : response.json())
+  if (epoch !== account.epoch || origin !== endpoint('')) throw new ApiError('Account changed. Please try again.', 409)
+  return data
 }
 
 const json = (body) => ({ body: JSON.stringify(body ?? {}) })
@@ -217,11 +236,15 @@ function stream (path, onEvent, onError, onOpen) {
   // Capture the server and credentials for this connection. Replacing it aborts
   // outstanding probes, so old-instance failures cannot gate the new instance.
   const base = endpoint(path)
-  const token = auth.token
-  const url = token ? `${base}?token=${encodeURIComponent(token)}` : base
-  return liveConnection(url, {
-    probe: signal => fetch(base, { method: 'HEAD', signal, cache: 'no-store',
-      headers: token ? { Authorization: `Bearer ${token}` } : {} }),
+  return liveConnection(base, {
+    probe: async signal => {
+      let response = await fetch(base, { method: 'HEAD', signal, cache: 'no-store', credentials: isNative ? 'omit' : 'same-origin', headers: headers() })
+      if (response.status === 401 && isNative && refreshSession) {
+        await refreshSession()
+        response = await fetch(base, { method: 'HEAD', signal, cache: 'no-store', credentials: 'omit', headers: headers() })
+      }
+      return response
+    },
     onMessage: message => {
       let data
       try { data = JSON.parse(message.data) } catch { return }
@@ -229,7 +252,7 @@ function stream (path, onEvent, onError, onOpen) {
     },
     onError,
     onOpen
-  })
+  }, isNative ? { EventSource: BearerEventSource } : {})
 }
 
 export function chatStream (chatId, onSnapshot, onError) {

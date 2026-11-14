@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 import { mockAgents, projectId } from './agent-fixture.js'
 import { openChatConfiguration, closeChatConfiguration } from './helpers.js'
 

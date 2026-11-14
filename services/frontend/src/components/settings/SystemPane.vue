@@ -118,7 +118,6 @@ async function refresh () {
     store.system = await api.system()
     checkedAt.value = new Date().toLocaleTimeString()
   } catch (failure) {
-    if (failure.status === 401) store.needsToken = true
     error.value = 'Could not refresh system health. Check your connection and try again.'
   } finally {
     loading.value = false

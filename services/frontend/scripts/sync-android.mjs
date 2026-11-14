@@ -6,7 +6,7 @@ import { configureAndroidStrings } from './native-brand.mjs'
 const root = new URL('../', import.meta.url)
 const config = JSON.parse(await readFile(new URL('capacitor.config.json', root), 'utf8'))
 if (config.appId !== 'dev.nautionette.app') throw new Error('Update the native Java package when changing appId.')
-for (const name of ['MainActivity.java', 'NautionetteSystemBarsPlugin.java', 'NautionetteDownloadsPlugin.java']) {
+for (const name of ['MainActivity.java', 'NautionetteSystemBarsPlugin.java', 'NautionetteDownloadsPlugin.java', 'DenkzeugAccountStorePlugin.java']) {
   await copyFile(new URL(`native/android/${name}`, root), new URL(`android/app/src/main/java/dev/nautionette/app/${name}`, root))
 }
 // BridgeWebChromeClient requests BOTH permissions for AUDIO_CAPTURE and denies
@@ -19,6 +19,9 @@ for (const permission of ['RECORD_AUDIO', 'MODIFY_AUDIO_SETTINGS']) {
     manifest = manifest.replace('</manifest>', `    <uses-permission android:name="android.permission.${permission}" />\n</manifest>`)
   }
 }
+// Account credentials are device-bound; never restore ciphertext without its Keystore key.
+manifest = manifest.replace(/android:allowBackup="[^"]*"/, 'android:allowBackup="false"')
+if (!manifest.includes('android:allowBackup=')) manifest = manifest.replace('<application', '<application android:allowBackup="false"')
 await writeFile(manifestPath, manifest)
 // Keep the app and launcher/activity labels in sync without touching package IDs,
 // custom_url_scheme or permission identifiers in the generated Android project.

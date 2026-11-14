@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 
 const notice = { kind: 'recovery', attempt: 1, max_attempts: 2,
   message: 'Automatic recovery 1/2: interrupted model connection' }

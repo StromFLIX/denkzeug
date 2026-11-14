@@ -33,7 +33,7 @@ test('storage deletion always sends the reviewed plan ID and explicit confirmati
   assert.deepEqual(JSON.parse(requests[0].body), { plan_id: 'a'.repeat(32), confirm: true })
 })
 
-test('supervised streams encode tokens, ignore malformed frames and fence replaced instance probes', async t => {
+test('web streams stay same-origin without URL secrets and ignore malformed frames', async t => {
   const storage = new Map(), sources = [], probes = [], snapshots = [], events = [], errors = []
   const previous = { localStorage: globalThis.localStorage, EventSource: globalThis.EventSource }
   globalThis.localStorage = { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) }
@@ -53,7 +53,8 @@ test('supervised streams encode tokens, ignore malformed frames and fence replac
   const chat = chatStream('a/b', data => snapshots.push(data), error => errors.push(error))
   const global = liveEvents(event => events.push(event), error => errors.push(error))
   t.after(() => { chat.close(); global.close() })
-  assert.equal(sources[0].url, 'https://old.example/api/chats/a%2Fb/stream?token=old%2Btoken%26secret')
+  assert.equal(sources[0].url, '/api/chats/a%2Fb/stream')
+  assert.equal(server.url, '')
   sources[0].onmessage({ data: '{' })
   sources[0].onmessage({ data: '{"type":"snapshot","chat":{"id":"a/b"}}' })
   sources[1].onmessage({ data: '{"kind":"connected"}' })
@@ -64,9 +65,10 @@ test('supervised streams encode tokens, ignore malformed frames and fence replac
   auth.token = 'new-token'
   t.mock.timers.tick(1000)
   assert.equal(probes.length, 1)
-  assert.equal(probes[0].url, 'https://old.example/api/chats/a%2Fb/stream')
+  assert.equal(probes[0].url, '/api/chats/a%2Fb/stream')
   assert.equal(probes[0].method, 'HEAD')
-  assert.deepEqual(probes[0].headers, { Authorization: 'Bearer old+token&secret' })
+  assert.deepEqual(probes[0].headers, {})
+  assert.equal(probes[0].credentials, 'same-origin')
   assert.equal(probes[0].cache, 'no-store')
   chat.close()
   assert.equal(probes[0].signal.aborted, true)

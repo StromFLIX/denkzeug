@@ -1,6 +1,7 @@
 import { openDB } from 'idb'
 import { ref } from 'vue'
 import { api, server } from './api.js'
+import { auth } from './auth-session.js'
 
 export const CHAT_CACHE_LIMIT = 100
 export const cacheError = ref('')
@@ -60,7 +61,7 @@ export function createChatCache (name = 'nautionette.chat-cache') {
 }
 
 const storage = createChatCache()
-export const chatCacheScope = () => server.url || location.origin
+export const chatCacheScope = () => `${server.url || location.origin}/account/${encodeURIComponent(auth.scope)}`
 
 async function cached (operation) {
   try {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 import { brand } from '../src/brand.js'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 import { mockDesign } from './design-fixture.js'
@@ -39,7 +39,7 @@ test('the rebrand preserves existing credentials, storage keys and deliberate de
   await expect(page.locator('body')).toHaveCSS('font-family', 'monospace')
   await expect(page.locator('.rail__brand')).toHaveAttribute('aria-label', brand.name)
   await expect(page.locator('.rail__brand img')).toHaveCSS('filter', 'invert(1)')
-  expect(await page.evaluate(() => localStorage.getItem('nautionette.token'))).toBe('fixture-existing-access-token')
+  expect(await page.evaluate(() => localStorage.getItem('nautionette.token'))).toBeNull()
   expect(await page.evaluate(() => localStorage.getItem('denkzeug.token'))).toBeNull()
 })
 

@@ -1,3 +1,4 @@
+import { fulfillAccount } from './account-fixture.js'
 import { createSSEFixture, snapshotFrame } from './sse-fixture.js'
 
 export async function mockDesign (context) {
@@ -33,6 +34,7 @@ export async function mockDesign (context) {
   }
   state.catalog = catalog
   await context.route('**/api/**', async route => {
+    if (new URL(route.request().url()).pathname.startsWith('/api/auth/')) return fulfillAccount(route)
     const path = new URL(route.request().url()).pathname
     const method = route.request().method()
     const reply = json => route.fulfill({ json })

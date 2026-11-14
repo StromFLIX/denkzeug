@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, fulfillAccount } from './account-fixture.js'
 import { createSSEFixture, snapshotFrame } from './sse-fixture.js'
 import { openChatConfiguration, closeChatConfiguration } from './helpers'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
@@ -15,6 +15,7 @@ async function mockChats (context, state) {
   await context.route('**/api/**', async (route) => {
     const path = new URL(route.request().url()).pathname
     const method = route.request().method()
+    if (path.startsWith('/api/auth/')) return fulfillAccount(route)
     if (state.disconnected) return route.abort('internetdisconnected')
     if (path === '/api/events') return sse(route, () => state.disconnected ? null : ': connected\n\n')
     if (path === '/api/system') {

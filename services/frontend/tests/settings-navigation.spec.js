@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 
 async function mockApi (context, health) {
   await context.route('**/api/**', route => {
@@ -29,7 +29,7 @@ for (const width of [1440, 901, 900, 390]) {
       await expect(settings).toHaveCSS('text-decoration-line', 'none')
       await settings.focus()
       await expect(settings).toHaveCSS('text-decoration-line', 'none')
-      await expect(settings).toHaveAttribute('href', `/settings/${health === 'degraded' ? 'system' : 'general'}`)
+      await expect(settings).toHaveAttribute('href', `/settings/${health === 'degraded' ? 'system' : 'account'}`)
       await expect(settings.locator('.dot')).toHaveCount(health === 'ok' ? 0 : 1)
       if (health === 'degraded') await expect(settings.locator('.dot')).toHaveClass(/dot--bad/)
 
@@ -38,7 +38,9 @@ for (const width of [1440, 901, 900, 390]) {
         const rail = await page.locator('.rail').boundingBox()
         expect(box.x).toBeGreaterThanOrEqual(rail.x)
         expect(box.x + box.width).toBeLessThanOrEqual(rail.x + rail.width)
-        expect(rail.y + rail.height - box.y - box.height).toBeLessThan(20)
+        const account = await page.getByRole('button', { name: 'Account menu' }).boundingBox()
+        expect(account.y - box.y - box.height).toBeLessThan(20)
+        expect(account.y).toBeGreaterThanOrEqual(box.y + box.height)
       } else {
         const header = await page.locator('.side__head').boundingBox()
         expect(box.y).toBeGreaterThanOrEqual(header.y)
@@ -47,7 +49,7 @@ for (const width of [1440, 901, 900, 390]) {
       }
 
       await settings.press('Enter')
-      await expect(page).toHaveURL(`/settings/${health === 'degraded' ? 'system' : 'general'}`)
+      await expect(page).toHaveURL(`/settings/${health === 'degraded' ? 'system' : 'account'}`)
     })
   }
 }

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './account-fixture.js'
 import { mockAgents } from './agent-fixture.js'
 
 for (const width of [1440, 320]) {
