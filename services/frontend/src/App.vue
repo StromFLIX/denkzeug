@@ -11,9 +11,7 @@
     <AgentRail v-if="showAgentRail" v-show="!sideCollapsed" class="shell__agents" />
     <template v-if="!fullPage">
       <aside v-show="!sideCollapsed" data-skin-part="sidebar" id="shell-sidebar" class="shell__side" :style="{ width: `${sideWidth}px` }">
-        <SidePanel ref="sidePanel" :show-collapse-button="!mobile" :show-pinned-apps="!detailPins && !(mobile && route.name === 'apps')" :is-chat-active="isChatActive" @collapse-sidebar="collapseSidebar" @open-search="openSearch">
-          <template v-if="mobile && route.name === 'apps'" #filters><AgentRail embedded /></template>
-        </SidePanel>
+        <SidePanel ref="sidePanel" :show-collapse-button="!mobile" :show-pinned-apps="!detailPins && !(mobile && route.name === 'apps')" :is-chat-active="isChatActive" @collapse-sidebar="collapseSidebar" @open-search="openSearch" />
         <div
           class="shell__grip"
           :class="{ 'shell__grip--active': dragging }"
@@ -104,8 +102,8 @@ const mobile = ref(mobileMedia.matches)
 const updateMobile = event => { mobile.value = event.matches }
 // Keep the desktop preference without hiding the list on narrow screens.
 const sideCollapsed = computed(() => !mobile.value && preferences.sideCollapsed)
-// Mobile Apps keeps its filters below the heading/search, not above the page.
-const showAgentRail = computed(() => route.name === 'chats' || (route.name === 'apps' && !mobile.value))
+// Chats and Apps share one rail position, including the mobile safe-area inset.
+const showAgentRail = computed(() => ['chats', 'apps'].includes(route.name))
 // Mobile detail headers own the safe-area inset. Shortcuts belong in the list,
 // never above an open chat/app; collapsed desktop lists still need shortcuts.
 const detailPins = computed(() => ['chats', 'apps'].includes(route.name) &&
