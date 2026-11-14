@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from .auth_store import install as install_auth_schema
 from .config import settings
 from .migrations import (
     add_agent_grouping,
@@ -572,6 +573,7 @@ class Database:
                         "DELETE FROM settings WHERE key IN ('github_projects_app', 'github_projects_webhook')"
                     )
             install_search_index(self._conn)
+            install_auth_schema(self._conn)
             self._conn.commit()
 
     # ------------------------------------------------------------------ basics

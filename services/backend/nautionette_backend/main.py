@@ -12,13 +12,17 @@ import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from nautionette.brand import NAME
 from nautionette.telemetry import instrument_app
 
 from . import (
     artcraft,
+    auth,
+    auth_mail,
     github_mentions,
     mcp_oauth,
     mcp_servers,
@@ -37,6 +41,7 @@ from .conversations import recover_chat_agents, recover_interrupted
 from .events import bus
 from .integrations import bootstrap
 from .routers import ROUTERS
+from .security import AccountBoundaryMiddleware
 
 
 def seed_workflows() -> None:
@@ -54,6 +59,8 @@ def seed_workflows() -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    auth.initialize()
+    spawn(auth_mail.maintenance(), name="account-mail-maintenance")
     Path(settings.artifacts_dir).mkdir(parents=True, exist_ok=True)
     seed_workflows()
     recover_interrupted()
@@ -91,8 +98,8 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
-# The packaged app runs on its own webview origin, so it is cross-origin to this
-# API. Credentials stay off: every call carries a bearer token, never a cookie.
+# Web uses same-origin HttpOnly sessions; packaged clients use bearer sessions.
+# Credentialed cross-origin cookies are intentionally not enabled.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -100,6 +107,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(AccountBoundaryMiddleware)
+
+
+@app.exception_handler(RequestValidationError)
+async def account_validation_error(request: Request, exc: RequestValidationError):
+    # Pydantic's default error includes submitted values, including passwords and
+    # recovery tokens. Never reflect those into responses or telemetry.
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": [
+                {"loc": list(error["loc"]), "type": error["type"], "msg": error["msg"]}
+                for error in exc.errors()
+            ]
+        },
+    )
+
 
 for router in ROUTERS[:-1]:
     app.include_router(router)

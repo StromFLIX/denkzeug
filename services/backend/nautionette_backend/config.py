@@ -59,9 +59,21 @@ class Settings:
         self.search_model_cache = os.environ.get("SEARCH_MODEL_CACHE", f"{self.data_dir}/search-model")
         self.search_model_local_only = _flag("SEARCH_MODEL_LOCAL_ONLY", False)
 
-        # Auth. Empty token means open mode, which is only sane on a laptop.
+        # APP_TOKEN is retained for migration diagnostics only, never human authentication.
         self.app_token = os.environ.get("APP_TOKEN", "").strip()
         self.internal_token = os.environ.get("INTERNAL_TOKEN", "").strip()
+        self.public_url = os.environ.get("DENKZEUG_PUBLIC_URL", self.public_url).strip().rstrip("/")
+        self.bootstrap_username = os.environ.get("DENKZEUG_BOOTSTRAP_ADMIN_USERNAME", "").strip()
+        self.bootstrap_email = os.environ.get("DENKZEUG_BOOTSTRAP_ADMIN_EMAIL", "").strip()
+        self.bootstrap_password_file = os.environ.get("DENKZEUG_BOOTSTRAP_ADMIN_PASSWORD_FILE", "").strip()
+        self.bootstrap_password = os.environ.get("DENKZEUG_BOOTSTRAP_ADMIN_PASSWORD", "")
+        self.smtp_host = os.environ.get("DENKZEUG_SMTP_HOST", "").strip()
+        self.smtp_port = int(os.environ.get("DENKZEUG_SMTP_PORT", "587"))
+        self.smtp_username = os.environ.get("DENKZEUG_SMTP_USERNAME", "").strip()
+        self.smtp_password_file = os.environ.get("DENKZEUG_SMTP_PASSWORD_FILE", "").strip()
+        self.smtp_password = os.environ.get("DENKZEUG_SMTP_PASSWORD", "")
+        self.smtp_from = os.environ.get("DENKZEUG_SMTP_FROM", "").strip()
+        self.smtp_tls_mode = os.environ.get("DENKZEUG_SMTP_TLS_MODE", "starttls").strip().lower()
 
         # Interactive turns use the broker's wall-clock ceiling. Workflow calls
         # keep their separate, explicit per-activity timeout (default 900s).
@@ -88,6 +100,32 @@ class Settings:
         if self.environment not in {"production", "staging", "development"}:
             raise ValueError("APP_ENVIRONMENT must be production, staging, or development")
 
+        self.auth_allow_insecure_localhost = _flag("DENKZEUG_AUTH_ALLOW_INSECURE_LOCALHOST", False)
+        if self.auth_allow_insecure_localhost and self.environment != "development":
+            raise ValueError("Insecure account sessions are restricted to APP_ENVIRONMENT=development")
+        if self.smtp_tls_mode not in {"starttls", "ssl", "plain"}:
+            raise ValueError("DENKZEUG_SMTP_TLS_MODE must be starttls, ssl or plain")
+        if self.smtp_tls_mode == "plain" and self.environment != "development":
+            raise ValueError("Unencrypted SMTP is restricted to development")
+        if not 1 <= self.smtp_port <= 65535:
+            raise ValueError("Invalid DENKZEUG_SMTP_PORT")
+        if self.public_url:
+            public = urlsplit(self.public_url)
+            local = public.hostname in {"localhost", "127.0.0.1", "::1"}
+            if (
+                not public.hostname
+                or public.username
+                or public.password
+                or public.query
+                or public.fragment
+                or public.path not in {"", "/"}
+                or (
+                    public.scheme != "https"
+                    and not (public.scheme == "http" and local and self.auth_allow_insecure_localhost)
+                )
+            ):
+                raise ValueError("DENKZEUG_PUBLIC_URL must be a canonical HTTPS origin")
+
         # Origins the packaged app is served from. Add your own with CORS_ORIGINS.
         self.cors_origins = [
             "capacitor://localhost",
@@ -98,7 +136,7 @@ class Settings:
 
     @property
     def auth_enabled(self) -> bool:
-        return bool(self.app_token)
+        return True
 
 
 settings = Settings()

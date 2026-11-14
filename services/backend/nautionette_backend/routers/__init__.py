@@ -8,6 +8,7 @@ from __future__ import annotations
 from . import (
     agents,
     artcraft,
+    auth,
     chat_inspection,
     chat_outputs,
     chats,
@@ -29,6 +30,7 @@ from . import (
 )
 
 ROUTERS = (
+    auth.router,
     system.router,
     settings.router,
     storage.router,

@@ -8,20 +8,35 @@ default integrations is tested on its own instead of racing every other test.
 
 from __future__ import annotations
 
+import time
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 from nautionette_backend import background, clients, main, output_storage, runs, runtime
+from nautionette_backend.auth_store import PASSWORDS, digest
 from nautionette_backend.db import db as database
 from nautionette_backend.integrations.registry import INITIALIZED_SETTING
+from nautionette_backend.security import current_principal
 
 from ..conftest import APP_TOKEN, INTERNAL_TOKEN
 from .fakes import FakeAuthoring, FakeBroker, FakeGateway, FakeModelCatalog, FakeTemporal
 from .output_fakes import MemoryS3
 
+_TEST_PASSWORD_HASH = PASSWORDS.hash("a correct horse battery staple for tests")
+
 _TABLES = (
+    "auth_consumed_refresh",
+    "auth_sessions",
+    "auth_tokens",
+    "auth_memberships",
+    "auth_identities",
+    "auth_users",
+    "auth_workspaces",
+    "auth_audit_events",
+    "auth_rate_limits",
+    "auth_mail_outbox",
     "mcp_cli_oauth",
     "mcp_http_oauth",
     "mcp_oauth_setups",
@@ -64,6 +79,22 @@ def db(monkeypatch: pytest.MonkeyPatch):
     """The real SQLite database, emptied between tests, with the caches dropped."""
     for table in _TABLES:
         database.execute(f"DELETE FROM {table}")  # noqa: S608 - names come from the tuple above
+    # Existing tests use this token as a real native session credential, not an
+    # APP_TOKEN authentication bypass. Production never seeds this account.
+    current_principal.set(None)
+    now = time.time()
+    database.execute("UPDATE auth_policy SET registration_mode='paused' WHERE id=1")
+    database.execute(
+        "INSERT INTO auth_users(id,username,email,display_name,role,email_verified,password_hash,created_at,"
+        "updated_at) VALUES('test-admin','admin','admin@example.test','Admin','admin',1,?,?,?)",
+        (_TEST_PASSWORD_HASH, now, now),
+    )
+    database.execute(
+        "INSERT INTO auth_sessions(id,user_id,token_hash,csrf_hash,native,created_at,last_seen_at,expires_at,"
+        "access_expires_at,reauth_at,device) "
+        "VALUES('test-session','test-admin',?,'',1,?,?,?,?,?,'Test client')",
+        (digest(APP_TOKEN), now, now, now + 86400, now + 86400, now),
+    )
     runtime.forget_catalog()
     runtime.model_windows.clear()
     # A request's own watcher is left behind on a loop that has already closed.
