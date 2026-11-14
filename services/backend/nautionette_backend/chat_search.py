@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import sqlite_vec
 
+from . import access
 from .config import settings
 from .db import db
 from .search_index import DIMENSIONS, chunks
@@ -120,8 +121,10 @@ class ChatSearch:
             "WHERE v.embedding MATCH ? AND k = 200 AND d.indexed_revision = d.revision "
             # BGE similarities have a high baseline: avoid returning unrelated
             # conversations merely because KNN always has nearest neighbors.
-            "AND v.distance < 0.4 ORDER BY v.distance",
-            (vector,),
+            "AND v.distance < 0.4 "
+            + ("AND c.owner_user_id = ? " if access.human_id() is not None else "")
+            + "ORDER BY v.distance",
+            (vector, access.human_id()) if access.human_id() is not None else (vector,),
         )
 
     def keyword(self, query: str) -> list[dict]:
@@ -132,15 +135,17 @@ class ChatSearch:
             return []
         expression = " AND ".join(f'"{term}"*' for term in terms)
         return self.db.query(
-            "WITH ranked AS MATERIALIZED ("
+            "WITH ranked AS MATERIALIZED ("  # noqa: S608 - only fixed ownership predicates are concatenated
             "SELECT d.id, d.chat_id, d.message_id, c.title, "
             "snippet(search_fts, -1, '', '', '…', 40) AS excerpt, "
             "bm25(search_fts, 6.0, 1.0) AS relevance "
             "FROM search_fts JOIN search_documents d ON d.id = search_fts.rowid "
-            "JOIN chats c ON c.id = d.chat_id WHERE search_fts MATCH ?), "
+            "JOIN chats c ON c.id = d.chat_id WHERE search_fts MATCH ? "
+            + ("AND c.owner_user_id = ? " if access.human_id() is not None else "")
+            + "), "
             "best AS (SELECT *, row_number() OVER (PARTITION BY chat_id ORDER BY relevance, id) AS n "
             "FROM ranked) SELECT * FROM best WHERE n = 1 ORDER BY relevance, id LIMIT 100",
-            (expression,),
+            (expression, access.human_id()) if access.human_id() is not None else (expression,),
         )
 
     async def search(self, query: str, limit: int = 30) -> dict:
@@ -160,7 +165,11 @@ class ChatSearch:
                 state = "unavailable"
                 log.error("Semantic query failed; returning keyword matches")
         pending = await asyncio.to_thread(
-            self.db.one, "SELECT COUNT(*) AS count FROM search_documents WHERE indexed_revision != revision"
+            self.db.one,
+            "SELECT COUNT(*) AS count FROM search_documents d JOIN chats c ON c.id=d.chat_id "  # noqa: S608
+            "WHERE d.indexed_revision != d.revision "
+            + ("AND c.owner_user_id = ?" if access.human_id() is not None else ""),
+            (access.human_id(),) if access.human_id() is not None else (),
         )
         if state == "ready" and pending["count"]:
             state = "indexing"

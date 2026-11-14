@@ -6,13 +6,12 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 
-from .. import run_statistics, runs
+from .. import access, run_statistics, runs
 from ..clients import temporal
-from ..config import settings
 from ..db import db
 from ..events import bus
 from ..execution_graph import execution_graph
-from ..security import require_user, token_matches
+from ..security import require_user
 from .internal import internal_run
 
 router = APIRouter()
@@ -25,11 +24,16 @@ async def run_workflow(name: str, payload: dict[str, Any] = Body(default={})) ->
 
 @router.get("/api/runs", dependencies=[Depends(require_user)])
 async def list_runs(workflow: str | None = None) -> dict[str, Any]:
-    local = db.list_runs(workflow)
+    owner = access.human_id()
+    if owner is None:
+        raise HTTPException(403, "User account required")
+    local = db.list_runs(workflow, owner_user_id=owner)
     try:
         remote = await temporal.recent(50)
     except Exception:  # noqa: BLE001
         remote = []
+    owned = {row["workflow_id"] for row in local}
+    remote = [item for item in remote if item["workflow_id"] in owned]
     by_id = {item["workflow_id"]: item for item in remote}
     for run in local:
         live = by_id.get(run["workflow_id"])
@@ -110,14 +114,10 @@ async def terminate_run(workflow_id: str, payload: dict[str, Any] = Body(default
     return {"ok": True}
 
 
-@router.post("/api/triggers/{name}")
+@router.post("/api/triggers/{name}", dependencies=[Depends(require_user)])
 async def trigger(name: str, request: Request, token: str | None = Query(default=None)) -> dict[str, Any]:
     """Triggers come in here and nowhere else."""
-    if settings.auth_enabled:
-        header = request.headers.get("authorization", "")
-        supplied = header[7:].strip() if header.lower().startswith("bearer ") else token
-        if not token_matches(supplied, settings.app_token):
-            raise HTTPException(status_code=401, detail="unauthorized")
+    access.require_execution()
     try:
         payload = await request.json()
     except Exception:  # noqa: BLE001 - a webhook may send nothing at all

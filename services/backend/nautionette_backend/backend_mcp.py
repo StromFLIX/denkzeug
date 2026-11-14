@@ -192,8 +192,9 @@ class BackendMCP:
     async def __call__(self, scope, receive, send) -> None:
         authorization = Headers(scope=scope).get("authorization", "")
         supplied = authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
-        expected = [value for value in (settings.internal_token, settings.app_token) if value]
-        if expected and not any(token_matches(supplied, value) for value in expected):
+        # The gateway transport is a service, never an APP_TOKEN-backed human.
+        expected = settings.internal_token
+        if not expected or not token_matches(supplied, expected):
             await JSONResponse({"detail": "unauthorized"}, status_code=401)(scope, receive, send)
             return
         if self.manager is None:
@@ -236,7 +237,19 @@ class BackendMCP:
                 path = path.replace("{" + key + "}", quote(value, safe=""))
             else:
                 query[key] = arguments[key]
-        headers = {"Authorization": f"Bearer {settings.app_token}"} if settings.app_token else {}
+        # Never exchange a service token for ambient user/admin authority. The
+        # normal dependency applies its scoped-service route policy again.
+        from .access import principal
+
+        who = principal()
+        if who is not None and not who.service and who.role != "admin":
+            return self.result({"error": "Member backend tool execution is not supported"}, error=True)
+        if not settings.internal_token:
+            return self.result({"error": "Service authentication is not configured"}, error=True)
+        headers = {
+            "Authorization": f"Bearer {settings.internal_token}",
+            "X-Internal-Token": settings.internal_token,
+        }
         request = httpx.Request(
             operation["method"],
             f"http://backend-mcp{path}",

@@ -8,6 +8,7 @@ import httpx
 from fastapi import HTTPException
 from pydantic import BaseModel
 
+from . import access
 from .clients import authoring
 from .events import bus
 from .runs import restart_worker
@@ -19,6 +20,8 @@ class WorkflowSource(BaseModel):
 
 
 async def deploy(name: str, code: str, message: str = "") -> dict[str, Any]:
+    access.require_execution()
+    access.register_resource("workflow", name)
     try:
         result = await authoring.deploy(name, code)
     except httpx.HTTPStatusError as exc:

@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
 from .. import (
+    access,
     agent_profiles,
     catalog,
     chat_attachments,
@@ -75,7 +76,10 @@ def _timeout_exempt(payload: dict[str, Any]) -> bool:
 
 @router.get("/api/chats")
 async def list_chats() -> dict[str, Any]:
-    return {"chats": db.list_chats(), "activity": db.chat_activity()}
+    owner = access.human_id()
+    if owner is None:
+        raise HTTPException(403, "User account required")
+    return {"chats": db.list_chats(owner_user_id=owner), "activity": db.chat_activity(owner_user_id=owner)}
 
 
 @router.post("/api/chats")
@@ -83,7 +87,18 @@ async def create_chat(payload: dict[str, Any] = Body(default={})) -> dict[str, A
     return await new_chat(payload)
 
 
-async def new_chat(payload: dict[str, Any], *, chat_id: str | None = None) -> dict[str, Any]:
+async def new_chat(
+    payload: dict[str, Any],
+    *,
+    chat_id: str | None = None,
+    owner_user_id: str | None = None,
+) -> dict[str, Any]:
+    who = access.principal()
+    if who is not None and not who.service and who.role != "admin":
+        if set(payload) - {"title", "agent_id"}:
+            raise HTTPException(403, "Member runtime overrides are not supported")
+        selected_id = payload.get("agent_id", runtime("default_agent_id"))
+        access.require_resource("agent", selected_id)
     selected = agent_profiles.for_chat(payload.get("agent_id", runtime("default_agent_id")))
     overrides = {key: payload[key] for key in agent_profiles.CONFIG_KEYS if key in payload}
     for key in ("model", "agent_set"):
@@ -92,6 +107,12 @@ async def new_chat(payload: dict[str, Any], *, chat_id: str | None = None) -> di
     config = agent_profiles.normalize(
         agent_profiles.resolve(overrides, {key: selected[key] for key in agent_profiles.CONFIG_KEYS})
     )
+    if who is not None and not who.service and who.role != "admin":
+        for project_id in config.get("project_ids") or []:
+            access.require_resource("project", project_id)
+        # Visibility grants do not authorize a credential-bearing runtime.
+        config["tools"] = []
+        config["packages"] = []
     if config["reasoning_effort"] is not None:
         _effort(config["reasoning_effort"], await catalog.model_info(config["model"]))
     customized = payload.get("agent_customized", False)
@@ -99,6 +120,7 @@ async def new_chat(payload: dict[str, Any], *, chat_id: str | None = None) -> di
         raise HTTPException(422, "agent_customized must be a boolean")
     chat = db.create_chat(
         chat_id=chat_id,
+        owner_user_id=owner_user_id,
         title=(payload.get("title") or "New chat").strip()[:120],
         agent_id=selected["agent_id"],
         agent_name=selected["agent_name"],
@@ -368,6 +390,7 @@ async def submit_message(
     before_accept: Callable[[], None] | None = None,
 ):
     """Submit through the normal chat pipeline, including its durable follow-up queue."""
+    access.require_owner_execution("chats", chat_id)
     _require_chat_admission()
     chat = _chat_or_404(chat_id)
     if not isinstance(payload.get("text", ""), str):

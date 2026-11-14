@@ -152,6 +152,13 @@ async def process(row: dict[str, Any]) -> None:
                 "project_ids": [project["id"]],
             },
             chat_id=chat_id,
+            owner_user_id=(
+                db.one(
+                    "SELECT owner_user_id FROM access_resources WHERE kind='project' AND resource_id=?",
+                    (project["id"],),
+                )
+                or {}
+            ).get("owner_user_id"),
         )
         chat_id = chat["id"]
     db.execute(

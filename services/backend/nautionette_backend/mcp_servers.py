@@ -458,7 +458,13 @@ async def reconcile_selection() -> None:
 async def bootstrap_backend() -> None:
     from . import mcp_oauth
 
-    credential = settings.internal_token or settings.app_token
+    # The backend MCP must never receive a universal human/application token.
+    credential = settings.internal_token
+    if not credential:
+        logging.getLogger("uvicorn.error").error(
+            "Backend MCP disabled: internal service credential is required"
+        )
+        return
     target = target_value("backend", settings.backend_mcp_url, credential)
     phase, last_status = "backend registration", None
     for retry in range(8):

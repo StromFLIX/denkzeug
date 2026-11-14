@@ -66,6 +66,8 @@ def commit(
     now = time.time()
     message_id = hashlib.sha256(f"workflow-result:{workflow_id}".encode()).hexdigest()
     with db.transaction() as conn:
+        run = conn.execute("SELECT owner_user_id FROM runs WHERE workflow_id=?", (workflow_id,)).fetchone()
+        owner = run["owner_user_id"] if run else None
         delivery = conn.execute(
             "SELECT d.* FROM run_deliveries d JOIN runs r ON r.id = d.run_id WHERE r.workflow_id = ?",
             (workflow_id,),
@@ -79,22 +81,27 @@ def commit(
             config = conn.execute("SELECT * FROM workflow_settings WHERE name = ?", (name,)).fetchone()
             same = config is None or config["chat_mode"] == "same"
             chat_id = config["chat_id"] if config and same else None
-            if chat_id and not conn.execute("SELECT 1 FROM chats WHERE id = ?", (chat_id,)).fetchone():
+            if (
+                chat_id
+                and not conn.execute(
+                    "SELECT 1 FROM chats WHERE id = ? AND owner_user_id IS ?", (chat_id, owner)
+                ).fetchone()
+            ):
                 chat_id = None
             if not chat_id:
                 chat_id = uuid.uuid4().hex[:12]
                 suffix = "" if same else time.strftime(" %d %b %H:%M")
                 conn.execute(
                     "INSERT INTO chats (id, title, agent_set, model, created_at, updated_at, "
-                    "last_message_at, last_user_message_at, last_activity_at, title_state) "
-                    "VALUES (?,?,?,?,?,?,?,?,?,'manual')",
-                    (chat_id, (title + suffix)[:120], agent_set, model, now, now, now, now, now),
+                    "last_message_at, last_user_message_at, last_activity_at, title_state, owner_user_id) "
+                    "VALUES (?,?,?,?,?,?,?,?,?,'manual',?)",
+                    (chat_id, (title + suffix)[:120], agent_set, model, now, now, now, now, now, owner),
                 )
                 if same:
                     conn.execute(
-                        "INSERT INTO workflow_settings (name, chat_id) VALUES (?,?) "
+                        "INSERT INTO workflow_settings (name, chat_id, owner_user_id) VALUES (?,?,?) "
                         "ON CONFLICT(name) DO UPDATE SET chat_id = excluded.chat_id",
-                        (name, chat_id),
+                        (name, chat_id, owner),
                     )
             conn.execute(
                 "INSERT INTO messages (id, chat_id, role, content, meta, created_at) "

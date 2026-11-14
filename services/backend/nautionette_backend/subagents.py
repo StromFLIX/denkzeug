@@ -27,6 +27,8 @@ LIMIT_KEYS = ("subagent_max_depth", "subagent_max_width", "subagent_max_parallel
 
 def caller(grant: str, tool: str | None = None) -> tuple[str, str, dict[str, Any]]:
     chat_id, turn_id = chat_outputs.grant_scope(grant)
+    from .access import require_owner_execution
+    require_owner_execution("chats", chat_id)
     turn = db.one(
         "SELECT job FROM chat_turns WHERE id=? AND chat_id=? AND state='running' AND stop_requested=0",
         (turn_id, chat_id),
@@ -181,7 +183,8 @@ async def start(grant: str, request_id: str, agent_id: str, text: str, chat_id: 
             if not chat_id:
                 # Leave the title provisional: normal message admission generates
                 # a task title from the delegated prompt, just like a human chat.
-                chat = await new_chat({"agent_id": agent_id})
+                parent_owner = db.one("SELECT owner_user_id FROM chats WHERE id=?", (parent_chat,))
+                chat = await new_chat({"agent_id": agent_id}, owner_user_id=parent_owner["owner_user_id"])
                 chat_id = chat["id"]
                 db.execute("UPDATE chats SET delegated_parent_chat_id=? WHERE id=?", (parent_chat, chat_id))
                 db.execute("UPDATE agent_calls SET child_chat_id=? WHERE id=?", (chat_id, call_id))

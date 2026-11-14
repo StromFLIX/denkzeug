@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Body, Depends, HTTPException
 from nautionette import input_problems
 
+from .. import access
 from ..clients import authoring, temporal
 from ..db import db
 from ..deployment import WorkflowSource, deploy
@@ -20,6 +21,15 @@ from ..workflow_graph import definition_graph
 router = APIRouter(dependencies=[Depends(require_user)])
 
 CHAT_MODES = {"same", "new"}
+
+
+def _private_settings(name: str) -> dict:
+    fields = dict(db.workflow_settings(name))
+    if fields.get("chat_id"):
+        row = db.one("SELECT owner_user_id FROM chats WHERE id=?", (fields["chat_id"],))
+        if row is None or row["owner_user_id"] != access.human_id():
+            fields["chat_id"] = None
+    return fields
 
 
 async def _schedules() -> list[dict[str, Any]]:
@@ -38,11 +48,14 @@ async def _schedule(workflow: str) -> dict[str, Any] | None:
 
 @router.get("/api/workflows")
 async def list_workflows() -> dict[str, Any]:
-    workflows = await authoring.list_workflows()
+    workflows = access.visible("workflow", await authoring.list_workflows(), "name")
     by_workflow = {item["workflow"]: item for item in await _schedules()}
     for workflow in workflows:
         workflow["schedule"] = by_workflow.get(workflow["name"])
-        workflow["settings"] = db.workflow_settings(workflow["name"])
+        workflow["settings"] = _private_settings(workflow["name"])
+        who = access.principal()
+        if who is not None and who.role != "admin":
+            workflow["schedule"] = None
     return {"workflows": workflows}
 
 
@@ -50,9 +63,11 @@ async def list_workflows() -> dict[str, Any]:
 async def get_workflow(name: str) -> dict[str, Any]:
     workflow = await authoring.get_workflow(name)
     workflow["graph"] = definition_graph(workflow.get("code", ""), name)
-    workflow["runs"] = db.list_runs(name, limit=25)
-    workflow["settings"] = db.workflow_settings(name)
-    workflow["schedule"] = await _schedule(name)
+    owner = access.human_id()
+    workflow["runs"] = db.list_runs(name, limit=25, owner_user_id=owner) if owner is not None else []
+    workflow["settings"] = _private_settings(name)
+    who = access.principal()
+    workflow["schedule"] = await _schedule(name) if who is not None and who.role == "admin" else None
     return workflow
 
 
@@ -68,7 +83,8 @@ async def patch_workflow_settings(name: str, payload: dict[str, Any] = Body(...)
     async with workflow_lock(name):
         # Save intent first. Manual/webhook starts fail closed immediately; the
         # periodic reconciler repairs a lost Temporal reply or backend restart.
-        updated = db.set_workflow_settings(name, fields)
+        db.set_workflow_settings(name, fields)
+        updated = _private_settings(name)
         bus.publish("workflow.settings", {"workflow": name, **fields})
         if "disabled" in fields:
             try:

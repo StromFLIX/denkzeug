@@ -71,7 +71,17 @@ async def _validated(payload: dict[str, Any], current: dict[str, Any] | None = N
 
 @router.get("/api/agents")
 async def list_agents() -> dict[str, Any]:
-    return agent_profiles.catalog_entries()
+    from .. import access
+    result = agent_profiles.catalog_entries()
+    who = access.principal()
+    if who is not None and who.role != "admin":
+        result["agents"] = access.visible("agent", result["agents"])
+        ids = {agent["id"] for agent in result["agents"]}
+        if result["default_agent_id"] not in ids:
+            result["default_agent_id"] = None
+        result["global_chat_defaults"] = {}
+        result["chat_defaults"] = {}
+    return result
 
 
 @router.post("/api/agents", status_code=201)

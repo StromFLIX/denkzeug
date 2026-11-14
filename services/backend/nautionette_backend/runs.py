@@ -143,6 +143,9 @@ async def start(name: str, payload: dict[str, Any], trigger: str) -> dict[str, A
 
 
 async def _start(name: str, payload: dict[str, Any], trigger: str) -> dict[str, Any]:
+    from .access import require_execution
+
+    require_execution()
     if db.workflow_settings(name)["disabled"]:
         raise HTTPException(status_code=409, detail=f"{name} is disabled")
     workflow = await authoring.get_workflow(name)

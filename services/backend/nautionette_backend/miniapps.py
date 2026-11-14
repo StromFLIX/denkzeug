@@ -395,6 +395,9 @@ async def dispatch(
 
 
 async def request(app_id: str, payload: AppRequest) -> Any:
+    from .access import require_execution, require_owner_execution
+    require_execution()
+    require_owner_execution("mini_apps", app_id)
     manifest = current(app_id, payload.revision)
     if not manifest["backend"]:
         raise HTTPException(409, "This app has no backend")
@@ -419,6 +422,8 @@ async def request(app_id: str, payload: AppRequest) -> Any:
 
 
 async def capability(app_id: str, revision: int, payload: dict) -> Any:
+    from .access import require_owner_execution
+    require_owner_execution("mini_apps", app_id)
     manifest = current(app_id, revision)
     try:
         serialized = json.dumps(payload, ensure_ascii=False, allow_nan=False)

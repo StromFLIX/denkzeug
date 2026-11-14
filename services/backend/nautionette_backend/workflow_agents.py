@@ -30,6 +30,10 @@ async def start(
     key: str, agent_id: str, prompt: str, *, validate_only: bool = False, source: dict | None = None
 ) -> dict:
     chat_id, turn_id = task_ids(key)
+    owner_run = db.one(
+        "SELECT owner_user_id FROM runs WHERE workflow_id=?", ((source or {}).get("workflow_id"),)
+    )
+    owner_user_id = owner_run["owner_user_id"] if owner_run else None
     if not isinstance(agent_id, str) or not agent_id:
         raise HTTPException(422, "agent_id is required")
     if not isinstance(prompt, str) or not prompt.strip():
@@ -76,6 +80,7 @@ async def start(
             chat = await new_chat(
                 {"agent_id": agent_id, "title": "Workflow agent task", "timeout_exempt": True},
                 chat_id=chat_id,
+                owner_user_id=owner_user_id,
             )
         except sqlite3.IntegrityError:
             # Concurrent retries may race while resolving model capabilities.

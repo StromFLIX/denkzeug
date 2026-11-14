@@ -227,6 +227,8 @@ async def run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
     owner = asyncio.current_task()
     _turn_owners[turn_id] = owner
     try:
+        from .access import require_owner_execution
+        require_owner_execution("chats", chat_id)
         await _run_turn(turn_id, chat_id, job)
     except BaseException as error:
         # The regular finalizer itself can fail (or be cancelled a second time).

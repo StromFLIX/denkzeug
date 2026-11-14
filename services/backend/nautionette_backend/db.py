@@ -574,6 +574,9 @@ class Database:
                     )
             install_search_index(self._conn)
             install_auth_schema(self._conn)
+            from .access import install_access_schema
+
+            install_access_schema(self._conn)
             self._conn.commit()
 
     # ------------------------------------------------------------------ basics
@@ -638,6 +641,7 @@ class Database:
         chat_id: str | None = None,
         system_prompt: str = "",
         agent_customized: bool = False,
+        owner_user_id: str | None = None,
     ) -> dict[str, Any]:
         now = time.time()
         chat_id = chat_id or uuid.uuid4().hex[:12]
@@ -645,8 +649,8 @@ class Database:
             "INSERT INTO chats (id, title, agent_set, model, tools, reasoning_effort,"
             " created_at, updated_at, title_state, project_ids, agent_id, agent_name, packages,"
             " last_message_at, last_user_message_at, last_activity_at, timeout_exempt,"
-            " system_prompt, agent_customized)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " system_prompt, agent_customized, owner_user_id)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 chat_id,
                 title,
@@ -667,6 +671,7 @@ class Database:
                 timeout_exempt,
                 system_prompt,
                 agent_customized,
+                owner_user_id,
             ),
         )
         return self.get_chat(chat_id)  # type: ignore[return-value]
@@ -707,20 +712,24 @@ class Database:
             row["package_commands"] = json.loads(row["package_commands"])
         return row
 
-    def list_chats(self, limit: int = 200) -> list[dict[str, Any]]:
+    def list_chats(self, limit: int = 200, *, owner_user_id: str | None = None) -> list[dict[str, Any]]:
+        # Ownership is an explicit caller choice; background reconciliation still
+        # needs the unfiltered database, unlike authenticated presentation.
+        owner_clause = " WHERE owner_user_id = ?" if owner_user_id is not None else ""
         rows = self.query(
             # The recent page selects families, not fragments: retain older
             # ancestors and descendants so the sidebar can show the whole tree.
             f"WITH RECURSIVE recent AS ("  # noqa: S608
-            "SELECT id FROM chats ORDER BY last_activity_at DESC, id LIMIT ?), "
+            f"SELECT id FROM chats{owner_clause} ORDER BY last_activity_at DESC, id LIMIT ?), "
             "ancestors(id) AS (SELECT id FROM recent UNION "
             "SELECT c.delegated_parent_chat_id FROM chats c JOIN ancestors a ON c.id = a.id "
             "WHERE c.delegated_parent_chat_id IS NOT NULL), "
             "family(id) AS (SELECT id FROM ancestors UNION "
             "SELECT c.id FROM chats c JOIN family f ON c.delegated_parent_chat_id = f.id) "
             f"SELECT *, {_CHAT_UNREAD} FROM chats WHERE id IN (SELECT id FROM family) "
-            "ORDER BY last_activity_at DESC, id",
-            (limit,),
+            + ("AND owner_user_id = ? " if owner_user_id is not None else "")
+            + "ORDER BY last_activity_at DESC, id",
+            (owner_user_id, limit, owner_user_id) if owner_user_id is not None else (limit,),
         )
         if not rows:
             return rows
@@ -766,7 +775,7 @@ class Database:
             )
         return rows
 
-    def chat_activity(self) -> dict[str, Any]:
+    def chat_activity(self, *, owner_user_id: str | None = None) -> dict[str, Any]:
         """Count live turns across all chats, not just the recent sidebar page.
 
         Agent membership follows the saved selection, including customized chats.
@@ -779,7 +788,9 @@ class Database:
             "SELECT c.agent_id, t.state, COUNT(*) AS n "
             "FROM chat_turns t JOIN chats c ON c.id = t.chat_id "
             "WHERE t.state IN ('running', 'queued') "
-            "GROUP BY c.agent_id, t.state"
+            + ("AND c.owner_user_id = ? " if owner_user_id is not None else "")
+            + "GROUP BY c.agent_id, t.state",
+            (owner_user_id,) if owner_user_id is not None else (),
         ):
             activity[row["state"]] += row["n"]
             if row["agent_id"]:
@@ -1242,14 +1253,25 @@ class Database:
     def forget_workflow(self, name: str) -> None:
         self.execute("DELETE FROM workflow_settings WHERE name = ?", (name,))
 
-    def list_runs(self, workflow: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+    def list_runs(
+        self,
+        workflow: str | None = None,
+        limit: int = 100,
+        *,
+        owner_user_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        predicates, values = [], []
         if workflow:
-            rows = self.query(
-                "SELECT * FROM runs WHERE workflow = ? ORDER BY created_at DESC LIMIT ?",
-                (workflow, limit),
-            )
-        else:
-            rows = self.query("SELECT * FROM runs ORDER BY created_at DESC LIMIT ?", (limit,))
+            predicates.append("workflow = ?")
+            values.append(workflow)
+        if owner_user_id is not None:
+            predicates.append("owner_user_id = ?")
+            values.append(owner_user_id)
+        where = " WHERE " + " AND ".join(predicates) if predicates else ""
+        rows = self.query(
+            "SELECT * FROM runs" + where + " ORDER BY created_at DESC LIMIT ?",  # noqa: S608
+            (*values, limit),
+        )
         for row in rows:
             row["input"] = json.loads(row["input"] or "{}")
             row["result"] = json.loads(row["result"]) if row["result"] else None
