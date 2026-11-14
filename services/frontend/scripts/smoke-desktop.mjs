@@ -33,12 +33,15 @@ try {
   expect(await application.evaluate(({ Menu }) => Menu.getApplicationMenu())).toBeNull()
   await page.keyboard.press('Alt')
   expect(await application.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isMenuBarVisible())).toBe(false)
+  // The packaged app starts at account setup; private workspace markup must
+  // not be rendered until an actual account session is established.
+  await expect(page.locator('.shell')).toHaveCount(0)
   const titlebar = page.locator('.desktop-titlebar')
   await expect(titlebar).toBeVisible()
   expect(await titlebar.evaluate(element => ({
     height: element.getBoundingClientRect().height,
     drag: getComputedStyle(element).getPropertyValue('app-region') || getComputedStyle(element).getPropertyValue('-webkit-app-region'),
-    top: document.querySelector('.shell').getBoundingClientRect().top,
+    top: document.querySelector('.account-entry').getBoundingClientRect().top,
     modalDragTarget: document.elementFromPoint(10, 10) === element
   }))).toEqual({ height: 32, drag: 'drag', top: 32, modalDragTarget: true })
   // Xvfb has no window manager, so emit the native events to exercise the real
