@@ -182,7 +182,7 @@ for (const instanceUrl of ['', 'https://instance.example.com']) {
     // Keep SSE offline rather than rewriting HTTPS requests to the local HTTP fixture.
     await context.route('**/api/events', route => route.fulfill({ status: 503, body: 'Live updates unavailable' }))
     await context.addInitScript((url) => {
-      if (url) localStorage.setItem('nautionette.server', url)
+      if (url) { globalThis.denkzeugDesktop = {}; localStorage.setItem('nautionette.server', url) }
     }, instanceUrl)
     await page.goto('/settings/projects')
     await expect(page.getByRole('button', { name: 'Connect GitHub' })).toBeEnabled()

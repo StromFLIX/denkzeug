@@ -22,7 +22,8 @@ test('header collapse button makes room for the chat without losing its draft, s
   await expect(grip).toHaveAttribute('aria-valuenow', '330')
   const expandedWidth = (await main.boundingBox()).width
   await expect(sidebar.locator('.side__head').getByRole('button', { name: 'Collapse sidebar', exact: true })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button')).toHaveCount(0)
+  await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Collapse sidebar', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Account menu', exact: true })).toBeVisible()
   const agentColumn = page.getByRole('navigation', { name: 'Chats by agent' })
   const agentWidth = (await agentColumn.boundingBox()).width
   const collapseBox = await collapseButton(page).boundingBox()
@@ -134,7 +135,7 @@ test('settings stays full width and does not forget the desktop collapse prefere
   await page.goto('/chats/alpha')
   await collapseButton(page).click()
   await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Settings', exact: true }).click()
-  await expect(page).toHaveURL(/\/settings\/general$/)
+  await expect(page).toHaveURL(/\/settings\/account$/)
   await expect(collapseButton(page)).toHaveCount(0)
   await expect(page.locator('#shell-sidebar')).toHaveCount(0)
   await page.goBack()

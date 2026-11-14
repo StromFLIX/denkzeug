@@ -16,7 +16,7 @@ import { createMcpAuthState } from './mcp-auth-state.js'
 
 export const chatSettings = createChatSettings({ scope: chatCacheScope, onError: message => { preferenceError.value = message } })
 
-const agentNavigation = createAgentNavigation({ scope: chatCacheScope, fetchAgents: () => guard(() => api.agents()) })
+const agentNavigation = createAgentNavigation({ scope: () => `${chatCacheScope()}:${account.user?.role || 'signed-out'}`, fetchAgents: () => guard(() => api.agents()) })
 const emptyCatalog = () => ({ agent_sets: [], agents: [], models: [], tools: [], default_model: '', default_agent_set: 'default', default_agent_id: null })
 const state = reactive({
   ready: false,
@@ -212,7 +212,7 @@ export const actions = {
     state.system = { components: [], agent_sets: [] }
     state.chats = []; state.chatActivity = null; state.projects = []; state.apps = []
     state.workflows = []; state.drafts = []; state.runs = []; state.events = []
-    agentNavigation.clear()
+    agentNavigation.reset({ restoreCached: Boolean(account.user) })
     mcpAuth.clear()
   },
 

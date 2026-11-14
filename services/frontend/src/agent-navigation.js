@@ -39,6 +39,12 @@ export function createAgentNavigation ({ scope, fetchAgents, storage = () => ses
         if (target === scope() && current === request) state.error = error.message || 'Could not load agents.'
       }
     },
+    reset ({ restoreCached = false } = {}) {
+      request++
+      state.agents = restoreCached ? restore() : []
+      state.loaded = false
+      state.error = ''
+    },
     clear () {
       request++
       state.agents = []

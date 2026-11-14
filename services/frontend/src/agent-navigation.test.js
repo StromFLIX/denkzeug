@@ -96,3 +96,16 @@ test('invalid caches and unavailable storage never block navigation', async () =
   nav.clear()
   assert.deepEqual(nav.state.agents, [])
 })
+
+test('account resets preserve only the confirmed account navigation cache', () => {
+  const f = fixture(), nav = f.create()
+  f.setScope('https://one.example/account/alice:admin'); nav.sync([agent])
+  nav.reset(); assert.deepEqual(nav.state.agents, [])
+  nav.reset({ restoreCached: true })
+  assert.deepEqual(nav.state.agents, [{ id: 'ada', name: 'Ada' }])
+  assert.equal(nav.state.loaded, false)
+  f.setScope('https://one.example/account/bob:member'); nav.reset({ restoreCached: true })
+  assert.deepEqual(nav.state.agents, [])
+  f.setScope('https://one.example/account/alice:member'); nav.reset({ restoreCached: true })
+  assert.deepEqual(nav.state.agents, [])
+})

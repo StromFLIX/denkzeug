@@ -187,7 +187,7 @@ test('keyboard settings shortcut and workspace reset preserve the selected theme
   await page.goto('/chats/alpha')
   await expect(page.getByRole('textbox', { name: 'Message', exact: true })).toBeVisible()
   await page.keyboard.press('Control+,')
-  await expect(page).toHaveURL(/\/settings\/general$/)
+  await expect(page).toHaveURL(/\/settings\/account$/)
   await page.getByRole('navigation', { name: 'Settings categories' }).getByRole('link', { name: 'Appearance', exact: true }).click()
   await page.getByRole('button', { name: 'Sand theme', exact: true }).click()
   await page.getByRole('navigation', { name: 'Settings categories' }).getByRole('link', { name: 'Workspace', exact: true }).click()

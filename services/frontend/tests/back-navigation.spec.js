@@ -65,7 +65,7 @@ test('settings reload retains the originating chat rather than replacing it with
   await page.goto('/chats/alpha')
   await expect(page.getByRole('textbox', { name: 'Message', exact: true })).toBeVisible()
   await page.keyboard.press('Control+,')
-  await expect(page).toHaveURL(/\/settings\/general$/)
+  await expect(page).toHaveURL(/\/settings\/account$/)
   await page.reload()
   await expect(page.locator('.settings')).toBeVisible()
   await page.goBack()

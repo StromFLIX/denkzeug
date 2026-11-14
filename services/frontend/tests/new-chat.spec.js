@@ -1,4 +1,4 @@
-import { test, expect } from './account-fixture.js'
+import { test, expect, fixtureAccount } from './account-fixture.js'
 import { mockAgents } from './agent-fixture.js'
 import { LAST_CHAT_SETTINGS_KEY } from '../src/new-chat-settings.js'
 import { openChatConfiguration, closeChatConfiguration } from './helpers.js'
@@ -221,9 +221,9 @@ test('catalog discovery for remembered settings does not block typing or use an 
   state.catalogGate = catalog.promise
   const requests = await pauseCreations(context)
   const settings = { agent_id: 'removed-agent', model: 'test/model', agent_set: 'research', reasoning_effort: 'high', tools: [], project_ids: [], packages: [] }
-  await page.addInitScript(({ key, settings }) => {
-    localStorage.setItem(`${key}:${encodeURIComponent(location.origin)}`, JSON.stringify(settings))
-  }, { key: LAST_CHAT_SETTINGS_KEY, settings })
+  await page.addInitScript(({ key, settings, accountId }) => {
+    localStorage.setItem(`${key}:${encodeURIComponent(`${location.origin}/account/${encodeURIComponent(accountId)}`)}`, JSON.stringify(settings))
+  }, { key: LAST_CHAT_SETTINGS_KEY, settings, accountId: fixtureAccount.user.id })
   await page.goto('/chats')
   await newChat(page)
   await expect(message(page)).toBeFocused()
@@ -245,9 +245,9 @@ test('a direct draft route tolerates initial discovery being superseded by a liv
   state.catalogGate = catalog.promise
   state.pendingEvents.push('connected')
   const settings = { agent_id: null, model: 'test/model', agent_set: 'research', tools: [], project_ids: [] }
-  await page.addInitScript(({ key, settings }) => {
-    localStorage.setItem(`${key}:${encodeURIComponent(location.origin)}`, JSON.stringify(settings))
-  }, { key: LAST_CHAT_SETTINGS_KEY, settings })
+  await page.addInitScript(({ key, settings, accountId }) => {
+    localStorage.setItem(`${key}:${encodeURIComponent(`${location.origin}/account/${encodeURIComponent(accountId)}`)}`, JSON.stringify(settings))
+  }, { key: LAST_CHAT_SETTINGS_KEY, settings, accountId: fixtureAccount.user.id })
   await page.goto('/chats/new')
   await message(page).fill('Keep typing during initial discovery')
   await expect.poll(() => state.catalogReads).toBeGreaterThanOrEqual(2)
@@ -296,9 +296,9 @@ test('catalog failure is retryable without losing the new-chat draft', async ({ 
   const state = await mockAgents(context)
   state.catalogFailure = true
   const settings = { agent_id: null, model: 'test/model', agent_set: 'default', tools: null, project_ids: [] }
-  await page.addInitScript(({ key, settings }) => {
-    localStorage.setItem(`${key}:${encodeURIComponent(location.origin)}`, JSON.stringify(settings))
-  }, { key: LAST_CHAT_SETTINGS_KEY, settings })
+  await page.addInitScript(({ key, settings, accountId }) => {
+    localStorage.setItem(`${key}:${encodeURIComponent(`${location.origin}/account/${encodeURIComponent(accountId)}`)}`, JSON.stringify(settings))
+  }, { key: LAST_CHAT_SETTINGS_KEY, settings, accountId: fixtureAccount.user.id })
   await page.goto('/chats')
   await newChat(page)
   await message(page).fill('Still here after failed discovery')

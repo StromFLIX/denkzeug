@@ -64,7 +64,7 @@
     <template v-else-if="isAdmin && tab === 'access'">
       <section id="account-policy" class="account-section">
         <form class="account-form" @submit.prevent="perform(async () => { policy = await accountApi.savePolicy({ registration_mode: registrationMode }); await load() }, 'Access policy saved.')">
-          <label>Registration<select v-model="registrationMode" class="field" :disabled="busy"><option value="invite_only">Invitation only</option><option value="paused">Paused</option></select></label>
+          <label>Registration<select v-model="registrationMode" aria-label="Registration" class="field" :disabled="busy"><option value="invite_only">Invitation only</option><option value="paused">Paused</option></select></label>
           <p class="muted">There is no public sign-up. Invitation only lets invited people join. Paused stops new registrations; existing accounts can still sign in.</p>
           <button class="btn btn--primary" :disabled="busy">Save access policy</button>
         </form>
