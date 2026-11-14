@@ -2,8 +2,9 @@
 
 Run inside the backend container against its real DATA_DIR. Host/container access
 is already administrative access to the trusted workspace. Passwords never occur
-in command arguments or normal output. Setup tokens are secrets, printed only by
-an explicit operator invocation, never during server startup.
+in command arguments or normal output. This CLI prints setup secrets only on
+explicit invocation. The backend may also issue an expiring one-time setup link
+in restricted operator logs before initial account claim.
 """
 
 from __future__ import annotations

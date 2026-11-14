@@ -22,6 +22,8 @@ jobs:
     timeout-minutes: 45
     env:
       COMPOSE_FILE: docker-compose.yaml:compose.ci-auth.yaml
+      DENKZEUG_SMOKE_USERNAME: smoke-admin
+      DENKZEUG_SMOKE_PASSWORD_FILE: .ci-auth/account-password
     # Stable GitHub repository ID: survives renames, still excludes forks.
     # A fork has no key, and a red run there would only ever mean "no secret".
     if: github.repository_id == '1353247647'
@@ -104,14 +106,13 @@ jobs:
           WEBSITE: http://127.0.0.1:8081
         run: |
           python3 scripts/smoke_auth.py --initialize
-          DENKZEUG_DEVICE_TOKEN="$(<.ci-auth/device-token)" uv run --with httpx python scripts/smoke.py
+          uv run --with httpx python scripts/smoke.py
 
       - name: Schedule round trip
         env:
           BASE: http://127.0.0.1:8080
         run: |
-          python3 scripts/smoke_auth.py
-          DENKZEUG_DEVICE_TOKEN="$(<.ci-auth/device-token)" uv run --with httpx python scripts/check_schedule_roundtrip.py
+          uv run --with httpx python scripts/check_schedule_roundtrip.py
 
       - name: Logs
         if: failure()

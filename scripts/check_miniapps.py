@@ -15,10 +15,10 @@ import urllib.request
 import uuid
 from urllib.parse import urlsplit
 
-
-class NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, *args, **kwargs):
-        return None
+try:
+    from scripts.account_session import AccountSession
+except ModuleNotFoundError:  # Direct `python scripts/...` execution.
+    from account_session import AccountSession
 
 
 class APIError(RuntimeError):
@@ -40,19 +40,23 @@ class API:
             or parsed.fragment
         ):
             raise ValueError("APP_URL must be direct HTTPS")
-        self.token = os.environ["DENKZEUG_DEVICE_TOKEN"]
-        if not self.token:
-            raise ValueError("Configure a staging test user's DENKZEUG_DEVICE_TOKEN secret")
+        self.session = AccountSession.from_env(self.url)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.session.close()
 
     def call(self, path, method="GET", body=None, expected=200):
         request = urllib.request.Request(  # noqa: S310 - validated HTTPS; redirects disabled
             self.url + path,
             method=method,
             data=json.dumps(body).encode() if body is not None else None,
-            headers={"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"},
+            headers={"Content-Type": "application/json"},
         )
         try:
-            with urllib.request.build_opener(NoRedirect()).open(request, timeout=250) as response:
+            with self.session.open(request, timeout=250) as response:
                 if response.status != expected:
                     raise RuntimeError(f"Mini-app smoke: unexpected HTTP {response.status}")
                 return json.load(response)
@@ -306,6 +310,6 @@ pub fn handle(ctx:&mut Context, req:&Request)->Result<Value> {
 
 if __name__ == "__main__":
     # This script is invoked only by the staging job, never the release/promotion job.
-    api = API()
-    run(api, "ci-smoke-" + uuid.uuid4().hex[:24])
-    workflow_smoke(api)
+    with API() as api:
+        run(api, "ci-smoke-" + uuid.uuid4().hex[:24])
+        workflow_smoke(api)

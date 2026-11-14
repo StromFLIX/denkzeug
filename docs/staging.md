@@ -247,7 +247,8 @@ Configure in **each** environment:
 | Variable | `DEPLOY_HEALTH_TIMEOUT_SECONDS` | Optional post-deployment readiness budget in seconds (default `600`, range `1`–`1800`) |
 | Secret | `COOLIFY_TOKEN` | Server-side Coolify API token allowing application read/update and deploy |
 | Secret | `INTERNAL_TOKEN` | That environment's service credential for read-only `/internal/system` and storage health |
-| Secret (staging only) | `DENKZEUG_DEVICE_TOKEN` | Dedicated staging test user's revocable device credential for functional smoke checks |
+| Secret (staging only) | `DENKZEUG_SMOKE_USERNAME` | Dedicated active/verified staging QA username |
+| Secret (staging only) | `DENKZEUG_SMOKE_PASSWORD` | Staging QA password; finish required password changes interactively first |
 
 In `production`, also set variable `COOLIFY_STAGING_APPLICATION_UUID` to the new
 staging UUID. Use GitHub's secret UI/approved secret-management channel, never chat

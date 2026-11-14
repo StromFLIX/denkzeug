@@ -1,7 +1,7 @@
 """Verify private streaming dictation through the deployed HTTPS/WebSocket route.
 
 Only the public JFK sample is used. Prints timings/counts, never tokens/transcripts.
-Run with APP_URL and DENKZEUG_DEVICE_TOKEN, like the other staging deployment checks.
+Run with APP_URL and DENKZEUG_SMOKE_USERNAME/PASSWORD[_FILE], like other functional checks.
 """
 
 import asyncio
@@ -18,6 +18,11 @@ from urllib.parse import urlsplit, urlunsplit
 
 from websockets.asyncio.client import connect
 from websockets.exceptions import WebSocketException
+
+try:
+    from scripts.account_session import AccountSession
+except ModuleNotFoundError:
+    from account_session import AccountSession
 
 SAMPLE_URL = "https://raw.githubusercontent.com/ggml-org/whisper.cpp/master/samples/jfk.wav"
 SAMPLE_HASH = "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e"
@@ -37,12 +42,13 @@ def request(url, token, body=None, origin=""):
         or parsed.password
     ):
         raise ValueError("Only credential-free HTTPS or loopback URLs are permitted")
-    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    headers = {"Authorization": f"Bearer {token}"} if isinstance(token, str) and token else {}
     if origin:
         headers["Origin"] = origin
     if body is not None:
         headers["Content-Type"] = "application/json"
-    with urllib.request.build_opener(NoRedirect).open(
+    opener = token if isinstance(token, AccountSession) else urllib.request.build_opener(NoRedirect)
+    with opener.open(
         urllib.request.Request(  # noqa: S310 - HTTPS/loopback checked above; redirects disabled.
             url, data=json.dumps(body).encode() if body is not None else None, headers=headers
         ),
@@ -171,7 +177,6 @@ async def check(url, token, sample, ready_timeout=300):
 
 def main():
     url = os.environ.get("APP_URL", "").rstrip("/")
-    token = os.environ.get("DENKZEUG_DEVICE_TOKEN", "")
     if not url:
         raise RuntimeError("APP_URL is required")
     with urllib.request.urlopen(SAMPLE_URL, timeout=30) as response:
@@ -179,7 +184,8 @@ def main():
     if hashlib.sha256(sample).hexdigest() != SAMPLE_HASH:
         raise RuntimeError("Public test sample hash changed")
     try:
-        print(json.dumps(asyncio.run(check(url, token, sample))))
+        with AccountSession.from_env(url) as session:
+            print(json.dumps(asyncio.run(check(url, session, sample))))
     except Exception:
         # No websocket error payload, credential-bearing URL or private text in CI logs.
         raise RuntimeError("Self-hosted dictation deployment check failed") from None

@@ -36,13 +36,17 @@ volumes, SQLite database, encryption/master keys and service credentials. Creati
 a new volume or changing `STACK_NAMESPACE` is not migration.
 
 **The operator/current owner must claim the first administrator account.** A
-release/deployment job must not silently appoint an administrator, choose a
-permanent password, or print setup credentials to deployment logs. Authentication
+release/deployment job must not silently appoint an administrator or choose a
+permanent password. Before first claim, the backend may issue an expiring,
+single-use setup link into its **restricted server logs**, never a permanent
+password. Limit log access to operators and do not upload these logs as public
+CI artifacts. Authentication
 schema migration and the first-admin claim preserve legacy content; the initial
 administrator receives the legacy ownership atomically, not a public fallback
 identity. Once claimed, bootstrap must not reset accounts or transfer ownership.
 
-On the deployment host, issue a short-lived, single-use setup token explicitly:
+Use that server-log setup link, or explicitly issue a replacement short-lived,
+single-use setup token on the deployment host (invalidating earlier setup links):
 
 ```sh
 docker compose exec backend python -m nautionette_backend.auth_cli setup-token
@@ -182,8 +186,14 @@ for copied schedules, agents and remote integration side effects as well.
 
 Deployment health checks must distinguish anonymous liveness (`/healthz`) from
 privileged component readiness and functional tests. Keep service-protocol
-credentials separate from a revocable least-privilege test user's device
-credential. Do not restore `APP_TOKEN` as a compatibility bypass. After an
+credentials separate from the dedicated, least-privilege QA account. Functional test scripts sign in per process using
+`DENKZEUG_SMOKE_USERNAME` plus `DENKZEUG_SMOKE_PASSWORD` or
+`DENKZEUG_SMOKE_PASSWORD_FILE`, refresh rotating native sessions in memory and
+sign out on completion where possible. They never bootstrap/reset existing
+users. Complete any mandatory password change interactively before using the
+account in CI. A manual `DENKZEUG_DEVICE_TOKEN` additionally requires
+`DENKZEUG_ALLOW_DEVICE_TOKEN=true`; it expires after ten minutes and cannot refresh.
+Do not restore `APP_TOKEN` as a compatibility bypass. After an
 upgrade, verify anonymous private API denial, initial claim/login, a normal
 user's private chat, cross-user denial, SMTP reset, session revocation and each
 supported native client before declaring the migration complete.

@@ -93,4 +93,5 @@ class LifecycleSmoke:
 
 
 if __name__ == "__main__":
-    check(API())
+    with API() as api:
+        check(api)

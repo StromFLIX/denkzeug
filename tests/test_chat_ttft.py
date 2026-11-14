@@ -204,6 +204,7 @@ def test_cli_keeps_project_selection_and_does_not_continue_after_failure(monkeyp
         )
 
     monkeypatch.setenv("DENKZEUG_DEVICE_TOKEN", "test-auth-only")
+    monkeypatch.setenv("DENKZEUG_ALLOW_DEVICE_TOKEN", "true")
     monkeypatch.setattr(
         benchmark_chat_ttft.httpx,
         "Client",
@@ -221,7 +222,13 @@ def test_cli_keeps_project_selection_and_does_not_continue_after_failure(monkeyp
 
 
 def test_cli_requires_environment_auth_without_starting_a_request(monkeypatch):
-    monkeypatch.delenv("APP_TOKEN", raising=False)
+    for name in (
+        "DENKZEUG_DEVICE_TOKEN",
+        "DENKZEUG_SMOKE_USERNAME",
+        "DENKZEUG_SMOKE_PASSWORD",
+        "DENKZEUG_SMOKE_PASSWORD_FILE",
+    ):
+        monkeypatch.delenv(name, raising=False)
     with pytest.raises(SystemExit) as exc:
         main(["--base", "https://app.test"])
     assert exc.value.code == 2

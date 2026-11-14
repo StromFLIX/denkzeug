@@ -45,7 +45,8 @@ are already deliberate operations.
 | Variable | `APP_URL` | `https://app.stage.denkzeug.ai` |
 | Secret | `COOLIFY_TOKEN` | Permanent Coolify API token with application read/update/deploy access |
 | Secret | `INTERNAL_TOKEN` | Staging service token for read-only component/storage readiness |
-| Secret | `DENKZEUG_DEVICE_TOKEN` | Revocable staging test user's device credential for functional smoke tests |
+| Secret | `DENKZEUG_SMOKE_USERNAME` | Dedicated, active and verified staging QA account username |
+| Secret | `DENKZEUG_SMOKE_PASSWORD` | That staging account's non-temporary password, stored only in Actions secrets |
 
 ### Production environment
 
@@ -61,17 +62,31 @@ are already deliberate operations.
 `APP_TOKEN` is obsolete and grants no access. Keep service tokens independent
 between environments; never pass them to `/api/*` as a user bearer token. Readiness
 uses `X-Internal-Token` on `/internal/system` and `/internal/settings/storage`.
-Functional staging checks use `DENKZEUG_DEVICE_TOKEN` on normal user API routes;
-provision it through the supported account/device flow after the operator claims
-the initial administrator, grant only the needed test capabilities, and revoke or
-rotate it when appropriate. Do not copy a production device credential to staging.
-Native access tokens currently expire after ten minutes. A static access-token
-secret is therefore **not** a durable unattended staging credential: obtain a
-fresh token through normal account sign-in before functional checks, or use a
-supported refresh flow that securely persists the rotated refresh credential.
-Never extend session expiry or bypass authentication just to keep CI green. The
-disposable-stack Smoke workflow uses `scripts/smoke_auth.py` to log in freshly and
-replace its temporary bootstrap password through the public account API.
+Functional staging checks use `scripts/account_session.py` to sign in through
+`POST /api/auth/login` with `native: true`. Access/rotating refresh tokens stay only
+in process memory, refresh before their ten-minute access expiry (or once after
+an explicit 401), and are signed out at the end on a best-effort basis. Uncertain
+refresh/network mutations are never retried. No token files or generated user
+credentials are passed through GitHub outputs.
+
+The operator must provision the QA account through supported administration and
+invitation/email verification, finish any mandatory password change, and grant
+the workflow/miniapp/MCP OAuth/dictation capabilities needed by these tests. The
+current instance-wide checks may require a dedicated **staging administrator**;
+never reuse a production administrator or password. Set the two QA secrets above
+in the GitHub **staging** environment, not production. Missing credentials fail
+closed; deployment never creates/resets a staging or production user. Password
+rotation is an operator action: update the account and its Actions secret together.
+For local runs, `DENKZEUG_SMOKE_PASSWORD_FILE` reads a restricted password file
+instead; configuring both password sources is rejected.
+
+A manually supplied `DENKZEUG_DEVICE_TOKEN` is supported only with explicit
+`DENKZEUG_ALLOW_DEVICE_TOKEN=true`. It is a short-lived access credential, expires
+after ten minutes, cannot refresh, and is not suitable for unattended CI. Never
+extend session expiry or bypass authentication to keep CI green. The separate
+disposable-stack Smoke workflow uses `scripts/smoke_auth.py` to replace its own
+temporary bootstrap password; functional scripts then use fresh refreshing QA
+sessions. It does not write access/refresh tokens to disk.
 No deployment job should generate a production administrator or permanent user
 password. See [authentication](authentication.md).
 Use the narrowest abilities/resource/team scope your Coolify version supports;
@@ -90,8 +105,8 @@ a trusted operator channel, never a chat or workflow log.
 
 Deploy the exact tested commit to staging first. The operator claims an unclaimed
 staging database using `python -m nautionette_backend.auth_cli setup-token` inside
-its backend container, then provisions the dedicated smoke device through normal
-authentication. No CI job may claim the production administrator. Once staging
+its backend container (or follows the expiring link in restricted backend logs),
+then provisions the dedicated staging QA account through normal administration. No CI job may claim the production administrator. Once staging
 verification is green, publish/promote the stable release through the existing
 pipeline. On an unclaimed production instance, its current owner performs the
 same local claim, with their own account/password. Upgrade native clients and

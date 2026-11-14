@@ -2,7 +2,8 @@
 
 Run this against a live backend:
 
-    BASE=http://127.0.0.1:18080 DENKZEUG_DEVICE_TOKEN=... uv run python scripts/check_schedule_roundtrip.py
+    BASE=http://127.0.0.1:18080 DENKZEUG_SMOKE_USERNAME=qa DENKZEUG_SMOKE_PASSWORD_FILE=/private/password \
+        uv run python scripts/check_schedule_roundtrip.py
 """
 
 import os
@@ -10,8 +11,12 @@ import sys
 
 import httpx
 
+try:
+    from scripts.account_session import AccountSession
+except ModuleNotFoundError:
+    from account_session import AccountSession
+
 BASE = os.environ.get("BASE", "http://127.0.0.1:18080").rstrip("/")
-TOKEN = os.environ.get("DENKZEUG_DEVICE_TOKEN", "")
 CASES = [
     (
         "hello_world",
@@ -30,11 +35,13 @@ CASES = [
 
 
 def main() -> int:
-    if not TOKEN:
-        raise ValueError("Configure DENKZEUG_DEVICE_TOKEN for authenticated schedule checks")
-    headers = {"Authorization": f"Bearer {TOKEN}"}
+    with AccountSession.from_env(BASE) as session:
+        return run(session)
+
+
+def run(session) -> int:
     ok = True
-    with httpx.Client(base_url=BASE, headers=headers, timeout=40) as client:
+    with httpx.Client(base_url=BASE, auth=session.httpx_auth(), timeout=40) as client:
         for name, definition in CASES:
             response = client.post(f"/api/workflows/{name}/schedule", json={**definition, "input": {}})
             response.raise_for_status()

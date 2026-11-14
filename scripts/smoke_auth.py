@@ -83,13 +83,16 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     try:
         token = authenticate(args.base, args.username, args.directory, initialize=args.initialize)
-        # Replacing a file rather than following an old file/symlink also avoids
-        # retaining permissive permissions from an earlier runner step.
-        target = args.directory / "device-token"
-        temporary = args.directory / "device-token.tmp"
-        with open(temporary, "x", opener=lambda path, flags: os.open(path, flags, 0o600)) as file:
-            file.write(token)
-        temporary.replace(target)
+        # The bootstrap verification session is disposable too. Functional tests
+        # create their own refreshing session; no token leaves process memory.
+        request = urllib.request.Request(  # noqa: S310 - authenticate validates this canonical origin
+            args.base.rstrip("/") + "/api/auth/logout",
+            method="POST",
+            data=b"{}",
+            headers={"Content-Type": "application/json", "Authorization": "Bearer " + token},
+        )
+        with urllib.request.build_opener(NoRedirect()).open(request, timeout=15):
+            pass
     except (OSError, ValueError, KeyError, TypeError, urllib.error.URLError):
         print(
             "Smoke account authentication failed; check bootstrap configuration and backend readiness.",

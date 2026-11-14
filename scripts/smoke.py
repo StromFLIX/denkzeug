@@ -2,7 +2,8 @@
 
 Walks the promise on the front page: talk, promote, approve, run, schedule.
 
-    BASE=http://app... DENKZEUG_DEVICE_TOKEN=... uv run --with httpx python scripts/smoke.py
+    BASE=https://app... DENKZEUG_SMOKE_USERNAME=qa DENKZEUG_SMOKE_PASSWORD_FILE=/private/password \
+        uv run --with httpx python scripts/smoke.py
 """
 
 import json
@@ -12,8 +13,12 @@ import time
 
 import httpx
 
+try:
+    from scripts.account_session import AccountSession
+except ModuleNotFoundError:
+    from account_session import AccountSession
+
 BASE = os.environ.get("BASE", "http://127.0.0.1:18080").rstrip("/")
-TOKEN = os.environ.get("DENKZEUG_DEVICE_TOKEN", "")
 WEBSITE = os.environ.get("WEBSITE", "")
 
 results: list[tuple[str, bool, str]] = []
@@ -62,10 +67,14 @@ def sse_text(response: httpx.Response) -> tuple[str, str | None]:
 
 
 def main() -> int:
-    if not TOKEN:
-        raise ValueError("Configure DENKZEUG_DEVICE_TOKEN for authenticated functional smoke checks")
-    headers = {"Authorization": f"Bearer {TOKEN}"}
-    client = httpx.Client(base_url=BASE, headers=headers, timeout=httpx.Timeout(420, connect=15))
+    with AccountSession.from_env(BASE) as session:
+        with httpx.Client(
+            base_url=BASE, auth=session.httpx_auth(), timeout=httpx.Timeout(420, connect=15)
+        ) as client:
+            return run(client)
+
+
+def run(client) -> int:
 
     if WEBSITE:
         check("website serves the landing page", httpx.get(WEBSITE, timeout=20).status_code == 200)
@@ -153,7 +162,6 @@ def main() -> int:
     client.request("DELETE", f"/api/workflows/{name}/schedule")
     client.request("DELETE", f"/api/workflows/{name}")
     client.request("DELETE", f"/api/chats/{chat['id']}")
-    client.close()
 
     failed = [label for label, ok, _ in results if not ok]
     print(f"\n{len(results) - len(failed)}/{len(results)} passed")

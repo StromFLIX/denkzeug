@@ -1,7 +1,7 @@
 """CI uses normal native login and mandatory password replacement, not a bypass."""
 
+import io
 import json
-import stat
 import urllib.error
 from pathlib import Path
 
@@ -58,12 +58,18 @@ def test_smoke_bootstrap_replaces_password_then_signs_in(credentials, monkeypatc
     assert final["password"] == "replacement-password-fixture" and final["native"] is True
 
 
-def test_cli_writes_private_token_file_without_printing_secrets(credentials, monkeypatch, capsys):
+def test_cli_signs_out_without_writing_or_printing_tokens(credentials, monkeypatch, capsys):
     monkeypatch.setattr(smoke_auth, "authenticate", lambda *args, **kwargs: "secret-device-fixture")
+
+    class Opener:
+        def open(self, request, timeout):
+            assert request.full_url.endswith("/api/auth/logout")
+            assert request.get_header("Authorization") == "Bearer secret-device-fixture"
+            return io.BytesIO(b"{}")
+
+    monkeypatch.setattr(smoke_auth.urllib.request, "build_opener", lambda *args: Opener())
     assert smoke_auth.main(["--directory", str(credentials)]) == 0
-    path = credentials / "device-token"
-    assert path.read_text() == "secret-device-fixture"
-    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    assert not (credentials / "device-token").exists()
     assert capsys.readouterr().out == ""
 
 
