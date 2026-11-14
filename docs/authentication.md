@@ -91,7 +91,7 @@ DENKZEUG_SMTP_HOST=smtp.example.com
 DENKZEUG_SMTP_PORT=587
 DENKZEUG_SMTP_USERNAME=denkzeug-mail
 DENKZEUG_SMTP_PASSWORD_FILE=/run/secrets/denkzeug-smtp
-DENKZEUG_SMTP_FROM=Denkzeug <no-reply@example.com>
+DENKZEUG_SMTP_FROM=no-reply@example.com
 DENKZEUG_SMTP_TLS_MODE=starttls
 ```
 
@@ -103,7 +103,10 @@ an origin or SMTP change; links must point to this environment's HTTPS origin.
 
 Reset requests must not disclose whether an account exists. Reset tokens are
 short-lived and single-use; do not forward reset email or copy its contents into
-logs. Missing/broken SMTP does not weaken login or expose a permanent fallback
+logs. Setup/invitation/reset/verification links carry secrets in URL fragments
+(`#bootstrap=`, `#invite=`, `#reset-password=`, `#verify-email=`), not query strings;
+the client submits them in POST bodies. Never rewrite these as proxy-visible
+query parameters or enable request-body logging for authentication endpoints. Missing/broken SMTP does not weaken login or expose a permanent fallback
 password. Diagnose connectivity, TLS, sender authorization and canonical origin;
 never disable certificate checking to repair delivery.
 
@@ -117,8 +120,9 @@ docker compose exec backend python -m nautionette_backend.auth_cli recover-passw
 ```
 
 The CLI prompts twice without echo and revokes existing sessions on successful
-recovery. Password policy is enforced by the same auth store as normal password
-changes. For a noninteractive operator session, mount a restricted temporary file
+recovery. The supplied recovery password is temporary: the user must choose a new
+password after signing in. Password policy is enforced by the same auth store as
+normal password changes. For a noninteractive operator session, mount a restricted temporary file
 and use `--password-file /run/secrets/recovery-password`; do not pass a password as
 a command argument or embed it in shell history. Remove the file after recovery.
 The CLI intentionally does not print passwords or raw exceptions. If it fails,

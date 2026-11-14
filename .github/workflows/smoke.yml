@@ -20,6 +20,8 @@ jobs:
     name: End to end
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      COMPOSE_FILE: docker-compose.yaml:compose.ci-auth.yaml
     # Stable GitHub repository ID: survives renames, still excludes forks.
     # A fork has no key, and a red run there would only ever mean "no secret".
     if: github.repository_id == '1353247647'
@@ -38,9 +40,20 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           AGENT_MODEL: ${{ vars.AGENT_MODEL || 'openai/gpt-4o-mini' }}
         run: |
+          umask 077
+          mkdir .ci-auth
+          openssl rand -base64 48 > .ci-auth/bootstrap-password
+          openssl rand -base64 48 > .ci-auth/account-password
+          printf 'services:\n  backend:\n    volumes:\n      - ./.ci-auth/bootstrap-password:/run/secrets/ci-bootstrap-password:ro\n' > compose.ci-auth.yaml
           cp .env.example .env
           {
-            echo "APP_TOKEN=$(openssl rand -hex 24)"
+            echo "APP_ENVIRONMENT=development"
+            echo "DENKZEUG_PUBLIC_URL=http://localhost:8080"
+            echo "APP_URL=http://localhost:8080"
+            echo "DENKZEUG_AUTH_ALLOW_INSECURE_LOCALHOST=true"
+            echo "DENKZEUG_BOOTSTRAP_ADMIN_USERNAME=smoke-admin"
+            echo "DENKZEUG_BOOTSTRAP_ADMIN_EMAIL=smoke-admin@example.test"
+            echo "DENKZEUG_BOOTSTRAP_ADMIN_PASSWORD_FILE=/run/secrets/ci-bootstrap-password"
             echo "INTERNAL_TOKEN=$(openssl rand -hex 24)"
             echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
             echo "MAXIO_ACCESS_KEY=nautionette-smoke"
@@ -71,7 +84,7 @@ jobs:
         run: |
           source .env
           for _ in $(seq 90); do
-            ready=$(curl -fsS -H "Authorization: Bearer $APP_TOKEN" "$BASE/api/system" \
+            ready=$(curl -fsS -H "X-Internal-Token: $INTERNAL_TOKEN" "$BASE/internal/system" \
               | python3 -c "import json,sys; print(any(a.get('ready') for a in json.load(sys.stdin).get('agent_sets', [])))" 2>/dev/null || echo False)
             [ "$ready" = "True" ] && exit 0
             sleep 10
@@ -90,15 +103,15 @@ jobs:
           BASE: http://127.0.0.1:8080
           WEBSITE: http://127.0.0.1:8081
         run: |
-          source .env
-          APP_TOKEN="$APP_TOKEN" uv run --with httpx python scripts/smoke.py
+          python3 scripts/smoke_auth.py --initialize
+          DENKZEUG_DEVICE_TOKEN="$(<.ci-auth/device-token)" uv run --with httpx python scripts/smoke.py
 
       - name: Schedule round trip
         env:
           BASE: http://127.0.0.1:8080
         run: |
-          source .env
-          APP_TOKEN="$APP_TOKEN" uv run --with httpx python scripts/check_schedule_roundtrip.py
+          python3 scripts/smoke_auth.py
+          DENKZEUG_DEVICE_TOKEN="$(<.ci-auth/device-token)" uv run --with httpx python scripts/check_schedule_roundtrip.py
 
       - name: Logs
         if: failure()
@@ -106,4 +119,6 @@ jobs:
 
       - name: Tear down
         if: always()
-        run: docker compose down -v --remove-orphans
+        run: |
+          trap 'rm -rf .ci-auth compose.ci-auth.yaml .env' EXIT
+          docker compose down -v --remove-orphans

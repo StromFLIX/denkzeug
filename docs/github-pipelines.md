@@ -65,6 +65,13 @@ Functional staging checks use `DENKZEUG_DEVICE_TOKEN` on normal user API routes;
 provision it through the supported account/device flow after the operator claims
 the initial administrator, grant only the needed test capabilities, and revoke or
 rotate it when appropriate. Do not copy a production device credential to staging.
+Native access tokens currently expire after ten minutes. A static access-token
+secret is therefore **not** a durable unattended staging credential: obtain a
+fresh token through normal account sign-in before functional checks, or use a
+supported refresh flow that securely persists the rotated refresh credential.
+Never extend session expiry or bypass authentication just to keep CI green. The
+disposable-stack Smoke workflow uses `scripts/smoke_auth.py` to log in freshly and
+replace its temporary bootstrap password through the public account API.
 No deployment job should generate a production administrator or permanent user
 password. See [authentication](authentication.md).
 Use the narrowest abilities/resource/team scope your Coolify version supports;

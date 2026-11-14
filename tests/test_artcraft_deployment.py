@@ -118,6 +118,7 @@ def test_main_only_retries_authenticated_read_only_status_requests(clock, monkey
             assert request.get_method() == "GET" and request.data is None
             assert request.full_url == "https://stage.example/internal/system"
             assert request.get_header("X-internal-token") == "private-token"
+            assert request.get_header("Authorization") is None
             calls.append(timeout)
             return io.BytesIO(json.dumps(next(states)).encode())
 

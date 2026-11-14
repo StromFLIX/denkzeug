@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
+from fastapi import HTTPException
 
 from scripts import coolify_release
 
@@ -22,10 +23,10 @@ SPEC.loader.exec_module(cli)
 
 @pytest.fixture
 def store(monkeypatch):
-    module = types.ModuleType("nautionette_backend.auth_store")
+    module = types.ModuleType("nautionette_backend.auth")
     module.issue_setup_token = Mock(return_value="single-use-setup-fixture")
     module.recover_password = Mock()
-    monkeypatch.setitem(sys.modules, "nautionette_backend.auth_store", module)
+    monkeypatch.setitem(sys.modules, "nautionette_backend.auth", module)
     return module
 
 
@@ -45,10 +46,13 @@ def test_password_file_recovery_preserves_spaces_and_hides_password(store, tmp_p
     assert "sessions revoked" in output.out
 
 
-def test_recovery_failure_does_not_echo_secret_exception(store, tmp_path, capsys):
+@pytest.mark.parametrize(
+    "error", [ValueError("credential-do-not-log"), HTTPException(409, "credential-do-not-log")]
+)
+def test_recovery_failure_does_not_echo_secret_exception(store, tmp_path, capsys, error):
     secret = tmp_path / "secret"
     secret.write_text("fixture-password")
-    store.recover_password.side_effect = ValueError("credential-do-not-log")
+    store.recover_password.side_effect = error
     assert cli.main(["recover-password", "owner", "--password-file", str(secret)]) == 1
     output = capsys.readouterr()
     assert "credential-do-not-log" not in output.out + output.err
@@ -130,7 +134,7 @@ def test_service_request_uses_internal_header_not_user_bearer(monkeypatch):
             return False
 
         def read(self):
-            return b'{}'
+            return b"{}"
 
     class Opener:
         def open(self, request, timeout):

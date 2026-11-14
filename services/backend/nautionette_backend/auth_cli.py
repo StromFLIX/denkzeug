@@ -14,6 +14,8 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from fastapi import HTTPException
+
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
@@ -29,7 +31,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         # Import lazily so --help never initializes a database or reads secrets.
-        from .auth_store import issue_setup_token, recover_password
+        from .auth import issue_setup_token, recover_password
 
         if args.command == "setup-token":
             print(issue_setup_token())
@@ -47,7 +49,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 parser.error("password must not be empty")
             recover_password(args.username, password)
             print("Password recovered; existing sessions revoked.")
-    except (OSError, ValueError, RuntimeError):
+    except (OSError, ValueError, RuntimeError, HTTPException):
         # Exception messages can contain secret values, usernames or file paths.
         print(
             "Authentication recovery failed; verify local configuration and command inputs.", file=sys.stderr
