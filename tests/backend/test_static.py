@@ -11,10 +11,11 @@ from nautionette_backend.config import settings
 
 
 @pytest.fixture
-def artifact() -> Path:
+def artifact(db) -> Path:
     path = Path(settings.artifacts_dir) / "digest.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("# Digest\n", encoding="utf-8")
+    db.execute("INSERT OR REPLACE INTO access_legacy_artifacts VALUES('digest.md','test-admin')")
     yield path
     path.unlink(missing_ok=True)
 

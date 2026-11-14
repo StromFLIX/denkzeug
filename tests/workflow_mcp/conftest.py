@@ -8,6 +8,8 @@ import pytest
 from fastapi.testclient import TestClient
 from nautionette_workflow_mcp import main, store
 
+from ..conftest import INTERNAL_TOKEN
+
 GOOD_WORKFLOW = '''"""A workflow that passes every check."""
 
 from datetime import timedelta
@@ -49,4 +51,4 @@ def workflows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 @pytest.fixture
 def client(workflows: Path) -> TestClient:
-    return TestClient(main.app)
+    return TestClient(main.app, headers={"X-Internal-Token": INTERNAL_TOKEN})

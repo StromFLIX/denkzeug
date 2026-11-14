@@ -2,16 +2,16 @@
   <EmptyState v-if="!route.params.id" icon="apps" title="An interface for your task"
     :description="`Apps are interfaces your agent builds in ${brand.name}. Open one from the list, or ask your agent to build one in chat.`"
     to="/chats" action="Open chats">
-    <RouterLink class="miniapp__runtime-link" to="/settings/app-runtimes">Manage app runtimes</RouterLink>
+    <RouterLink v-if="account.user?.role === 'admin'" class="miniapp__runtime-link" to="/settings/app-runtimes">Manage app runtimes</RouterLink>
   </EmptyState>
   <section v-else class="miniapp stack grow" aria-label="Mini-app">
     <header class="miniapp__head row">
       <button class="btn btn--icon miniapp__back" aria-label="Back to apps" @click="backTo(appList)"><span class="material-icons">arrow_back</span></button>
       <AppAvatar v-if="item" :app="item" />
       <div class="grow miniapp__identity"><h1 class="truncate">{{ item?.title || 'Mini-app' }}</h1><p class="caption dim truncate">{{ owner }}<template v-if="active"> · v{{ active.revision }}</template></p></div>
-      <button v-if="item" class="btn btn--icon" :class="{ 'miniapp__selected': item.pinned }" :disabled="busy || !active || !!item.archived" :aria-label="item.pinned ? 'Unpin app' : 'Pin app'" :aria-pressed="!!item.pinned" :title="item.pinned ? `Unpin v${item.pinned_revision || item.active_revision}` : `Pin v${item.active_revision} above chats`" @click="pin"><span class="material-icons">push_pin</span></button>
+      <button v-if="item && account.user?.role === 'admin'" class="btn btn--icon" :class="{ 'miniapp__selected': item.pinned }" :disabled="busy || !active || !!item.archived" :aria-label="item.pinned ? 'Unpin app' : 'Pin app'" :aria-pressed="!!item.pinned" :title="item.pinned ? `Unpin v${item.pinned_revision || item.active_revision}` : `Pin v${item.active_revision} above chats`" @click="pin"><span class="material-icons">push_pin</span></button>
       <button class="btn btn--icon" :disabled="busy || loading" aria-label="Reload app" title="Reload app" @click="load(true)"><span class="material-icons">refresh</span></button>
-      <button class="btn btn--icon" :class="{ 'miniapp__selected': showDetails }" aria-label="App details" title="App details" :aria-expanded="showDetails" aria-controls="miniapp-info" @click="toggleDetails"><span class="material-icons">{{ showDetails ? 'close' : 'info_outline' }}</span></button>
+      <button v-if="account.user?.role === 'admin'" class="btn btn--icon" :class="{ 'miniapp__selected': showDetails }" aria-label="App details" title="App details" :aria-expanded="showDetails" aria-controls="miniapp-info" @click="toggleDetails"><span class="material-icons">{{ showDetails ? 'close' : 'info_outline' }}</span></button>
     </header>
     <p v-if="error" class="miniapp__notice caption" role="alert">{{ error }}</p>
     <div v-if="showDetails && item" id="miniapp-info" class="miniapp__details scroll-y grow">
@@ -71,6 +71,7 @@ import AppAvatar from '../components/AppAvatar.vue'
 import AppResources from '../components/AppResources.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { brand } from '../brand'
+import { account } from '../auth-session.js'
 const route = useRoute(), router = useRouter()
 const item = ref(null), frame = ref(null), runtime = ref(null), diagnostics = ref(null)
 const error = ref(''), resourceError = ref(''), diagnosticError = ref('')
@@ -109,8 +110,8 @@ function connect () {
   bridge = connectMiniapp(frame.value, (payload, signal) => api.miniappRequest(id, { revision, ...payload }, signal), theme.value)
 }
 watch(theme, value => bridge?.setTheme(value), { deep: true, flush: 'post' })
-watch(() => route.params.id, () => { showDetails.value = route.hash === '#info'; resourceError.value = ''; diagnosticError.value = ''; load(true) }, { immediate: true })
-watch(() => route.hash, hash => { showDetails.value = hash === '#info'; if (showDetails.value && item.value) resources() })
+watch(() => route.params.id, () => { showDetails.value = account.user?.role === 'admin' && route.hash === '#info'; resourceError.value = ''; diagnosticError.value = ''; load(true) }, { immediate: true })
+watch(() => route.hash, hash => { showDetails.value = account.user?.role === 'admin' && hash === '#info'; if (showDetails.value && item.value) resources() })
 const unsubscribe = onLiveEvent(event => {
   if (event.kind === 'client.reconnect' || (event.kind === 'miniapp.changed' && event.data?.app_id === route.params.id)) load()
 })

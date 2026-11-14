@@ -10,8 +10,6 @@ from contextlib import asynccontextmanager
 import httpx
 import pytest
 
-from ..conftest import APP_TOKEN
-
 pytestmark = [pytest.mark.slow, pytest.mark.skipif(os.name != "posix", reason="Requires POSIX signals")]
 
 
@@ -42,6 +40,9 @@ async def backend_process(tmp_path, port, repo_root):
         "WORKFLOWS_SEED_DIR": str(tmp_path / "seed"),
         "BACKEND_CHAT_DRAIN_SECONDS": "10",
         "OTEL_SDK_DISABLED": "true",
+        "DENKZEUG_BOOTSTRAP_ADMIN_USERNAME": "restart-admin",
+        "DENKZEUG_BOOTSTRAP_ADMIN_EMAIL": "restart@example.test",
+        "DENKZEUG_BOOTSTRAP_ADMIN_PASSWORD": "restart initial password for process tests",
     }
     with (tmp_path / "backend.log").open("ab") as log:
         process = await asyncio.create_subprocess_exec(
@@ -58,11 +59,42 @@ async def backend_process(tmp_path, port, repo_root):
         )
         async with httpx.AsyncClient(
             base_url=f"http://127.0.0.1:{port}",
-            headers={"Authorization": f"Bearer {APP_TOKEN}", "Accept": "application/json"},
+            headers={"Accept": "application/json"},
             timeout=2,
         ) as client:
             try:
                 await until(lambda: client.get("/healthz"), lambda r: r.status_code == 200)
+                final_password = "restart permanent password for process tests"
+                signed_in = await client.post(
+                    "/api/auth/login",
+                    json={"username": "restart-admin", "password": final_password, "native": True},
+                )
+                if signed_in.status_code == 401:
+                    signed_in = await client.post(
+                        "/api/auth/login",
+                        json={
+                            "username": "restart-admin",
+                            "password": env["DENKZEUG_BOOTSTRAP_ADMIN_PASSWORD"],
+                            "native": True,
+                        },
+                    )
+                    assert signed_in.status_code == 200, signed_in.text
+                    client.headers["Authorization"] = "Bearer " + signed_in.json()["access_token"]
+                    assert (
+                        await client.post(
+                            "/api/auth/change-password",
+                            json={
+                                "current_password": env["DENKZEUG_BOOTSTRAP_ADMIN_PASSWORD"],
+                                "password": final_password,
+                            },
+                        )
+                    ).status_code == 200
+                    signed_in = await client.post(
+                        "/api/auth/login",
+                        json={"username": "restart-admin", "password": final_password, "native": True},
+                    )
+                assert signed_in.status_code == 200
+                client.headers["Authorization"] = "Bearer " + signed_in.json()["access_token"]
                 yield process, client
             finally:
                 if process.returncode is None:

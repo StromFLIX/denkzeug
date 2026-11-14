@@ -173,7 +173,7 @@ async function main() {
   };
 
   mkdirSync(workspace, { recursive: true });
-  if ((job.chat_id || job.project_ids?.length) && existsSync("/root/.pi/agent")) {
+  if ((job.chat_id || job.project_ids?.length || job.member_mode) && existsSync("/root/.pi/agent")) {
     cpSync("/root/.pi/agent", `${workspace}/.pi-agent`, { recursive: true });
   }
   // Whatever the agent set ships (AGENTS.md and friends) becomes the context for
@@ -198,9 +198,11 @@ async function main() {
   const interactive = Boolean(job.chat_id);
   const args = ["--mode", interactive ? "rpc" : "json", ...(historyFile ? ["--session", historyFile] : ["--no-session"]),
                 "--provider", "nautionette", "--model", model, "--approve"];
+  if (job.member_mode) args.push("--no-builtin-tools", "--exclude-tools", "read,write,edit,bash,grep,find,ls,codemode,tool_search");
   if (interactive) args.push("--extension", "/usr/local/lib/nautionette/chat-compaction-extension.mjs");
   if (continuity) args.push("--extension", "/usr/local/lib/nautionette/chat-session-extension.mjs");
   const systemInstructions = [job.system_prompt];
+  if (job.member_mode) systemInstructions.push("This is a member conversation. Local code execution, filesystem tools, native applications and infrastructure administration are disabled. Use only explicitly shared tools. Ask an administrator for additional access; never attempt to bypass account permissions through a gateway or internal service.");
   if (continuity) systemInstructions.push(
     "This chat resumes its native Pi session, including tools and compaction. Use chat_history to retrieve older exact evidence before repeating an uncertain action. " +
     "Original attachments persist under /chat-session/attachments. Other /workspace files and background processes do not survive. " +
@@ -234,6 +236,7 @@ async function main() {
       NAUTIONETTE_MODEL_REASONING: JSON.stringify(job.model_reasoning || {}),
       NAUTIONETTE_REASONING_EFFORT: job.reasoning_effort ?? "",
       NAUTIONETTE_MODE: mode,
+      NAUTIONETTE_MEMBER_MODE: job.member_mode ? "true" : "false",
       NAUTIONETTE_MCP_CATALOG_FILE: mcpCatalogFile,
       NAUTIONETTE_TURN_ID: job.turn_id || '',
       NAUTIONETTE_ARTCRAFT_JSON: job.artcraft === undefined ? "" : JSON.stringify(job.artcraft),

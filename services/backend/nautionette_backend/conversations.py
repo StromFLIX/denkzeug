@@ -103,6 +103,15 @@ async def control_turn(turn_id: str, chat_id: str, job: dict[str, Any], finished
         if not turn:
             return
         try:
+            from fastapi import HTTPException
+
+            from .access import require_owner_execution
+
+            try:
+                require_owner_execution("chats", chat_id)
+            except HTTPException:
+                db.stop_chat_turn(chat_id, turn_id)
+                turn["stop_requested"] = 1
             if subagents.ancestor_stopped(turn_id):
                 db.stop_chat_turn(chat_id, turn_id)
                 turn["stop_requested"] = 1
@@ -228,6 +237,7 @@ async def run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
     _turn_owners[turn_id] = owner
     try:
         from .access import require_owner_execution
+
         require_owner_execution("chats", chat_id)
         await _run_turn(turn_id, chat_id, job)
     except BaseException as error:

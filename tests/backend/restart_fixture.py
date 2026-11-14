@@ -7,11 +7,12 @@ process that waits read-only, then calls the still-live authenticated backend.
 
 import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 
 import uvicorn
-from nautionette_backend import catalog, clients, conversations, main
+from nautionette_backend import catalog, chat_outputs, clients, conversations, main
 from nautionette_backend.server import DrainingServer
 
 from .fakes import FakeBroker
@@ -41,6 +42,12 @@ async def cleanup(chat, turn):
 
 
 async def agent(job):
+    with chat_outputs.publication_grant(job["chat_id"], job["turn_id"]) as grant:
+        async for event in scoped_agent(job, grant):
+            yield event
+
+
+async def scoped_agent(job, grant):
     turn = job["turn_id"]
     record("agent", turn)
     yield {"type": "delta", "text": f"Starting {turn}. "}
@@ -51,13 +58,16 @@ async def agent(job):
         "import os, pathlib, sys, time, urllib.request\n"
         "while not pathlib.Path(sys.argv[1]).exists(): time.sleep(0.02)\n"
         "req = urllib.request.Request(sys.argv[2], "
-        "headers={'Authorization': 'Bearer ' + os.environ['APP_TOKEN']})\n"
+        "headers={'Authorization': 'Bearer ' + os.environ['INTERNAL_TOKEN'], "
+        "'X-Internal-Token': os.environ['INTERNAL_TOKEN'], "
+        "'X-Denkzeug-Actor': os.environ['TEST_ACTOR_CAPABILITY']})\n"
         "with urllib.request.urlopen(req, timeout=3) as response: assert response.status == 200\n"
         "print('Read-only tool completed.')\n",
         RELEASE,
         f"http://127.0.0.1:{PORT}/api/chats/{job['chat_id']}",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
+        env={**os.environ, "TEST_ACTOR_CAPABILITY": grant["grant"]},
     )
     record("tool", turn)
     yield {"type": "tool", "id": f"read-{turn}", "name": "bash", "args": {"command": "read-only wait"}}

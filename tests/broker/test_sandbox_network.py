@@ -6,7 +6,10 @@ import yaml
 from nautionette_docker_broker import agent_run, chat_sessions, main
 
 
-@pytest.mark.parametrize("job", [{"chat_id": "chat-a"}, {"chat_id": "chat-b", "internet_allowed": False}, {}])
+@pytest.mark.parametrize(
+    "job",
+    [{"chat_id": "chat-a"}, {"chat_id": "chat-b", "internet_allowed": False}, {}, {"member_mode": True}],
+)
 def test_agents_start_without_a_network_decision(monkeypatch, job):
     calls = []
     container = SimpleNamespace(
@@ -18,10 +21,17 @@ def test_agents_start_without_a_network_decision(monkeypatch, job):
     )
 
     def create(image, **kwargs):
-        expected = agent_run.AGENT_NETWORK if job.get("chat_id") else agent_run.TARGET_NETWORK
+        expected = (
+            agent_run.AGENT_NETWORK
+            if job.get("chat_id") or job.get("member_mode")
+            else agent_run.TARGET_NETWORK
+        )
         assert kwargs["network"] == expected
         assert kwargs["cap_drop"] == ["ALL"]
         assert kwargs["security_opt"] == ["no-new-privileges:true"]
+        if job.get("member_mode"):
+            assert kwargs["volumes"] == {}
+            assert kwargs["user"] == "10001:10001"
         return container
 
     # No network attach/detach or decision delivery API is needed to start.
@@ -37,10 +47,14 @@ def test_agents_start_without_a_network_decision(monkeypatch, job):
     assert calls == ["start"]
 
 
-def test_chat_container_has_no_service_credential():
-    environment = agent_run._environment({"chat_id": "chat-a"})
+@pytest.mark.parametrize("job", [{"chat_id": "chat-a"}, {"member_mode": True}])
+def test_chat_or_member_container_has_no_service_credential(job):
+    environment = agent_run._environment(job)
     assert "INTERNAL_TOKEN" not in environment
     assert "BACKEND_URL" not in environment
+    if job.get("member_mode"):
+        assert "OTEL_EXPORTER_OTLP_HEADERS" not in environment
+        assert environment["OTEL_SDK_DISABLED"] == "true"
 
 
 def test_compose_sandbox_network_has_outbound_access_without_control_plane_membership(repo_root):

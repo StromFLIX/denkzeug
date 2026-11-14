@@ -100,11 +100,13 @@ def test_a_webhook_starts_a_run(client, digest, anonymous):
     assert response.json()["trigger"] == "webhook"
 
 
-def test_a_webhook_needs_the_app_token(anonymous, digest):
+def test_a_webhook_needs_an_authenticated_session_header(anonymous, digest):
     assert anonymous.post("/api/triggers/url_digest", json={"url": "https://a"}).status_code == 401
     assert (
         anonymous.post(
-            "/api/triggers/url_digest", params={"token": APP_TOKEN}, json={"url": "https://a"}
+            "/api/triggers/url_digest",
+            headers={"Authorization": f"Bearer {APP_TOKEN}"},
+            json={"url": "https://a"},
         ).status_code
         == 200
     )

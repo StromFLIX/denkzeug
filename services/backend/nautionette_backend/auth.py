@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import Request, Response
+from fastapi import HTTPException, Request, Response
 
 from . import auth_mail
 from .auth_store import (
@@ -26,6 +26,7 @@ from .auth_store import (
     issue_token,
     password_hash,
     public_user,
+    rehash_verified_password,
     secret,
     store,
     username,
@@ -45,7 +46,8 @@ def setup_required() -> bool:
 def link(kind: str, token: str) -> str:
     if not settings.public_url:
         fail(503, "public_url_required", "Configure DENKZEUG_PUBLIC_URL before creating account links.")
-    return f"{settings.public_url}/#{kind}={quote(token, safe='')}"
+    fragment = {"verify-email": "verify", "reset-password": "reset"}.get(kind, kind)
+    return f"{settings.public_url}/#{fragment}={quote(token, safe='')}"
 
 
 def add_membership(conn: sqlite3.Connection, user_id: str, role: str) -> None:
@@ -53,21 +55,23 @@ def add_membership(conn: sqlite3.Connection, user_id: str, role: str) -> None:
     conn.execute("INSERT INTO auth_memberships VALUES('default',?,?)", (user_id, role))
 
 
-def _create_admin(conn: sqlite3.Connection, name: str, address: str, encoded: str, temporary: bool) -> str:
+def _create_admin(
+    conn: sqlite3.Connection, name: str, address: str | None, encoded: str, temporary: bool
+) -> str:
     if conn.execute("SELECT 1 FROM auth_users WHERE role='admin'").fetchone():
         fail(409, "already_initialized", "This instance already has an administrator.")
     user_id, now = identifier(), time.time()
     conn.execute(
         "INSERT INTO auth_users(id,username,email,display_name,role,email_verified,must_change_password,"
-        "password_hash,created_at,updated_at) VALUES(?,?,?,?,'admin',1,?,?,?,?)",
-        (user_id, name, address, name, int(temporary), encoded, now, now),
+        "password_hash,created_at,updated_at) VALUES(?,?,?,?,'admin',?,?,?, ?,?)",
+        (user_id, name, address, name, 0, int(temporary), encoded, now, now),
     )
     add_membership(conn, user_id, "admin")
     # Account and legacy ownership are one transaction. Nothing is assigned to a
     # later invitee, and a crash cannot leave a claimed instance with unowned data.
     from .access import claim_legacy
 
-    claim_legacy(conn, user_id)
+    claim_legacy(user_id, conn)
     conn.execute("UPDATE auth_tokens SET revoked_at=? WHERE purpose='setup' AND revoked_at IS NULL", (now,))
     audit(conn, "bootstrap.completed", user_id, user_id)
     return user_id
@@ -87,6 +91,12 @@ def issue_setup_token() -> str:
 
 def initialize() -> None:
     """Idempotent startup; environment credentials are never a recurring reset."""
+    try:
+        auth_mail.validate_configuration()
+    except (OSError, ValueError):
+        log.warning(
+            "Optional account email is unavailable; configure SMTP or use administrator recovery codes"
+        )
     if not setup_required():
         if settings.app_token:
             log.warning("APP_TOKEN no longer authenticates users; upgrade clients and use account sign-in")
@@ -94,7 +104,6 @@ def initialize() -> None:
     supplied = any(
         (
             settings.bootstrap_username,
-            settings.bootstrap_email,
             settings.bootstrap_password,
             settings.bootstrap_password_file,
         )
@@ -105,13 +114,13 @@ def initialize() -> None:
             if settings.bootstrap_password_file
             else settings.bootstrap_password
         )
-        if not (settings.bootstrap_username and settings.bootstrap_email and password):
-            raise ValueError("Supply all bootstrap administrator credentials, or none")
+        if not (settings.bootstrap_username and password):
+            raise ValueError("Supply a bootstrap username and password, or neither; email is optional")
         if settings.bootstrap_password_file and settings.bootstrap_password:
             raise ValueError("Use either bootstrap PASSWORD_FILE or PASSWORD, not both")
         name, address, encoded = (
             username(settings.bootstrap_username),
-            email(settings.bootstrap_email),
+            email(settings.bootstrap_email) if settings.bootstrap_email else None,
             password_hash(password),
         )
         with store().transaction() as conn:
@@ -120,21 +129,22 @@ def initialize() -> None:
         log.warning("Initial administrator provisioned; sign in and replace the temporary password")
     else:
         # Never publish this secret into the app's event bus, health, tracing or tool responses.
+        token = issue_setup_token()
         if settings.public_url:
-            token = issue_setup_token()
             log.warning(
                 "Account setup required. One-time administrator setup link (expires in 30 minutes): %s",
                 link("bootstrap", token),
             )
         else:
             log.warning(
-                "Account setup required. Configure DENKZEUG_PUBLIC_URL, then issue a setup link "
-                "with the local account administration command. All user APIs remain locked."
+                "Account setup required. One-time administrator setup code (expires in 30 minutes): %s. "
+                "Use Enter setup code and configure DENKZEUG_PUBLIC_URL for links. User APIs remain locked.",
+                token,
             )
 
 
-def bootstrap(token: str, name: str, address: str, password: str) -> dict:
-    name, address, encoded = username(name), email(address), password_hash(password)
+def bootstrap(token: str, name: str, address: str | None, password: str) -> dict:
+    name, address, encoded = username(name), email(address) if address else None, password_hash(password)
     try:
         with store().transaction() as conn:
             valid_token(conn, token, "setup")
@@ -147,7 +157,7 @@ def bootstrap(token: str, name: str, address: str, password: str) -> dict:
 def authenticate(name: str, password: str) -> dict:
     row = store().one("SELECT * FROM auth_users WHERE username=? COLLATE NOCASE", (name.strip(),))
     valid = verify_password(row["password_hash"] if row else None, password)
-    if not valid or row["status"] != "active" or not row["email_verified"]:
+    if not valid or row["status"] != "active":
         with store().transaction() as conn:
             audit(conn, "signin.failed")
         fail(
@@ -156,10 +166,14 @@ def authenticate(name: str, password: str) -> dict:
             "The username or password is incorrect, or the account is unavailable.",
         )
     if PASSWORDS.check_needs_rehash(row["password_hash"]):
-        store().execute(
+        encoded = rehash_verified_password(password)
+        changed = store().execute(
             "UPDATE auth_users SET password_hash=? WHERE id=? AND password_hash=?",
-            (PASSWORDS.hash(password), row["id"], row["password_hash"]),
+            (encoded, row["id"], row["password_hash"]),
         )
+        if changed.rowcount != 1:
+            fail(401, "account_changed", "Please sign in again.")
+        row["password_hash"] = encoded
     return row
 
 
@@ -235,7 +249,6 @@ def rotate_refresh(token: str) -> dict:
             and row["expires_at"] > now
             and row["last_seen_at"] + 86400 > now
             and row["status"] == "active"
-            and row["email_verified"]
         ):
             access, refresh = secret(), secret()
             conn.execute(
@@ -263,43 +276,40 @@ def invitation(code: str) -> dict:
         if policy["registration_mode"] != "invite_only":
             fail(403, "registration_paused", "Registration is paused. Contact your administrator.")
         row = valid_token(conn, code, "invite")
-        return {key: row[key] for key in ("email", "role", "expires_at")}
+        return {key: row[key] for key in ("role", "expires_at")}
 
 
-def register(code: str, name: str, password: str) -> dict:
-    if not auth_mail.available():
-        fail(503, "mail_unavailable", "Account email is unavailable. Contact your administrator.")
+def register(code: str, name: str, password: str, address: str | None = None) -> dict:
     name, encoded = username(name), password_hash(password)
+    address = email(address) if address else None
     try:
         with store().transaction() as conn:
             policy = conn.execute("SELECT registration_mode FROM auth_policy WHERE id=1").fetchone()
             if policy["registration_mode"] != "invite_only":
                 fail(403, "registration_paused", "Registration is paused. Contact your administrator.")
             invite = valid_token(conn, code, "invite")
+            # The administrator's single-use code is the admission proof. Mailbox
+            # verification is only for optional email recovery, never a sign-in gate.
+            # An invitation's recipient is delivery metadata, not a mandatory
+            # account identifier. The invitee may omit email entirely.
             user_id, now = identifier(), time.time()
             conn.execute(
                 "INSERT INTO auth_users(id,username,email,display_name,role,status,password_hash,created_at,"
-                "updated_at) VALUES(?,?,?,?,?,'pending',?,?,?)",
-                (user_id, name, invite["email"], name, invite["role"], encoded, now, now),
+                "updated_at) VALUES(?,?,?,?,?,'active',?,?,?)",
+                (user_id, name, address, name, invite["role"], encoded, now, now),
             )
             add_membership(conn, user_id, invite["role"])
             conn.execute("UPDATE auth_tokens SET consumed_at=? WHERE id=?", (now, invite["id"]))
-            _, token = issue_token(conn, "verify_email", user_id=user_id, address=invite["email"], ttl=86400)
-            auth_mail.enqueue(
-                conn,
-                invite["email"],
-                "Verify your Denkzeug email",
-                "Verify your email address to activate your account:\n\n"
-                + link("verify-email", token)
-                + "\n\nThis link expires in 24 hours.",
-                ttl=86400,
-            )
             audit(conn, "account.registered", user_id, user_id)
     except sqlite3.IntegrityError:
-        fail(
-            409, "account_conflict", "The username or email is unavailable. Ask your administrator for help."
-        )
-    return {"verification_required": True}
+        fail(409, "account_conflict", "The username or optional email is unavailable.")
+    # Optional delivery must never roll back a usable, invited account.
+    if address and auth_mail.available():
+        try:
+            request_email_verification(user_id)
+        except (OSError, ValueError, HTTPException):
+            log.warning("Optional recovery-email verification could not be queued")
+    return store().one("SELECT * FROM auth_users WHERE id=?", (user_id,))
 
 
 def verify_email(token: str) -> None:
@@ -314,6 +324,8 @@ def verify_email(token: str) -> None:
         user = conn.execute("SELECT * FROM auth_users WHERE id=?", (row["user_id"],)).fetchone()
         if not user or user["status"] == "suspended":
             fail(400, "invalid_link", "This verification link is unavailable.")
+        if purpose == "verify_email" and row["email"] != user["email"]:
+            fail(400, "invalid_link", "This email address has changed. Request a new verification link.")
         now = time.time()
         try:
             if purpose == "verify_email":
@@ -333,21 +345,44 @@ def verify_email(token: str) -> None:
             fail(409, "account_conflict", "This email address is no longer available.")
 
 
+def request_email_verification(user_id: str) -> None:
+    cipher = auth_mail.ready()
+    with store().transaction() as conn:
+        user = conn.execute("SELECT * FROM auth_users WHERE id=? AND status='active'", (user_id,)).fetchone()
+        if not user or not user["email"]:
+            fail(409, "no_email", "Add an optional recovery email first.")
+        if user["email_verified"]:
+            return
+        conn.execute(
+            "UPDATE auth_tokens SET revoked_at=? WHERE user_id=? AND purpose='verify_email'",
+            (time.time(), user_id),
+        )
+        _, token = issue_token(conn, "verify_email", user_id=user_id, address=user["email"], ttl=86400)
+        auth_mail.enqueue(
+            conn,
+            user["email"],
+            "Verify your optional Denkzeug recovery email",
+            "Your account already works without email. Verify this optional address to enable "
+            "email password recovery:\n\n" + link("verify-email", token),
+            ttl=86400,
+            cipher=cipher,
+        )
+        audit(conn, "email.verification_requested", user_id, user_id)
+
+
 def forgot_password(address: str) -> None:
-    if not auth_mail.available():
-        fail(503, "mail_unavailable", "Account email is unavailable. Contact your administrator.")
+    cipher = auth_mail.ready()
     with store().transaction() as conn:
         row = conn.execute("SELECT * FROM auth_users WHERE email=? COLLATE NOCASE", (address,)).fetchone()
-        if not row or row["status"] == "suspended":
+        if not row or row["status"] != "active" or not row["email_verified"]:
             return
-        if row["status"] == "pending":
-            purpose, title, action = "verify_email", "Verify your Denkzeug email", "Verify your email"
-        elif not row["password_hash"]:
+        if not row["password_hash"]:
             auth_mail.enqueue(
                 conn,
                 row["email"],
                 "Your Denkzeug sign-in method",
                 "Your account uses single sign-on. Use your configured identity provider to sign in.",
+                cipher=cipher,
             )
             return
         else:
@@ -366,6 +401,7 @@ def forgot_password(address: str) -> None:
             + ":\n\n"
             + link(route, token)
             + "\n\nThis link expires in 30 minutes. If you did not request it, ignore this email.",
+            cipher=cipher,
         )
         audit(conn, "recovery.requested", subject=row["id"])
 
@@ -387,8 +423,8 @@ def reset_password(token: str, password: str) -> None:
         )
         conn.execute("UPDATE auth_tokens SET consumed_at=? WHERE id=?", (now, record["id"]))
         revoke(conn, user["id"])
-        if auth_mail.available():
-            auth_mail.enqueue(
+        if user["email_verified"]:
+            auth_mail.notify(
                 conn,
                 user["email"],
                 "Your Denkzeug password changed",
@@ -418,8 +454,8 @@ def change_password(principal: Principal, current: str, password: str) -> None:
             "UPDATE auth_tokens SET revoked_at=? WHERE user_id=? AND purpose IN ('reset','change_email')",
             (now, row["id"]),
         )
-        if auth_mail.available():
-            auth_mail.enqueue(
+        if row["email_verified"]:
+            auth_mail.notify(
                 conn,
                 row["email"],
                 "Your Denkzeug password changed",

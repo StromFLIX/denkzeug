@@ -28,6 +28,7 @@ LIMIT_KEYS = ("subagent_max_depth", "subagent_max_width", "subagent_max_parallel
 def caller(grant: str, tool: str | None = None) -> tuple[str, str, dict[str, Any]]:
     chat_id, turn_id = chat_outputs.grant_scope(grant)
     from .access import require_owner_execution
+
     require_owner_execution("chats", chat_id)
     turn = db.one(
         "SELECT job FROM chat_turns WHERE id=? AND chat_id=? AND state='running' AND stop_requested=0",

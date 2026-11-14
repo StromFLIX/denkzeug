@@ -30,7 +30,10 @@ def inventory(*, offset: int = 0, limit: int = 50, sort: str = "largest", query:
     }
     if sort not in orders:
         raise HTTPException(422, "Sort outputs by largest, oldest or newest")
-    search = (query, *([f"%{query}%"] * 3))
+    from .access import human_id
+
+    owner = human_id()
+    search = (query, *([f"%{query}%"] * 3), owner)
     # An EXISTS-style subquery preserves full revision sizes when a filename
     # matches only one file in the snapshot.
     source = (
@@ -39,7 +42,7 @@ def inventory(*, offset: int = 0, limit: int = 50, sort: str = "largest", query:
         "ON f.output_id = r.output_id AND f.revision = r.revision "
         "WHERE (? = '' OR c.title LIKE ? OR json_extract(r.manifest,'$.title') LIKE ? "
         "OR EXISTS (SELECT 1 FROM chat_output_files q WHERE q.output_id = r.output_id "
-        "AND q.revision = r.revision AND q.name LIKE ?)) "
+        "AND q.revision = r.revision AND q.name LIKE ?)) AND c.owner_user_id = ? "
     )
     select = (
         "SELECT r.output_id, r.revision, r.created_at, r.manifest, o.chat_id, c.title AS chat_title, "
@@ -77,7 +80,12 @@ def _candidates(selector: dict[str, Any], *, limit: int = 1001) -> list[dict[str
     criteria = [key for key in ("revisions", "output_ids", "older_than_days") if key in selector]
     if len(criteria) != 1:
         raise HTTPException(422, "Select revisions, whole outputs, or an age filter (exactly one)")
-    where, args = [], []
+    from .access import human_id
+
+    owner = human_id()
+    where, args = (
+        (["o.chat_id IN (SELECT id FROM chats WHERE owner_user_id=?)"], [owner]) if owner else ([], [])
+    )
     if "revisions" in selector:
         if not selector["revisions"]:
             raise HTTPException(422, "Select at least one output revision")
@@ -144,6 +152,16 @@ def _delete_revisions(rows: list[dict[str, Any]]) -> dict[str, Any]:
             ).fetchone()
             if not stored:
                 continue
+            from .access import human_id
+
+            owner = human_id()
+            if (
+                owner is not None
+                and not conn.execute(
+                    "SELECT 1 FROM chats WHERE id=? AND owner_user_id=?", (stored["chat_id"], owner)
+                ).fetchone()
+            ):
+                raise HTTPException(404, "Cleanup preview not found")
             conn.execute(
                 "DELETE FROM chat_output_revisions WHERE output_id = ? AND revision = ?",
                 (row["output_id"], row["revision"]),

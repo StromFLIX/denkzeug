@@ -142,7 +142,7 @@ export const actions = {
   async loadWorkflows () {
     const [workflows, drafts] = await Promise.all([
       guard(() => api.workflows()),
-      guard(() => api.drafts())
+      account.user?.role === 'admin' ? guard(() => api.drafts()) : Promise.resolve({ drafts: [] })
     ])
     if (workflows) state.workflows = workflows.workflows
     if (drafts) state.drafts = drafts.drafts
@@ -182,7 +182,7 @@ export const actions = {
   async refreshAll () {
     if (!account.user) return
     const common = [actions.loadCatalog(), actions.loadChats()]
-    if (account.user.role !== 'admin') { await Promise.all(common); state.ready = true; return }
+    if (account.user.role !== 'admin') { await Promise.all([...common, actions.loadAgents(), actions.loadProjects(), actions.loadMiniapps(), actions.loadWorkflows(), actions.loadRuns()]); state.ready = true; return }
     await Promise.all([
       ...common,
       actions.loadSystem(),
@@ -233,11 +233,12 @@ export const actions = {
     delivery.connect()
     emit({ kind: 'client.reconnect' })
     source = liveEvents((event) => {
+      if (event.account_id && event.account_id !== account.user?.id) { clearAccount(); return }
       state.events.unshift(event)
       state.events = state.events.slice(0, 200)
       const kind = event.kind || ''
       if (kind === 'connected') actions.refreshAll().catch(() => {})
-      if (account.user?.role !== 'admin' && !kind.startsWith('chat.')) return
+      if (account.user?.role !== 'admin' && !/^(chat|run|workflow|miniapp)\./.test(kind)) return
       if (kind.startsWith('run.')) actions.loadRuns().catch(() => {})
       if (kind.startsWith('workflow.') || kind.startsWith('promote.')) actions.loadWorkflows().catch(() => {})
       if (kind.startsWith('chat.')) actions.loadChats().catch(() => {})

@@ -118,4 +118,29 @@ async def cleanup_worktrees(payload: dict = Body(...)) -> dict:
 
 @router.get("/api/catalog")
 async def catalog(refresh: bool = False) -> dict[str, Any]:
-    return await catalog_service.build(refresh)
+    from .. import access
+
+    data = await catalog_service.build(refresh)
+    who = access.principal()
+    if who is None or who.role == "admin":
+        return data
+    agents = access.visible("agent", data.get("agents", []))
+    selected = next(
+        (item for item in agents if item["id"] == data.get("default_agent_id")), agents[0] if agents else None
+    )
+    defaults = {**(selected.get("resolved", {}) if selected else {}), "tools": [], "packages": []}
+    model_ids = {agent.get("resolved", {}).get("model") for agent in agents}
+    return {
+        **data,
+        "agents": agents,
+        "default_agent_id": selected["id"] if selected else None,
+        "models": [model for model in data.get("models", []) if model.get("id") in model_ids],
+        "tools": [],
+        "tool_servers": [],
+        "global_chat_defaults": defaults,
+        "chat_defaults": {
+            **defaults,
+            "agent_id": selected["id"] if selected else None,
+            "agent_name": selected["name"] if selected else None,
+        },
+    }

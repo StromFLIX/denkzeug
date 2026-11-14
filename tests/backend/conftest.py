@@ -18,7 +18,7 @@ from nautionette_backend import background, clients, main, output_storage, runs,
 from nautionette_backend.auth_store import PASSWORDS, digest
 from nautionette_backend.db import db as database
 from nautionette_backend.integrations.registry import INITIALIZED_SETTING
-from nautionette_backend.security import current_principal
+from nautionette_backend.security import Principal, current_principal
 
 from ..conftest import APP_TOKEN, INTERNAL_TOKEN
 from .fakes import FakeAuthoring, FakeBroker, FakeGateway, FakeModelCatalog, FakeTemporal
@@ -27,6 +27,10 @@ from .output_fakes import MemoryS3
 _TEST_PASSWORD_HASH = PASSWORDS.hash("a correct horse battery staple for tests")
 
 _TABLES = (
+    "access_revocations",
+    "access_legacy_artifacts",
+    "access_grants",
+    "access_resources",
     "auth_consumed_refresh",
     "auth_sessions",
     "auth_tokens",
@@ -82,6 +86,7 @@ def db(monkeypatch: pytest.MonkeyPatch):
     # Existing tests use this token as a real native session credential, not an
     # APP_TOKEN authentication bypass. Production never seeds this account.
     current_principal.set(None)
+    database.execute("UPDATE access_state SET legacy_owner=NULL WHERE id=1")
     now = time.time()
     database.execute("UPDATE auth_policy SET registration_mode='paused' WHERE id=1")
     database.execute(
@@ -95,6 +100,10 @@ def db(monkeypatch: pytest.MonkeyPatch):
         "VALUES('test-session','test-admin',?,'',1,?,?,?,?,?,'Test client')",
         (digest(APP_TOKEN), now, now, now + 86400, now + 86400, now),
     )
+    from nautionette_backend.access import claim_legacy
+
+    claim_legacy("test-admin")
+    principal_reset = current_principal.set(Principal("test-admin", "admin", "test-session"))
     runtime.forget_catalog()
     runtime.model_windows.clear()
     # A request's own watcher is left behind on a loop that has already closed.
@@ -102,7 +111,10 @@ def db(monkeypatch: pytest.MonkeyPatch):
     background._chat_turns.clear()
     monkeypatch.setattr(background, "_draining", False)
     monkeypatch.setattr(runtime, "_agent_answered", False)
-    return database
+    try:
+        yield database
+    finally:
+        current_principal.reset(principal_reset)
 
 
 @pytest.fixture(autouse=True)

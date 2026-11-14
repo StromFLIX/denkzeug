@@ -208,10 +208,14 @@ class BackendMCP:
     async def call_tool(self, context, params: types.CallToolRequestParams) -> types.CallToolResult:
         return await self.call(params.name, params.arguments or {})
 
-    async def call(self, name: str, arguments: dict[str, Any]) -> types.CallToolResult:
+    async def call(
+        self, name: str, arguments: dict[str, Any], *, selection_tool: str | None = None
+    ) -> types.CallToolResult:
         operation = self.operations.get(name)
         if operation is None:
             return self.result({"error": "Unknown backend operation"}, error=True)
+        arguments = dict(arguments)
+        actor_grant = arguments.pop("__denkzeug_actor", None)
         try:
             jsonschema.validate(arguments, operation["schema"])
         except jsonschema.ValidationError as exc:
@@ -242,14 +246,34 @@ class BackendMCP:
         from .access import principal
 
         who = principal()
-        if who is not None and not who.service and who.role != "admin":
-            return self.result({"error": "Member backend tool execution is not supported"}, error=True)
+        if who is not None and not who.service and who.role != "admin" and not actor_grant:
+            return self.result({"error": "A live delegated account capability is required"}, error=True)
         if not settings.internal_token:
             return self.result({"error": "Service authentication is not configured"}, error=True)
         headers = {
             "Authorization": f"Bearer {settings.internal_token}",
             "X-Internal-Token": settings.internal_token,
         }
+        local_delegation = None
+        if not actor_grant and who is not None and not who.service and who.role == "admin" and who.session_id:
+            from .access import delegate
+
+            local_delegation = actor_grant = delegate(who)
+        if actor_grant:
+            from fastapi import HTTPException
+
+            from .access import actor_for_grant, authorize_actor_tool
+
+            try:
+                actor_for_grant(actor_grant)
+                authorize_actor_tool(actor_grant, selection_tool or f"backend_{name}")
+            except HTTPException:
+                if local_delegation:
+                    from .access import release_delegation
+
+                    release_delegation(local_delegation)
+                return self.result({"error": "The delegated account capability expired"}, error=True)
+            headers["X-Denkzeug-Actor"] = actor_grant
         request = httpx.Request(
             operation["method"],
             f"http://backend-mcp{path}",
@@ -257,9 +281,15 @@ class BackendMCP:
             headers=headers,
             json=arguments.get("body"),
         )
-        async with httpx.ASGITransport(app=self.app, raise_app_exceptions=False) as transport:
-            response = await transport.handle_async_request(request)
-            await response.aread()
+        try:
+            async with httpx.ASGITransport(app=self.app, raise_app_exceptions=False) as transport:
+                response = await transport.handle_async_request(request)
+                await response.aread()
+        finally:
+            if local_delegation:
+                from .access import release_delegation
+
+                release_delegation(local_delegation)
         if operation["method"] != "GET" and not operation["path"].startswith("/api/mcp-oauth/"):
             bus.publish("agent.backend_operation", {"tool": name, "status": response.status_code})
         try:

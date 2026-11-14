@@ -67,7 +67,9 @@ def commit(
     message_id = hashlib.sha256(f"workflow-result:{workflow_id}".encode()).hexdigest()
     with db.transaction() as conn:
         run = conn.execute("SELECT owner_user_id FROM runs WHERE workflow_id=?", (workflow_id,)).fetchone()
-        owner = run["owner_user_id"] if run else None
+        from .access import human_id
+
+        owner = run["owner_user_id"] if run else human_id()
         delivery = conn.execute(
             "SELECT d.* FROM run_deliveries d JOIN runs r ON r.id = d.run_id WHERE r.workflow_id = ?",
             (workflow_id,),
@@ -80,7 +82,22 @@ def commit(
         else:
             config = conn.execute("SELECT * FROM workflow_settings WHERE name = ?", (name,)).fetchone()
             same = config is None or config["chat_mode"] == "same"
-            chat_id = config["chat_id"] if config and same else None
+            private_target = (
+                conn.execute(
+                    "SELECT a.chat_id FROM access_workflow_chats a JOIN chats c ON c.id=a.chat_id "
+                    "WHERE a.workflow=? AND a.user_id=? AND c.owner_user_id=?",
+                    (name, owner, owner),
+                ).fetchone()
+                if same and owner
+                else None
+            )
+            chat_id = (
+                private_target["chat_id"]
+                if private_target
+                else config["chat_id"]
+                if config and same
+                else None
+            )
             if (
                 chat_id
                 and not conn.execute(
@@ -98,11 +115,23 @@ def commit(
                     (chat_id, (title + suffix)[:120], agent_set, model, now, now, now, now, now, owner),
                 )
                 if same:
-                    conn.execute(
-                        "INSERT INTO workflow_settings (name, chat_id, owner_user_id) VALUES (?,?,?) "
-                        "ON CONFLICT(name) DO UPDATE SET chat_id = excluded.chat_id",
-                        (name, chat_id, owner),
-                    )
+                    resource = conn.execute(
+                        "SELECT owner_user_id FROM access_resources WHERE kind='workflow' AND resource_id=?",
+                        (name,),
+                    ).fetchone()
+                    workspace_owner = resource["owner_user_id"] if resource else owner
+                    if workspace_owner == owner and (config is None or config["owner_user_id"] == owner):
+                        conn.execute(
+                            "INSERT INTO workflow_settings (name, chat_id, owner_user_id) VALUES (?,?,?) "
+                            "ON CONFLICT(name) DO UPDATE SET chat_id = excluded.chat_id",
+                            (name, chat_id, owner),
+                        )
+            if same and owner:
+                conn.execute(
+                    "INSERT INTO access_workflow_chats VALUES(?,?,?) ON CONFLICT(workflow,user_id) "
+                    "DO UPDATE SET chat_id=excluded.chat_id",
+                    (name, owner, chat_id),
+                )
             conn.execute(
                 "INSERT INTO messages (id, chat_id, role, content, meta, created_at) "
                 "VALUES (?,?,'assistant',?,?,?)",

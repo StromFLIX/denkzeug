@@ -58,7 +58,12 @@ export async function request (path, options = {}, retried = 0) {
     headers: headers({ ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...csrf, ...options.headers })
   })
   if (epoch !== account.epoch || origin !== endpoint('')) throw new ApiError('Account changed. Please try again.', 409)
-  if (response.status === 401 && isNative && auth.token && !(retried & 1) && refreshSession && !/^\/api\/auth\/(refresh|login|bootstrap|register|forgot-password|reset-password|verify-email)(?:\?|$)/.test(path)) {
+  const responseAccount = response.headers.get('x-denkzeug-account')
+  if (account.user && responseAccount && responseAccount !== account.user.id) {
+    clearAccount()
+    throw new ApiError('Account changed in another tab. Sign in again.', 409)
+  }
+  if (response.status === 401 && !responseAccount && isNative && auth.token && !(retried & 1) && refreshSession && !/^\/api\/auth\/(refresh|login|bootstrap|register|forgot-password|reset-password|verify-email)(?:\?|$)/.test(path)) {
     await refreshSession()
     return request(path, options, retried | 1)
   }
@@ -77,7 +82,7 @@ export async function request (path, options = {}, retried = 0) {
       if (epoch !== account.epoch || origin !== endpoint('')) throw new ApiError('Account changed.', 409)
       return request(path, options, retried | 2)
     }
-    if (response.status === 401 && account.user && !/^\/api\/auth\/(reauth|refresh)(?:\?|$)/.test(path)) clearAccount()
+    if (response.status === 401 && !responseAccount && account.user && !/^\/api\/auth\/(reauth|refresh)(?:\?|$)/.test(path)) clearAccount()
     throw new ApiError(detail, response.status, structured)
   }
   if (response.status === 204) return null
@@ -181,7 +186,7 @@ export const api = {
 
   chats: () => request('/api/chats'),
   searchChats: (query, signal) => request(`/api/search/chats?${new URLSearchParams({ q: query })}`, { signal }),
-  createChat: (payload) => request('/api/chats', { method: 'POST', ...json(payload) }),
+  createChat: (payload = {}) => request('/api/chats', { method: 'POST', ...json(account.user?.role === 'member' ? { ...(payload.title ? { title: payload.title } : {}), ...(payload.agent_id ? { agent_id: payload.agent_id } : {}) } : payload) }),
   chatDraft: id => request(`/api/chats/${id}/draft`, { signal: AbortSignal.timeout(15000) }),
   saveChatDraft: (id, payload) => request(`/api/chats/${id}/draft`, { method: 'PUT', ...json(payload), signal: AbortSignal.timeout(15000) }),
   chat: (id, signal = AbortSignal.timeout(15000)) => request(`/api/chats/${id}`, { signal }),

@@ -164,6 +164,7 @@ pub fn handle(ctx:&mut Context,req:&Request)->Result<Value> {
 @router.get("/api/miniapps", dependencies=user)
 def list_miniapps() -> dict:
     from .. import access
+
     return {"apps": access.visible("app", miniapps.list_apps())}
 
 

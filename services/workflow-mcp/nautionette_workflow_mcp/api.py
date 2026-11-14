@@ -2,16 +2,27 @@
 
 from __future__ import annotations
 
+import hmac
 from typing import Any
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
 from . import backend, store
 from .validate import run_checks
 
-router = APIRouter(prefix="/api")
+
+async def require_service(x_internal_token: str | None = Header(default=None)) -> None:
+    if (
+        not backend.INTERNAL_TOKEN
+        or not x_internal_token
+        or not hmac.compare_digest(x_internal_token, backend.INTERNAL_TOKEN)
+    ):
+        raise HTTPException(401, "Service authentication is required")
+
+
+router = APIRouter(prefix="/api", dependencies=[Depends(require_service)])
 
 
 def _checked_name(name: str, status: int = 400) -> str:

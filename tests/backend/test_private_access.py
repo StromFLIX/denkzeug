@@ -24,9 +24,13 @@ def private_db(tmp_path, monkeypatch):
     monkeypatch.setattr(db_module, "db", database)
     monkeypatch.setattr(chats, "db", database)
     monkeypatch.setattr(chat_drafts, "db", database)
-    database.execute("CREATE TABLE auth_users (id TEXT PRIMARY KEY, role TEXT, status TEXT)")
     for user, role in (("alice", "admin"), ("bob", "member"), ("carol", "admin")):
-        database.execute("INSERT INTO auth_users VALUES(?,?,'approved')", (user, role))
+        database.execute(
+            "INSERT INTO auth_users(id,username,email,display_name,role,status,email_verified,"
+            "created_at,updated_at) "
+            "VALUES(?,?,?,?,?,'active',1,0,0)",
+            (user, user, user + "@example.test", user, role),
+        )
     legacy = database.create_chat(title="legacy secret", agent_set="default")
     with database.transaction() as conn:
         access.claim_legacy("alice", conn)
@@ -118,9 +122,6 @@ async def test_member_routes_and_grants_fail_closed(private_db):
     for path in (
         "/api/settings",
         "/api/system",
-        "/api/events",
-        "/api/events/recent",
-        "/api/chat-inspection/chats",
         "/api/model-integrations",
         "/api/mcp-servers",
         "/api/miniapps/overview",
@@ -217,6 +218,6 @@ async def test_backend_mcp_never_dispatches_member_tools(private_db, monkeypatch
     try:
         result = await main.backend_mcp.call("system_status", {})
         assert result.is_error
-        assert "Member backend tool execution is not supported" in result.content[0].text
+        assert "live delegated account capability" in result.content[0].text
     finally:
         context.reset(token)

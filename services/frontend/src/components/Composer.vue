@@ -31,14 +31,14 @@
         <span class="material-icons" aria-hidden="true">add</span>
         <q-tooltip>{{ attachmentNotice }}</q-tooltip>
       </button>
-      <button ref="configurationToggle" class="pick pick--icon composer__config-toggle" type="button"
+      <button v-if="account.user?.role === 'admin'" ref="configurationToggle" class="pick pick--icon composer__config-toggle" type="button"
         aria-label="Chat configuration" :aria-expanded="configurationOpen" :aria-controls="configurationId"
         :disabled="voiceActive" @click="openConfiguration">
         <span class="material-icons" aria-hidden="true">tune</span>
         <span v-if="customConfiguration && !configurationOpen" class="composer__configured" aria-label="Custom configuration" />
         <q-tooltip>Chat settings · model, reasoning, tools, projects & extensions{{ customConfiguration ? ' · customized' : '' }}</q-tooltip>
       </button>
-      <button v-if="!configurationOpen" class="pick composer__quick-agent" type="button" aria-label="Select agent"
+      <button v-if="!configurationOpen && (account.user?.role === 'admin' || variant === 'welcome')" class="pick composer__quick-agent" type="button" aria-label="Select agent"
         :disabled="configurationBusy || configurationSaving || voiceActive || !configurationReady" aria-haspopup="menu">
         <AgentAvatar :agent="selectedAgent" class="composer__agent-avatar" />
         <span class="truncate">{{ profileLabel }}</span>
@@ -170,6 +170,7 @@ import ProjectPicker from './ProjectPicker.vue'
 import PackagePicker from './PackagePicker.vue'
 import { store } from '../store'
 import { preferences } from '../preferences'
+import { account } from '../auth-session.js'
 import { contextMeter, modelContextWindow } from '../context'
 
 const props = defineProps({

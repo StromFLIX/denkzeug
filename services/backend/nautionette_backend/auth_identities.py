@@ -59,7 +59,7 @@ def resolve_identity(identity: VerifiedIdentity) -> dict:
         "WHERE i.provider=? AND i.issuer=? AND i.subject=?",
         (identity.provider, identity.issuer, identity.subject),
     )
-    if not row or row["status"] != "active" or not row["email_verified"]:
+    if not row or row["status"] != "active":
         # Never look up or link by email, even when a provider says it is verified.
         fail(403, "membership_required", "Link this identity from an existing invited account first.")
     return public_user(row)

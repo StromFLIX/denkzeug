@@ -178,7 +178,7 @@ def _await_image(tag: str, stopped: threading.Event | None = None) -> Iterator[s
 def _uses_app_user(job: dict[str, Any]) -> bool:
     # Root with cap_drop=ALL cannot access the backend-owned mode-0700 session.
     # Every chat (with or without projects) shares the volume's unprivileged UID.
-    return bool(job.get("project_ids") or job.get("chat_id"))
+    return bool(job.get("project_ids") or job.get("chat_id") or job.get("member_mode"))
 
 
 def _environment(job: dict[str, Any]) -> dict[str, str]:
@@ -196,10 +196,14 @@ def _environment(job: dict[str, Any]) -> dict[str, str]:
     if _uses_app_user(job):
         environment["HOME"] = "/workspace"
         environment["PI_CODING_AGENT_DIR"] = "/workspace/.pi-agent"
-    if job.get("chat_id"):
+    if job.get("chat_id") or job.get("member_mode"):
         environment.pop("BACKEND_URL", None)
+        environment.pop("INTERNAL_TOKEN", None)
     elif INTERNAL_TOKEN:
         environment["INTERNAL_TOKEN"] = INTERNAL_TOKEN
+    if job.get("member_mode"):
+        environment.pop("OTEL_EXPORTER_OTLP_HEADERS", None)
+        environment["OTEL_SDK_DISABLED"] = "true"
     return environment
 
 
@@ -269,7 +273,12 @@ def _timeout_error(timeout: int) -> dict[str, Any]:
 def _run(
     job: dict[str, Any], stopped: threading.Event, completed: threading.Event | None = None
 ) -> Iterator[str]:
+    if job.get("member_mode"):
+        job = {**job, "packages": [], "package_runtime": [], "project_credentials": [], "artcraft": []}
     agent_set = job.get("agent_set") or "default"
+    if job.get("member_mode") and agent_set != "default":
+        yield _ndjson({"type": "error", "message": "This container environment is administrator-only"})
+        return
     if agent_set not in images.discovered_agent_sets():
         yield _ndjson({"type": "error", "message": f"unknown agent set '{agent_set}'"})
         return
@@ -328,8 +337,10 @@ def _run(
             tag,
             detach=True,
             environment=environment,
-            network=AGENT_NETWORK if job.get("chat_id") else TARGET_NETWORK,
-            volumes={WORKFLOWS_VOLUME: {"bind": "/workflows", "mode": "ro"}},
+            network=AGENT_NETWORK if job.get("chat_id") or job.get("member_mode") else TARGET_NETWORK,
+            volumes={}
+            if job.get("member_mode")
+            else {WORKFLOWS_VOLUME: {"bind": "/workflows", "mode": "ro"}},
             mounts=[*project_mounts, *package_mounts, *app_mounts, *session_mounts],
             tmpfs=(
                 {

@@ -69,13 +69,13 @@ def test_web_mobile_and_old_desktop_are_rejected_before_cli_start(client, oauth)
     assert not oauth.calls
 
 
-def test_cli_oauth_is_not_enabled_through_backend_open_mode(client, oauth, monkeypatch):
+def test_cli_oauth_uses_accounts_without_the_obsolete_shared_token(client, oauth, monkeypatch):
     from nautionette_backend.config import settings
 
     monkeypatch.setattr(settings, "app_token", "")
-    assert client.post(BASE + "/start/example", json=CONFIG).status_code == 403
-    assert client.get(BASE + "/capabilities").json()["available"] is False
-    assert not oauth.calls
+    assert client.post(BASE + "/start/example", json=CONFIG).status_code == 200
+    assert client.get(BASE + "/capabilities").json()["available"] is True
+    assert oauth.calls
 
 
 def test_every_oauth_operation_requires_user_authentication(anonymous):

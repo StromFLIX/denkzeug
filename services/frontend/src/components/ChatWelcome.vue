@@ -9,7 +9,7 @@
         <h1 class="welcome__title">What should happen next?</h1>
         <p class="welcome__lead">A little more room for what’s on your mind.</p>
       </div>
-      <Composer ref="composer" v-model="text" v-model:attachments="attachments" :agent-id="config.agent_id" :agent-name="config.agent_name || ''" :agent-customized="Boolean(config.agent_customized)" :system-prompt="config.system_prompt || ''"
+      <Composer v-if="account.user?.role === 'admin' || !store.catalogLoaded || store.catalog.agents?.length" ref="composer" v-model="text" v-model:attachments="attachments" :agent-id="config.agent_id" :agent-name="config.agent_name || ''" :agent-customized="Boolean(config.agent_customized)" :system-prompt="config.system_prompt || ''"
         :agent-set="config.agent_set" :model="config.model" :reasoning-effort="config.reasoning_effort" :tools="config.tools" :project-ids="config.project_ids" :packages="config.packages || []"
         variant="welcome" :busy="busy" :configuration-ready="store.catalogLoaded" placeholder="Ask, build, or automate…"
         @update:agent-id="chooseAgent" @update:agent-set="override('agent_set', $event)" @update:model="override('model', $event)"
@@ -17,10 +17,11 @@
         @update:packages="override('packages', $event)"
         @send="$emit('start', { text, configuration: config, attachments })" />
 
+      <div v-else class="notice" role="status">Your account is ready. Ask an administrator to share an agent with you to start chatting. Your conversations will stay private. <button class="btn" @click="actions.loadCatalog(true)">Refresh access</button></div>
       <nav class="welcome__paths" aria-label="Ways to work">
-        <RouterLink to="/settings/creative-apps"><i class="welcome__tile welcome__tile--create" aria-hidden="true" /><span>Create<small>Code, slides, drawings</small></span></RouterLink>
-        <RouterLink to="/workflows"><i class="welcome__tile welcome__tile--process" aria-hidden="true" /><span>Process<small>Repeatable workflows</small></span></RouterLink>
-        <RouterLink to="/apps"><i class="welcome__tile welcome__tile--show" aria-hidden="true" /><span>Show<small>Your own miniapps</small></span></RouterLink>
+        <RouterLink v-if="account.user?.role === 'admin'" to="/settings/creative-apps"><i class="welcome__tile welcome__tile--create" aria-hidden="true" /><span>Create<small>Code, slides, drawings</small></span></RouterLink>
+        <RouterLink v-if="account.user?.role === 'admin' || store.workflows.length" to="/workflows"><i class="welcome__tile welcome__tile--process" aria-hidden="true" /><span>Process<small>Repeatable workflows</small></span></RouterLink>
+        <RouterLink v-if="account.user?.role === 'admin' || store.apps.length" to="/apps"><i class="welcome__tile welcome__tile--show" aria-hidden="true" /><span>Show<small>Your own miniapps</small></span></RouterLink>
       </nav>
       <p v-if="draftError" class="caption" role="alert">{{ draftError }}</p>
       <p v-if="!store.catalogLoaded && store.catalogError" class="caption" role="alert">{{ store.catalogError }} <button class="btn btn--sm" @click="actions.loadCatalog(true)">Retry defaults</button></p>

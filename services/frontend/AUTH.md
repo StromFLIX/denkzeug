@@ -21,12 +21,19 @@ is removed on startup and is never imported as an account credential.
 Public links use fragments `#bootstrap=…`, `#invite=…`, `#verify=…`, and `#reset=…`.
 The client consumes and strips these before router redirects/history seeding or
 API exchanges. Invitations can also be entered as a code or pasted fragment link.
+Invite lookup is `POST /api/auth/invitation` with `{code}`, never a secret-bearing
+query string. Email-less invitations have an explicit **Copy code** action. Administrators
+can also issue one-time password reset codes; **Forgot password? → Use a reset code**
+works without email. Optional recovery-email fields may be left blank or removed.
+Passwords require at least 15 characters. Changing/resetting a password signs devices out.
 There are no external identity-provider buttons in this release.
 
 Bootstrap and invitation registration use the same public payloads on every
 platform. Native clients sign in separately after successful registration if the
-response has no native tokens (unless email verification is still required). Refresh
-accepts either a complete session response or tokens followed by `/me`.
+response has no native tokens. New registrations are active immediately after a valid
+single-use invite code; email and SMTP are never a registration or sign-in requirement.
+The optional recovery address can be verified later. Refresh accepts either a complete
+session response or tokens followed by `/me`, without recursively refreshing `/me`.
 
 ## Native vault boundary
 
@@ -52,7 +59,10 @@ History, composer drafts, remembered chat settings, agent selection and outbox
 keys include both the server origin and account ID. Old unscoped records are not
 read or replayed. Signing out closes streams, stops delivery, clears all shared
 reactive lists and unmounts the private shell. An account epoch fences late HTTP
-responses; delivery also checks its original account scope before sending.
+responses; response account headers and event handshakes also fence cookie identity
+changes in another tab. Delivery checks its original account scope before sending.
+Native vault mutations are serialized so an older asynchronous write cannot replace
+credentials for a newer login.
 Cross-tab logout broadcasts only a timestamp, not credentials. Previously queued
 messages remain available only when that same account signs back in.
 

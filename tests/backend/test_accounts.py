@@ -73,6 +73,39 @@ def test_origin_and_validation_never_echo_secrets(backend):
     assert result.headers["cache-control"] == "no-store"
 
 
+def test_account_json_is_bounded_before_credential_parsing(backend):
+    http = web_client()
+    result = http.post(
+        "/api/auth/login",
+        content=b'{"password":"' + b"p" * 70000 + b'"}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert result.status_code == 413
+    assert "pppppppp" not in result.text
+
+
+def test_local_common_password_list_blocks_predictable_long_passwords():
+    from fastapi import HTTPException
+    from nautionette_backend.auth_store import _COMMON_PASSWORDS, password_hash
+
+    candidate = next(value for value in _COMMON_PASSWORDS if len(value) >= 15 and len(set(value)) >= 5)
+    with pytest.raises(HTTPException) as result:
+        password_hash(candidate)
+    assert result.value.status_code == 422
+
+
+def test_password_rehash_does_not_invalidate_the_same_successful_login(backend, db):
+    from argon2 import PasswordHasher
+    from nautionette_backend.auth_store import PASSWORDS
+
+    previous = PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1).hash(PASSWORD)
+    db.execute("UPDATE auth_users SET password_hash=? WHERE id='test-admin'", (previous,))
+    signed_in = login(web_client(), native=True)
+    assert signed_in.status_code == 200, signed_in.text
+    changed = db.one("SELECT password_hash FROM auth_users WHERE id='test-admin'")["password_hash"]
+    assert changed != previous and not PASSWORDS.check_needs_rehash(changed)
+
+
 def test_native_refresh_rotation_detects_replay_and_revokes_family(backend):
     http = web_client()
     result = login(http, native=True).json()
@@ -106,7 +139,7 @@ def test_password_change_revokes_every_session(backend):
     )
 
 
-def test_invite_policy_email_verification_and_one_use(client, db, mail):
+def test_invite_policy_optional_email_verification_and_one_use(client, db, mail):
     http = web_client()
     assert client.post("/api/auth/invitations", json={"email": "new@example.test"}).status_code == 403
     assert client.patch("/api/auth/policy", json={"registration_mode": "invite_only"}).status_code == 200
@@ -123,11 +156,14 @@ def test_invite_policy_email_verification_and_one_use(client, db, mail):
         == 403
     )
     client.patch("/api/auth/policy", json={"registration_mode": "invite_only"})
-    body = {"code": code, "username": "new.person", "password": PASSWORD}
-    assert http.post("/api/auth/register", json=body).json() == {"verification_required": True}
+    body = {"code": code, "username": "new.person", "password": PASSWORD, "email": "new@example.test"}
+    registered = http.post("/api/auth/register", json=body)
+    assert registered.status_code == 200
+    assert registered.json()["verification_required"] is False
+    assert registered.json()["user"]["status"] == "active"
     assert http.post("/api/auth/register", json=body).status_code == 400
     assert (
-        http.post("/api/auth/login", json={"username": "new.person", "password": PASSWORD}).status_code == 401
+        http.post("/api/auth/login", json={"username": "new.person", "password": PASSWORD}).status_code == 200
     )
     user = db.one("SELECT * FROM auth_users WHERE username='new.person'")
     assert user["role"] == "member" and not user["email_verified"]
@@ -168,6 +204,26 @@ def test_recovery_generic_response_single_use_and_session_revocation(client, db,
     )
 
 
+def test_recovery_configuration_errors_do_not_reveal_accounts(backend, mail, monkeypatch):
+    http = web_client()
+    monkeypatch.setattr(settings, "smtp_from", "invalid sender")
+    known = http.post("/api/auth/forgot-password", json={"email": "admin@example.test"})
+    unknown = http.post("/api/auth/forgot-password", json={"email": "unknown@example.test"})
+    assert known.status_code == unknown.status_code == 503
+    assert known.json() == unknown.json()
+    monkeypatch.setattr(settings, "smtp_from", "accounts@example.test")
+
+    def broken_key():
+        raise OSError("private filesystem details")
+
+    monkeypatch.setattr(auth_mail, "_cipher", broken_key)
+    known = http.post("/api/auth/forgot-password", json={"email": "admin@example.test"})
+    unknown = http.post("/api/auth/forgot-password", json={"email": "unknown@example.test"})
+    assert known.status_code == unknown.status_code == 503
+    assert known.json() == unknown.json()
+    assert "private filesystem" not in known.text
+
+
 def test_last_admin_and_stale_reauthentication(client, db):
     assert client.patch("/api/auth/users/test-admin", json={"role": "member"}).status_code == 409
     assert client.patch("/api/auth/users/test-admin", json={"status": "suspended"}).status_code == 409
@@ -186,7 +242,11 @@ def test_sessions_cannot_be_revoked_across_accounts(client, db):
 
 def test_bootstrap_claims_every_legacy_chat_once(db, monkeypatch):
     # Real migration, not merely a new-admin login test.
+    from nautionette_backend.security import current_principal
+
     db.execute("DELETE FROM auth_users")
+    db.execute("UPDATE access_state SET legacy_owner=NULL WHERE id=1")
+    current_principal.set(None)
     chat = db.create_chat("Legacy private conversation", "default")
     monkeypatch.setattr(settings, "public_url", "https://testserver")
     token = auth.issue_setup_token()

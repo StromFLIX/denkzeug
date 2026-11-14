@@ -57,18 +57,26 @@ class EventBus:
         finally:
             self._subscribers.discard(queue)
 
-    async def stream(self):
+    async def stream(self, who=None):
         queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=256)
         self._subscribers.add(queue)
         try:
-            yield sse({"kind": "connected", "at": time.time()})
+            yield sse(
+                {"kind": "connected", "at": time.time(), **({"account_id": who.user_id} if who else {})}
+            )
             while True:
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=20)
                 except TimeoutError:
                     yield SSE_HEARTBEAT
                     continue
-                yield sse(event)
+                if who is None:
+                    yield sse(event)
+                else:
+                    from .account_streams import visible
+
+                    if visible(event, who):
+                        yield sse(event)
         finally:
             self._subscribers.discard(queue)
 

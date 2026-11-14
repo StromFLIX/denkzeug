@@ -280,11 +280,26 @@ async def mcp_call(params: dict[str, Any]) -> dict[str, Any]:
 
         await observe("running")
         status = "interrupted"
+        grant = None
         try:
+            arguments = params.get("arguments") or {}
+            if not isinstance(arguments, dict):
+                raise ValueError("MCP arguments must be an object")
+            if tool.startswith(("backend_", "workflows_")):
+                if not activity.in_activity():
+                    raise ValueError("First-party MCP calls require verified workflow activity provenance")
+                proof = await client.post(
+                    f"{BACKEND_URL}/internal/auth/activity-grant",
+                    headers=_headers(),
+                    json={"source": _workflow_source(), "tool": tool},
+                )
+                proof.raise_for_status()
+                grant = proof.json()["grant"]
+                arguments = {**arguments, "__denkzeug_actor": grant}
             called = await client.post(
                 MCP_URL,
                 headers=headers,
-                json=rpc(2, "tools/call", {"name": tool, "arguments": params.get("arguments") or {}}),
+                json=rpc(2, "tools/call", {"name": tool, "arguments": arguments}),
             )
             called.raise_for_status()
             frame = _mcp_frame(called)
@@ -308,6 +323,15 @@ async def mcp_call(params: dict[str, Any]) -> dict[str, Any]:
             status = "failed"
             raise
         finally:
+            if grant:
+                try:
+                    await client.post(
+                        f"{BACKEND_URL}/internal/auth/revoke-activity-grant",
+                        headers=_headers(),
+                        json={"grant": grant},
+                    )
+                except httpx.HTTPError:
+                    log.warning("Scoped activity capability cleanup is pending expiry")
             await observe(status)
 
 

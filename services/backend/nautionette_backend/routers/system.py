@@ -9,12 +9,13 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import Response, StreamingResponse
 
 from .. import runs
+from ..account_streams import guarded, visible
 from ..background import is_draining
 from ..clients import authoring, broker, gateway, temporal
 from ..config import settings
 from ..events import bus
 from ..runtime import agent_has_answered
-from ..security import require_user
+from ..security import current_principal, require_user
 
 router = APIRouter()
 
@@ -94,12 +95,16 @@ async def probe_events() -> Response:
 
 @router.get("/api/events", dependencies=[Depends(require_user)])
 async def events_stream() -> StreamingResponse:
-    return StreamingResponse(bus.stream(), media_type="text/event-stream", headers=SSE_HEADERS)
+    who = current_principal.get()
+    return StreamingResponse(
+        guarded(bus.stream(who), who), media_type="text/event-stream", headers=SSE_HEADERS
+    )
 
 
 @router.get("/api/events/recent", dependencies=[Depends(require_user)])
 async def events_recent() -> dict[str, Any]:
-    return {"events": bus.recent(100)}
+    who = current_principal.get()
+    return {"events": [event for event in bus.recent(100) if visible(event, who)]}
 
 
 @router.post("/api/system/worker/restart", dependencies=[Depends(require_user)])

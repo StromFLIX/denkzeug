@@ -91,9 +91,10 @@ export default async function (pi: ExtensionAPI) {
   // Local first-party tools hold a private, turn-scoped capability. The raw
   // transports must never be declared to the model or gated by MCP selection.
   const grant = loadOutputGrant();
-  registerOutputTools(pi, control.rpc, grant);
-  registerSubagentTools(pi, control.rpc, grant, ALLOWED);
-  registerCraftTools(pi);
+  const chatGrant = process.env.NAUTIONETTE_TURN_ID ? grant : null;
+  registerOutputTools(pi, control.rpc, chatGrant);
+  registerSubagentTools(pi, control.rpc, chatGrant, ALLOWED);
+  if (process.env.NAUTIONETTE_MEMBER_MODE !== "true") registerCraftTools(pi);
 
   // Tools are discovered, not hard-coded: federate a new MCP server behind the
   // gateway and this agent set picks it up on its next run.
@@ -133,7 +134,13 @@ export default async function (pi: ExtensionAPI) {
             await waitForMcpAuth(control.rpc, grant || {}, tool.name, _toolCallId, signal);
           }
           const dispatch = oauthTools.has(tool.name) ? transport.rpcFresh : rpc;
-          const result = await dispatch("tools/call", { name: tool.name, arguments: params ?? {} }, signal);
+          // The gateway's service credential is transport-only. A hidden,
+          // live turn capability carries this account's authority; it never
+          // enters the model-visible schema or persisted tool arguments.
+          const argumentsWithActor = (tool.name.startsWith("backend_") || tool.name.startsWith("workflows_")) && grant?.grant
+            ? { ...(params as Record<string, unknown> ?? {}), __denkzeug_actor: grant.grant }
+            : params ?? {};
+          const result = await dispatch("tools/call", { name: tool.name, arguments: argumentsWithActor }, signal);
           const text = renderToolResult(result);
           if (result?.isError) throw new Error(text);
           return { content: [{ type: "text", text }], details: result ?? {} };

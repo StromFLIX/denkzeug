@@ -20,6 +20,7 @@ from nautionette.brand import NAME
 from nautionette.telemetry import instrument_app
 
 from . import (
+    access,
     artcraft,
     auth,
     auth_mail,
@@ -55,6 +56,13 @@ def seed_workflows() -> None:
         destination = target / item.name
         if not destination.exists():
             shutil.copy2(item, destination)
+        # Environment bootstrap happens before seeding. Newly installed example
+        # definitions still need an explicit workspace owner and can then be shared.
+        from .db import db
+
+        state = db.one("SELECT legacy_owner FROM access_state WHERE id=1")
+        if state and state["legacy_owner"]:
+            access.register_resource("workflow", item.stem, owner_user_id=state["legacy_owner"])
 
 
 @asynccontextmanager
@@ -63,6 +71,7 @@ async def lifespan(_: FastAPI):
         raise ValueError("INTERNAL_TOKEN is required for authenticated internal services")
     auth.initialize()
     spawn(auth_mail.maintenance(), name="account-mail-maintenance")
+    spawn(access.account_maintenance(), name="account-access-maintenance")
     Path(settings.artifacts_dir).mkdir(parents=True, exist_ok=True)
     seed_workflows()
     recover_interrupted()
@@ -108,6 +117,7 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Denkzeug-Account"],
 )
 
 app.add_middleware(AccountBoundaryMiddleware)

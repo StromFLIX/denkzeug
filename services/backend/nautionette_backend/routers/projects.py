@@ -41,6 +41,7 @@ async def project_repositories(
 @router.get("/api/projects")
 async def project_list():
     from .. import access
+
     return {"projects": access.visible("project", projects.list_projects())}
 
 

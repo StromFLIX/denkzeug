@@ -26,8 +26,17 @@ export function acceptAccount (data) {
   if (data.access_token) accessToken = data.access_token
 }
 
-/** One narrow native bridge; no plaintext fallback (including on old clients). */
+let vaultWrites = Promise.resolve()
+/** Serialize vault mutations so an older asynchronous write cannot replace a newer login. */
 export async function secureSession (operation, origin, value) {
+  if (operation === 'get') { await vaultWrites; return nativeSession(operation, origin, value) }
+  const pending = vaultWrites.then(() => nativeSession(operation, origin, value))
+  vaultWrites = pending.catch(() => {})
+  return pending
+}
+
+/** One narrow native bridge; no plaintext fallback (including on old clients). */
+async function nativeSession (operation, origin, value) {
   const desktop = globalThis.denkzeugDesktop || globalThis.nautionetteDesktop
   let bridge = desktop?.accountStore
   if (!bridge && globalThis.Capacitor?.isNativePlatform?.()) {
@@ -41,14 +50,15 @@ export async function secureSession (operation, origin, value) {
 
 export function consumeAuthFragment (location = globalThis.location, history = globalThis.history) {
   const params = new URLSearchParams(location.hash.slice(1))
-  const keys = ['bootstrap', 'invite', 'reset', 'verify']
+  const aliases = { 'reset-password': 'reset', 'verify-email': 'verify' }
+  const keys = ['bootstrap', 'invite', 'reset', 'verify', ...Object.keys(aliases)]
   const flow = keys.find(key => params.has(key))
   if (!flow) return null
   const token = params.get(flow)
   for (const key of keys) params.delete(key)
   const rest = params.toString()
   history.replaceState(history.state, '', `${location.pathname}${location.search}${rest ? `#${rest}` : ''}`)
-  return { flow, token }
+  return { flow: aliases[flow] || flow, token }
 }
 
 // Capture and strip before Vue Router redirects or seeds native back history.

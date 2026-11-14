@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from .. import access
 from . import (
     agents,
     artcraft,
@@ -12,6 +13,7 @@ from . import (
     chat_inspection,
     chat_outputs,
     chats,
+    delegation,
     frontend,
     gateway,
     github_setup,
@@ -31,6 +33,7 @@ from . import (
 )
 
 ROUTERS = (
+    access.router,
     auth.router,
     system.router,
     settings.router,
@@ -49,6 +52,7 @@ ROUTERS = (
     workflows.router,
     runs.router,
     internal.router,
+    delegation.router,
     operational.router,
     projects.router,
     github_setup.router,

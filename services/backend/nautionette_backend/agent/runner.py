@@ -162,16 +162,70 @@ def agent_job(
 async def stream_agent(job: dict[str, Any]) -> AsyncIterator[dict[str, Any]]:
     # Resolve private configuration only in the outgoing call, never in persisted
     # jobs/history, profile snapshots or public API responses.
+    from ..db import db
+
+    owner = None
+    if job.get("chat_id"):
+        owner = db.one(
+            "SELECT u.id,u.role,u.status FROM chats c JOIN auth_users u ON u.id=c.owner_user_id WHERE c.id=?",
+            (job["chat_id"],),
+        )
+    elif job.get("run_id"):
+        owner = db.one(
+            "SELECT u.id,u.role,u.status FROM runs r JOIN auth_users u ON u.id=r.owner_user_id "
+            "WHERE r.workflow_id=? OR r.run_id=? LIMIT 1",
+            (job["run_id"], job["run_id"]),
+        )
+    if owner is None and (origin := job.get("origin", {})).get("kind") == "workflow":
+        owner = db.one(
+            "SELECT u.id,u.role,u.status FROM access_resources r JOIN auth_users u "
+            "ON u.id=r.owner_user_id WHERE r.kind='workflow' AND r.resource_id=?",
+            (origin.get("workflow"),),
+        )
+    if owner is None and not job.get("chat_id"):
+        from ..access import human_id
+
+        user_id = human_id()
+        if not user_id:
+            state = db.one("SELECT legacy_owner FROM access_state WHERE id=1")
+            user_id = state["legacy_owner"] if state else None
+        if user_id:
+            owner = db.one("SELECT id,role,status FROM auth_users WHERE id=?", (user_id,))
+    if owner and owner["status"] != "active":
+        raise PermissionError("The runtime owner is not active")
+    member = bool(owner and owner["role"] != "admin")
+    if member and (job.get("agent_set") or settings.default_agent_set) != "default":
+        raise PermissionError("This container environment is administrator-only")
+    # Account authority is resolved here, never trusted from a saved job or a
+    # browser payload. Shared member conversations do not imply local code or
+    # control-plane access. Full coding remains an administrator capability.
+    from ..access import member_tools
+
+    selected_tools = member_tools(job.get("tools"), owner["id"]) if member else job.get("tools")
     outgoing = {
         **job,
-        "artcraft": artcraft.for_run(),
-        "mcp_targets": await mcp_selection.for_run(job.get("tools")),
+        "member_mode": member,
+        "tools": selected_tools,
+        "artcraft": [] if member else artcraft.for_run(),
+        "mcp_targets": await mcp_selection.for_run(selected_tools),
     }
-    if job.get("packages"):
+    if member:
+        outgoing.update(packages=[], project_credentials=[], package_runtime=[])
+    elif job.get("packages"):
         outgoing["package_runtime"] = pi_packages.for_run(job["packages"])
     timeout = None if chat_timeout_exempt(job) else job.get("timeout_seconds", 900) + 30
-    with chat_outputs.publication_grant(job.get("chat_id", ""), job.get("turn_id", "")) as grant:
-        if grant:
+    from ..access import activity_grant
+
+    with (
+        chat_outputs.publication_grant(job.get("chat_id", ""), job.get("turn_id", "")) as chat_grant,
+        activity_grant(
+            owner["id"] if owner and not chat_grant else None,
+            job.get("run_id") or job.get("origin", {}).get("workflow_id", ""),
+            selected_tools,
+            int(job.get("timeout_seconds") or 900),
+        ) as workflow_grant,
+    ):
+        if grant := chat_grant or workflow_grant:
             outgoing["output_publication"] = grant
         async for event in broker.run_agent(outgoing, timeout=timeout):
             yield event

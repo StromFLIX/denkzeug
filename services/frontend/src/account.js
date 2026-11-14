@@ -24,7 +24,9 @@ export async function refreshAccount () {
     if (origin !== server.url || epoch !== account.epoch) throw new Error('Account changed.')
     if (!data.user && data.access_token) {
       auth.token = data.access_token
-      const me = await request('/api/auth/me')
+      // This is already inside refresh: a rejected new token must fail, not
+      // recursively await the same in-flight refresh promise.
+      const me = await request('/api/auth/me', {}, 1)
       Object.assign(data, me)
     }
     return accept(data, origin)
@@ -55,22 +57,30 @@ export const accountApi = {
   },
   async login (username, password) { return accept(await send('login', { username, password, ...(isNative ? { native: true } : {}) })) },
   async bootstrap (body) {
-    const data = await send('bootstrap', body)
+    const data = await send('bootstrap', { ...body, ...(isNative ? { native: true } : {}) })
     if (isNative && !data.access_token) return accountApi.login(body.username, body.password)
     if (data.user) await accept(data)
     return data
   },
-  invitation: code => request(`/api/auth/invitation?code=${encodeURIComponent(code)}`),
+  invitation: code => send('invitation', { code }),
   async register (body) {
-    const data = await send('register', body)
+    const data = await send('register', { ...body, ...(isNative ? { native: true } : {}) })
     if (isNative && !data.verification_required && !data.access_token) return accountApi.login(body.username, body.password)
     if (data.user) await accept(data)
     return data
   },
   verify: token => send('verify-email', { token }),
+  requestVerification: () => send('verify-email/request'),
+  securityEvents: () => request('/api/auth/security-events'),
+  recoveryCode: id => send(`users/${encodeURIComponent(id)}/recovery`),
   forgot: email => send('forgot-password', { email }),
-  reset: body => send('reset-password', body),
-  async changePassword (body) { await send('change-password', body); await accountApi.me() },
+  async reset (body) { await send('reset-password', body); clearAccount(); if (isNative) await secureSession('remove', server.url) },
+  async changePassword (body) {
+    await send('change-password', body)
+    clearAccount()
+    if (isNative) await secureSession('remove', server.url)
+    try { localStorage.setItem('denkzeug.account.logout', String(Date.now())) } catch { /* optional broadcast */ }
+  },
   async me () { const data = await request('/api/auth/me'); acceptAccount(data); return data },
   async profile (body) { await send('profile', body, 'PATCH'); await accountApi.me() },
   sessions: () => request('/api/auth/sessions'),
@@ -81,6 +91,12 @@ export const accountApi = {
   invite: body => send('invitations', body),
   revokeInvitation: id => send(`invitations/${encodeURIComponent(id)}/revoke`),
   policy: () => request('/api/auth/policy'),
+  resources: () => request('/api/access/resources'),
+  grants: () => request('/api/access/grants'),
+  share: body => request('/api/access/grants', { method: 'PUT', body: JSON.stringify(body) }),
+  unshare: body => request('/api/access/grants', { method: 'DELETE', body: JSON.stringify(body) }),
+  mailStatus: () => request('/api/auth/mail-status'),
+  testEmail: () => send('test-email'),
   savePolicy: body => send('policy', body, 'PATCH'),
   reauth: password => send('reauth', { password }),
   async logout (allDevices = false) {
@@ -103,4 +119,4 @@ if (globalThis.addEventListener) globalThis.addEventListener('storage', event =>
 })
 
 export const memberSettingKeys = new Set(['account', 'appearance', 'workspace'])
-export const canOpenRoute = route => account.user?.role === 'admin' || route.name === 'chats' || (route.name === 'settings' && memberSettingKeys.has(route.params.tab))
+export const canOpenRoute = route => account.user?.role === 'admin' || ['chats', 'workflows', 'runs', 'apps'].includes(route.name) || (route.name === 'settings' && memberSettingKeys.has(route.params.tab))

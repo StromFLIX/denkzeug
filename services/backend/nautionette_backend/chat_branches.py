@@ -69,7 +69,6 @@ def branch(chat_id: str) -> dict:
     budget = [MAX_COPY_BYTES, MAX_COPY_FILES]
     try:
         with session_lock(chat_id), db.transaction() as connection:
-            connection.execute("BEGIN IMMEDIATE")
             original = connection.execute("SELECT * FROM chats WHERE id = ?", (chat_id,)).fetchone()
             if original is None:
                 raise HTTPException(404, "Chat not found")

@@ -1,94 +1,90 @@
-# Authentication and operator recovery
+# Accounts, invitations and private workspace access
 
-Denkzeug authenticates people with individual accounts, not a shared deployment
-password. `APP_TOKEN` is obsolete: it grants **no** human or service access. Missing
-credentials never enable an open mode. Browser sessions use secure, HttpOnly
-cookies; native/device clients must use their supported sign-in flow. The private
-`INTERNAL_TOKEN` still authenticates stack services; it is not a user login.
+Denkzeug uses individual username/password accounts. **Email is optional everywhere**: bootstrap, invitations, registration and password recovery all work without SMTP or an email address. There is no public unrestricted registration or anonymous API mode.
 
-## Configure the external origin before upgrading
+## First administrator and existing data
 
-Set `DENKZEUG_PUBLIC_URL=https://your-app.example` (or the compatibility fallback
-`APP_URL`) to the app's canonical external origin, not the promotional website.
-Keep both variables equal when both are supplied. Terminate TLS at a trusted
-reverse proxy, route the app to the backend and preserve HTTPS/WebSocket support.
-Do not publish broker, gateway, database, storage or Temporal ports. Do not trust
-arbitrary forwarded headers from the public internet.
+The person operating the existing instance claims the first administrator account. In the same SQLite transaction, Denkzeug assigns **all existing unowned chats, messages/attachments/outputs through their chat, runs, workflows, apps and workspace resources** to that account. Existing legacy artifact files are indexed for that owner. Later invited accounts never inherit existing conversations. Do not initialize a real instance using a disposable QA identity.
 
-Secure sessions are the default, including behind a TLS-terminating proxy. For an
-isolated **development** stack on localhost only, explicitly set all of:
+Back up the database, private object storage and persistent volumes before upgrading. Keep the existing Compose project, namespaces, bucket names and volumes; never replace the deployment's `.env` wholesale with `.env.example`.
+
+Authentication is always enabled. The old `APP_TOKEN` does not authenticate users; it is neither an account password nor an API-key compatibility bypass. `INTERNAL_TOKEN` remains a separate required service credential and must not equal the obsolete `APP_TOKEN`. Upgrade existing native clients to the account-capable release. Existing external scripts using the old token require a deliberately authenticated replacement.
+
+Set the canonical application origin:
 
 ```dotenv
-APP_ENVIRONMENT=development
-DENKZEUG_PUBLIC_URL=http://localhost:8080
-APP_URL=http://localhost:8080
-DENKZEUG_AUTH_ALLOW_INSECURE_LOCALHOST=true
+DENKZEUG_PUBLIC_URL=https://app.example.com
 ```
 
-This is not a switch for staging, production, a LAN IP, or remote HTTP. Do not
-turn authentication off to make a smoke test pass. Plain SMTP is likewise only a
-development option; do not use it to work around a mail certificate error.
+`APP_URL` remains a fallback. Use this environment's HTTPS origin, not a marketing-site URL, another environment, a path or a request-supplied Host header. Links use fragment secrets, not query strings.
 
-## Claim a new or upgraded instance
+### Interactive setup
 
-Back up first. On an existing installation, retain the original namespace,
-volumes, SQLite database, encryption/master keys and service credentials. Creating
-a new volume or changing `STACK_NAMESPACE` is not migration.
+When no administrator exists, normal user APIs remain locked. With a configured public origin, startup writes an expiring, single-use setup link into **restricted backend logs** (or a pasteable setup code when no origin is configured). Open it and choose a username/password; leave recovery email blank if you do not want it. The link expires after 30 minutes and changes after restart/reissuance. Never put it in tickets, chat messages, public build output or telemetry.
 
-**The operator/current owner must claim the first administrator account.** A
-release/deployment job must not silently appoint an administrator or choose a
-permanent password. Before first claim, the backend may issue an expiring,
-single-use setup link into its **restricted server logs**, never a permanent
-password. Limit log access to operators and do not upload these logs as public
-CI artifacts. Authentication
-schema migration and the first-admin claim preserve legacy content; the initial
-administrator receives the legacy ownership atomically, not a public fallback
-identity. Once claimed, bootstrap must not reset accounts or transfer ownership.
-
-Use that server-log setup link, or explicitly issue a replacement short-lived,
-single-use setup token on the deployment host (invalidating earlier setup links):
+An operator with container access can explicitly issue a replacement setup code:
 
 ```sh
 docker compose exec backend python -m nautionette_backend.auth_cli setup-token
 ```
 
-Enter that token in the app's initial setup flow and create your administrator
-account. Treat the token like a password: never paste it into a chat, CI log, issue,
-or URL query string. Close/clear the terminal when finished. An already claimed
-instance cannot be claimed again by reissuing a setup token.
+Paste the printed code through **Enter setup code** on the first-run screen. This command refuses once an administrator exists. It is not a permanent backdoor or an account reset mechanism.
 
-For **new unattended installations only**, provision the bootstrap values through
-the deployment secret store:
+### Environment provisioning
+
+For unattended initialization, supply a username and password file. **Email is not required.**
 
 ```dotenv
 DENKZEUG_BOOTSTRAP_ADMIN_USERNAME=owner
-DENKZEUG_BOOTSTRAP_ADMIN_EMAIL=owner@example.com
-DENKZEUG_BOOTSTRAP_ADMIN_PASSWORD_FILE=/run/secrets/denkzeug-bootstrap
+DENKZEUG_BOOTSTRAP_ADMIN_PASSWORD_FILE=/run/secrets/denkzeug-admin
+# Optional:
+DENKZEUG_BOOTSTRAP_ADMIN_EMAIL=
 ```
 
-Mount that secret read-only into the backend. `_FILE` names are container paths,
-not host paths: passing a path through `.env` does not mount it. For example,
-create a private `compose.secrets.yaml` (never commit passwords or secret files):
+Mount that secret read-only using a private Compose override or Docker secrets; `_FILE` paths refer to the backend container, not the host. Restrict its permissions. `DENKZEUG_BOOTSTRAP_ADMIN_PASSWORD` is an alternative for systems without secret-file support, but environment inspection exposes it to the operator. Do not set both password sources.
 
-```yaml
-services:
-  backend:
-    volumes:
-      - /etc/denkzeug/bootstrap-password:/run/secrets/denkzeug-bootstrap:ro
-      - /etc/denkzeug/smtp-password:/run/secrets/denkzeug-smtp:ro
+Provisioning happens only once and requires replacing the temporary password after sign-in. Changing environment values does not overwrite existing accounts or reset passwords. Remove temporary bootstrap credentials after successful initialization. Permanent passwords are never printed in application logs.
+
+Explicit localhost development is supported with `APP_ENVIRONMENT=development`, `DENKZEUG_AUTH_ALLOW_INSECURE_LOCALHOST=true` and a matching localhost `DENKZEUG_PUBLIC_URL`. These are not switches for production, staging, remote HTTP or disabling authentication. Native clients require HTTPS origins.
+
+## Copy/paste invitations—no email needed
+
+In **Settings → Account & workspace → Access policies**, enable **Invitation only**. In **Invitations**:
+
+1. Optionally add a private note, such as “For Sam”.
+2. Leave email blank for a code-only invitation. Member is the default role.
+3. Create the invitation and select **Copy code**. Send it through whatever secure channel you prefer.
+4. The recipient selects **Use an invitation**, pastes the code, and chooses a username/password. They may leave recovery email blank and start using the account immediately.
+
+A copyable link is also provided when a canonical public URL is configured. A link is a convenience, never a requirement for using the code. Codes are high-entropy secrets, single-use, hashed in storage, expiring and revocable. The default expiry is seven days. They are shown only on creation; create a replacement if the code is lost. Reissuing an email-addressed invitation supersedes previous outstanding invitations for that delivery address. Independent code-only invitations do not revoke each other.
+
+An invitation's email is optional **delivery metadata**, not an account identifier or mandatory mailbox check. The recipient chooses whether to add any recovery email. SMTP being absent does not block invitation creation, acceptance or sign-in.
+
+**Paused** blocks both creation of invitations and redemption of outstanding codes, without preventing existing accounts signing in. Resuming accepts only still-valid, unrevoked codes. There is no unrestricted sign-up mode. Administrative invitations/role elevation require deliberate confirmation and recent authentication.
+
+## Password recovery without email
+
+An administrator can open **Users → Create reset code** for an active password account. It requires recent authentication and is audited. Copy the code or optional link and share it with that person securely.
+
+At sign-in, choose **Forgot password? → Use a reset code**. Paste the code, choose a new password and sign in again. No email, SMTP or previous password is required. Reset codes expire in 30 minutes, can be used once, and are replaced when reissued. Successful redemption revokes the target account's existing sessions. Issuing a code alone does not sign the person out.
+
+Administrators cannot retrieve passwords. Creating a recovery code nevertheless gives its recipient the ability to replace a password, so this is a powerful, audited administrative capability. Recent account security events are available through the authenticated account API. A verified optional recovery address can receive a security notice, but delivery is not required for recovery.
+
+If the only administrator loses access, the local operator can recover it using a non-echoed terminal prompt or mounted password file:
+
+```sh
+docker compose exec -it backend python -m nautionette_backend.auth_cli recover-password owner
+# Non-interactive alternative:
+docker compose exec backend python -m nautionette_backend.auth_cli recover-password owner --password-file /run/secrets/recovery-password
 ```
 
-Use `docker compose -f docker-compose.yaml -f compose.secrets.yaml ...` consistently.
-Restrict host file permissions to the operator/backend identity. Docker secrets
-are another mounting option. Plain `DENKZEUG_BOOTSTRAP_ADMIN_PASSWORD` and
-`DENKZEUG_SMTP_PASSWORD` exist for deployment systems without mounted secrets, but
-container environment inspection can reveal them. Do not specify conflicting
-file and inline secrets. Remove the bootstrap secret/values after a successful
-claim and recreate the backend. No permanent password is generated in server logs.
+The command requires server/container access, revokes sessions/refresh families, and requires replacing the temporary password at the next sign-in. Never place passwords directly in command arguments, workflow inputs, chat messages or shell history.
 
-## Password reset mail
+## Optional email convenience
 
-Configure SMTP in the **backend only**, not in the agent containers:
+A person may add, change or remove **Recovery email (optional)** under Profile & security, confirming their password. Email recovery is enabled only after verifying the chosen address. An unverified or absent email never prevents username/password sign-in. Removing an address is supported even when SMTP is unavailable.
+
+Optional SMTP settings belong to the backend only:
 
 ```dotenv
 DENKZEUG_SMTP_HOST=smtp.example.com
@@ -99,101 +95,44 @@ DENKZEUG_SMTP_FROM=no-reply@example.com
 DENKZEUG_SMTP_TLS_MODE=starttls
 ```
 
-`starttls` upgrades an SMTP connection and validates the server certificate.
-For implicit TLS use `ssl` and the provider's corresponding port (usually 465).
-`plain` is development-only. Configure the sender's SPF/DKIM/DMARC and permit the
-host's outbound SMTP traffic. Test reset delivery with a controlled mailbox after
-an origin or SMTP change; links must point to this environment's HTTPS origin.
+Use a bare sender mailbox. `starttls` and `ssl` verify the server certificate; `plain` is development-only. Configure SPF/DKIM/DMARC and outbound SMTP connectivity. Never disable certificate validation to work around an error. Empty/misconfigured optional SMTP does not weaken authentication or make code-based onboarding/recovery unavailable.
 
-Reset requests must not disclose whether an account exists. Reset tokens are
-short-lived and single-use; do not forward reset email or copy its contents into
-logs. Setup/invitation/reset/verification links carry secrets in URL fragments
-(`#bootstrap=`, `#invite=`, `#reset-password=`, `#verify-email=`), not query strings;
-the client submits them in POST bodies. Never rewrite these as proxy-visible
-query parameters or enable request-body logging for authentication endpoints. Missing/broken SMTP does not weaken login or expose a permanent fallback
-password. Diagnose connectivity, TLS, sender authorization and canonical origin;
-never disable certificate checking to repair delivery.
+Email reset requests give a non-enumerating response. Mail configuration/key-storage errors are checked before account lookup. Verification/reset links use `#verify=`/`#reset=` fragments and POST redemption, not proxy-visible query parameters. Invite lookup also uses a POST body. Do not enable authentication request-body logging. Account responses are non-cacheable.
 
-## Local operator recovery (including unavailable SMTP)
+Transactional mail is queued durably with encrypted payloads, bounded retry and secret-free delivery errors. The mail encryption key is stored under `DATA_DIR/account-mail.key`, mode 0600; full backups containing the key and database are sensitive. Admins can inspect sanitized mail delivery status through the account API and queue a test to their optional email. A missing/unverified address is not an error for normal account use.
 
-Host/container access is administrative access. On the correct deployment's
-backend, use an interactive terminal:
+## Private data and explicit sharing
 
-```sh
-docker compose exec backend python -m nautionette_backend.auth_cli recover-password USERNAME
-```
+- Chats, branches, drafts, attachments, outputs and private run results belong to their account. An administrator role does not bypass private HTTP ownership checks, searches, diagnostics or download authorization.
+- Existing anonymous data is assigned once to the initial administrator, never shared with each invited person.
+- Saved agents, projects/repositories, workflows, miniapps and individual tools can be shared explicitly through **Access policies → Shared resources**. Sharing an agent is not sharing any conversation with it. Share its needed projects/tools separately.
+- Member agents use the reviewed default container in **conversation/shared-tool mode**. Local shell/filesystem tools, native creative processes, extensions and arbitrary infrastructure administration remain administrator-only. The runner/broker derives this policy from the real account owner, not browser-supplied flags, including agent activities started by a member-owned workflow. Required grants/status are rechecked before execution and during chat control. Fully trusted coding operators can be given administrator access explicitly; custom containers must not silently bypass member policy.
+- Shared workflow results use account-specific delivery chats; one member's run must not change another person's private delivery target.
+- Administrators manage users, invitations, registration policy and shared infrastructure. The last active administrator cannot be suspended or demoted.
+- Suspension revokes sessions immediately, fences delegated calls, stops owned chats and queues cancellation/pause of owned automation. Infrastructure outages are retried; the account API explicitly reports when automation pause is still pending. Reactivation does not silently re-enable schedules.
 
-The CLI prompts twice without echo and revokes existing sessions on successful
-recovery. The supplied recovery password is temporary: the user must choose a new
-password after signing in. Password policy is enforced by the same auth store as
-normal password changes. For a noninteractive operator session, mount a restricted temporary file
-and use `--password-file /run/secrets/recovery-password`; do not pass a password as
-a command argument or embed it in shell history. Remove the file after recovery.
-The CLI intentionally does not print passwords or raw exceptions. If it fails,
-verify the target container, `DATA_DIR`, file permissions and username locally.
-Do not directly edit password hashes or authentication tables in SQLite.
+This is a **trusted self-hosted workspace**, not hostile multi-tenant isolation or end-to-end encryption. The server operator controls files, backups, logs, powerful code and integration credentials. Granting access to a saved executable resource is a trust decision; HTTP ownership does not isolate malicious code from shared hosts, networks or repositories. Do not share generic control-plane HTTP/code-execution tools or privileged custom runtimes with non-operators: a configured tool can act with its external identity. Private application data checks do not claim to protect against the host operator or a deliberately shared workflow that publishes its own results.
 
-## Users, roles and grants
+## Sessions, devices and service authority
 
-Use individual accounts; never share the administrator's session or device
-credential. Administrators manage users and instance-wide security/configuration.
-Resource ownership and explicit grants determine access to chats and other
-resources; a role name alone is not consent to share somebody else's private chat.
-Grant only the needed projects, agents and tools. Revoke lost devices and obsolete
-sessions, and disable departed accounts. Test both authorized and denied access
-after changing grants.
+Browser sessions are opaque, server-side, HttpOnly/Secure/SameSite cookies; writes require CSRF proof and origin checks. Native apps keep short-lived access credentials in memory and rotating refresh credentials in OS-protected storage. No account credential is persisted in localStorage. Missing/unavailable OS encryption fails closed rather than falling back to plaintext. Native origins are exactly allowlisted, not wildcard credentialed CORS.
 
-Chats are private to their owner unless explicitly shared by a supported grant.
-This HTTP/API boundary is **not** a hardened mutually-untrusted tenant boundary:
-Denkzeug runs trusted automation with shared deployment resources. Operators can
-read backups and the database. Agents with filesystem/project, shell, workflow or
-external integration access may reach information or accounts outside a chat's
-API grants. Workflows, tools, projects and integration credentials must therefore
-be given only to trusted collaborators. See [self-hosting security](self-hosting.md#security-and-data).
+Account-scoped caches/drafts/outboxes and response epochs prevent one account inheriting another's pending writes/content. Response account headers and event handshakes fence browser account changes. Sign-out/revocation closes long-lived transports. Streams never carry account tokens in URLs.
 
-Provider-identity records prepare the account model for OIDC identity linking.
-They do **not** mean live OIDC/SSO is configured or supported. GitHub/Copilot model
-or project integration OAuth is also not a Denkzeug user sign-in provider.
+Agentgateway's internal transport credential is **not** a human administrator. Backend operations need a live turn capability resolving the owning account and its current status/role. Capabilities are short-lived process-memory authority, not persisted master tokens or model-visible schemas. Account management routes are deliberately excluded from agent MCP. Workflow-MCP is also capability-scoped: its network tool calls go through the same private API checks, and its REST authoring surface requires service authentication. First-party SDK activity calls use verified Temporal provenance and short-lived per-tool authority; neither private run history nor workflow deployment is available through an unscoped MCP backdoor. The rebuilt agent image is required for this delegated transport.
 
-## Native clients and device builds
+`/internal/system` and `/internal/settings/storage` expose read-only operational readiness to `X-Internal-Token`; they do not grant human private-data access. Never expose that credential to browsers, native apps, model prompts or test artifacts. Configure trusted proxy forwarding explicitly; do not blindly trust internet-supplied forwarding headers for authentication/rate limits.
 
-Browser, desktop, Android and iOS clients connect to the **app** origin, never the
-website origin. Upgrade/rebuild clients with the server authentication change;
-old builds asking only for `APP_TOKEN` cannot log in. Sign in with an individual
-account and authorize devices through the supported flow. Never bake passwords,
-setup tokens, SMTP credentials or `INTERNAL_TOKEN` into a binary or build artifact.
-Device credentials must be stored in platform-protected storage and revocable;
-a copied/stolen bearer credential is secret access until revoked/expired. Test
-sign-in, expiry, logout and lost-device revocation on every distributed platform.
+## SSO readiness
 
-## Backups, staging and maintenance
+Local passwords are optional credentials in the account model; external identities have independent provider/issuer/subject keys. The provider interface and explicit link/unlink rules are ready for a maintained OIDC authorization-code/PKCE adapter. Matching email claims never silently link accounts or bypass invitations. Removing the last usable sign-in method is rejected.
 
-The backend SQLite database includes account identities, password hashes,
-session/token digests, ownership and grants. Back it up consistently with
-`maxio-data`, native chat sessions, projects and the other datasets listed in
-[self-hosting](self-hosting.md#security-and-data). Protect backups as secrets,
-preserve permissions and master keys, and test a restore in an isolated stack.
-Never copy only a live SQLite main file while WAL writes are active.
+This release does **not** enable a live SSO provider or show a nonfunctional SSO button. External identity-provider configuration and protocol integration follow separately.
 
-A production-data staging clone also clones identity/security state. Use an
-independent `INTERNAL_TOKEN`, HTTPS origin, secrets and SMTP test sink. Do not
-send production password-reset mail from staging. Existing copied credentials
-and sessions are sensitive even when cookies are origin-scoped; explicitly
-revoke copied sessions/device grants using the supported administration tools
-before granting staging access. Never regenerate bootstrap configuration to
-seize an already claimed database. Follow the [staging quarantine](staging.md)
-for copied schedules, agents and remote integration side effects as well.
+## Staging and verification
 
-Deployment health checks must distinguish anonymous liveness (`/healthz`) from
-privileged component readiness and functional tests. Keep service-protocol
-credentials separate from the dedicated, least-privilege QA account. Functional test scripts sign in per process using
-`DENKZEUG_SMOKE_USERNAME` plus `DENKZEUG_SMOKE_PASSWORD` or
-`DENKZEUG_SMOKE_PASSWORD_FILE`, refresh rotating native sessions in memory and
-sign out on completion where possible. They never bootstrap/reset existing
-users. Complete any mandatory password change interactively before using the
-account in CI. A manual `DENKZEUG_DEVICE_TOKEN` additionally requires
-`DENKZEUG_ALLOW_DEVICE_TOKEN=true`; it expires after ten minutes and cannot refresh.
-Do not restore `APP_TOKEN` as a compatibility bypass. After an
-upgrade, verify anonymous private API denial, initial claim/login, a normal
-user's private chat, cross-user denial, SMTP reset, session revocation and each
-supported native client before declaring the migration complete.
+A copied production database includes account/session state. Use an independent `INTERNAL_TOKEN`, public origin, secrets and optional SMTP sink. Never send real recovery mail from staging. Do not reset real users to create a QA identity.
+
+Functional staging scripts use a dedicated QA account via `DENKZEUG_SMOKE_USERNAME` and `DENKZEUG_SMOKE_PASSWORD[_FILE]`. Sessions are acquired normally for each process, refreshed in memory, and signed out best-effort. No static ten-minute token is a durable CI credential. A short-lived manual override requires explicit `DENKZEUG_ALLOW_DEVICE_TOKEN=true`. Provision any QA account deliberately after the real initial administrator claims ownership.
+
+Before declaring rollout verified, test initial ownership, email-free code registration/recovery, cross-account denial, session/device revocation, delegated permissions, migration/backup restore and each supported native platform. Optional email delivery needs its own controlled-mailbox verification only if configured. Browser emulation and mocked OS stores are not physical iOS/Android/desktop verification.

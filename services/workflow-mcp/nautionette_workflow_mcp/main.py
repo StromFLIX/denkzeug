@@ -18,6 +18,7 @@ from nautionette.telemetry import instrument_app
 
 from . import store, tools
 from .api import router
+from .scoped_mcp import ScopedWorkflowMCP
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s workflow-mcp %(levelname)s %(message)s")
 
@@ -57,6 +58,6 @@ app.include_router(router)
 
 if mcp_app is not None:
     # Mounted last so the REST routes above win; MCP itself answers on /mcp.
-    app.mount("/", mcp_app)
+    app.mount("/", ScopedWorkflowMCP(mcp_app))
 
 instrument_app(app, "nautionette-workflow-mcp")

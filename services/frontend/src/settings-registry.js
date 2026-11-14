@@ -9,13 +9,13 @@ export const SETTINGS_SECTIONS = [
     key: 'account', label: 'Profile & security', icon: 'account_circle', group: 'Account & workspace', scope: 'Your account',
     scopeNote: 'Your profile, password and signed-in devices. Changes apply to your account only.',
     load: () => import('./components/settings/AccountPane.vue'),
-    entries: [entry('account-profile', 'Profile', 'Your display name and verified email.', 'account username identity'), entry('account-password', 'Password', 'Change your password.', 'security'), entry('account-sessions', 'Devices & sessions', 'End sessions and sign out.', 'logout security')]
+    entries: [entry('account-profile', 'Profile', 'Your display name and optional recovery email.', 'account username identity email optional recovery'), entry('account-password', 'Password', 'Change your password.', 'security'), entry('account-sessions', 'Devices & sessions', 'End sessions and sign out.', 'logout security')]
   },
   ...[
-    ['users', 'Users', 'group', 'account-users', 'Manage administrator and member accounts.'],
-    ['invitations', 'Invitations', 'mail', 'account-invitations', 'Invite people and revoke unused invitations.'],
+    ['users', 'Users', 'group', 'account-users', 'Manage accounts and issue one-time password reset codes.'],
+    ['invitations', 'Invitations', 'vpn_key', 'account-invitations', 'Create copy/paste invitation codes. No email required.'],
     ['access', 'Access policies', 'admin_panel_settings', 'account-policy', 'Pause registrations or allow invited people to join.']
-  ].map(([key, label, icon, id, description]) => ({ key, label, icon, group: 'Account & workspace', scope: 'Workspace administrators', load: () => import('./components/settings/AccountPane.vue'), entries: [entry(id, label, description, 'account security access admin')] })),
+  ].map(([key, label, icon, id, description]) => ({ key, label, icon, group: 'Account & workspace', scope: 'Workspace administrators', load: () => import('./components/settings/AccountPane.vue'), entries: [entry(id, label, description, 'account security access admin copy paste code optional email'), ...(key === 'access' ? [entry('account-sharing', 'Shared resources', 'Share saved agents, projects, tools, workflows and apps explicitly.', 'grants permissions members resources')] : [])] })),
   {
     key: 'general', label: 'General', icon: 'tune', group: 'Your experience', scope: 'Instance',
     scopeNote: 'Chat defaults are shared across this instance.',

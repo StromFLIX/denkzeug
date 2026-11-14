@@ -396,6 +396,7 @@ async def dispatch(
 
 async def request(app_id: str, payload: AppRequest) -> Any:
     from .access import require_execution, require_owner_execution
+
     require_execution()
     require_owner_execution("mini_apps", app_id)
     manifest = current(app_id, payload.revision)
@@ -423,6 +424,7 @@ async def request(app_id: str, payload: AppRequest) -> Any:
 
 async def capability(app_id: str, revision: int, payload: dict) -> Any:
     from .access import require_owner_execution
+
     require_owner_execution("mini_apps", app_id)
     manifest = current(app_id, revision)
     try:

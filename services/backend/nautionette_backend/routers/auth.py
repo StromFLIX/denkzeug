@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from .. import auth, auth_mail
@@ -51,7 +52,7 @@ class Login(Form):
 
 class Bootstrap(Login):
     token: Token
-    email: Address
+    email: str | None = Field(default=None, max_length=254)
 
 
 class Refresh(Form):
@@ -70,6 +71,8 @@ class Registration(Form):
     code: Token
     username: str = Field(min_length=3, max_length=64)
     password: Password
+    email: str | None = Field(default=None, max_length=254)
+    native: bool = False
 
 
 class TokenForm(Form):
@@ -95,7 +98,7 @@ class Reauthentication(Form):
 
 class Profile(Form):
     display_name: str | None = Field(default=None, min_length=1, max_length=100)
-    email: Address | None = None
+    email: str | None = Field(default=None, max_length=254)
     current_password: Password | None = None
 
 
@@ -105,7 +108,8 @@ class UserChange(Form):
 
 
 class Invitation(Form):
-    email: Address
+    email: str | None = Field(default=None, max_length=254)
+    label: str = Field(default="", max_length=100)
     role: Literal["admin", "member"] = "member"
     expires_in_days: int = Field(default=7, ge=1, le=30)
     send_email: bool = False
@@ -140,7 +144,7 @@ def _invitation(row) -> dict:
         else "pending"
     )
     return {
-        **{key: row[key] for key in ("id", "email", "role", "created_at", "expires_at")},
+        **{key: row[key] for key in ("id", "email", "role", "label", "created_at", "expires_at")},
         "status": status,
     }
 
@@ -211,10 +215,15 @@ def inspect_invitation(body: InvitationLookup, request: Request) -> dict:
 
 
 @router.post("/register")
-def register(body: Registration, request: Request) -> dict:
+def register(body: Registration, request: Request, response: Response) -> dict:
     validate_public_origin(request)
     rate(request, "register")
-    return auth.register(body.code, body.username, body.password)
+    user = auth.register(body.code, body.username, body.password, body.email or None)
+    return {
+        **auth.create_session(user, request, response, body.native),
+        "verification_required": False,
+        "email_verification_pending": bool(user["email"] and not user["email_verified"]),
+    }
 
 
 @router.post("/verify-email")
@@ -265,17 +274,20 @@ def reauthenticate(body: Reauthentication, request: Request, principal: User) ->
 
 @router.patch("/profile")
 def profile(body: Profile, request: Request, principal: User) -> dict:
-    address = email(body.email) if body.email is not None else None
+    address = email(body.email) if body.email else None
     user = store().one("SELECT * FROM auth_users WHERE id=?", (principal.user_id,))
-    changing_email = address is not None and address != user["email"]
+    changing_email = "email" in body.model_fields_set and address != user["email"]
     if changing_email:
         rate(request, "email.change", principal.user_id, 3)
         require_recent(request)
         if not body.current_password or not verify_password(user["password_hash"], body.current_password):
             fail(403, "invalid_credentials", "Confirm your current password to change your email.")
-        if not auth_mail.available():
-            fail(503, "mail_unavailable", "Account email is unavailable. Contact your administrator.")
     with store().transaction() as conn:
+        current = conn.execute(
+            "SELECT status,password_hash FROM auth_users WHERE id=?", (principal.user_id,)
+        ).fetchone()
+        if not current or current["status"] != "active" or current["password_hash"] != user["password_hash"]:
+            fail(409, "account_changed", "Please sign in again before changing your profile.")
         if body.display_name is not None:
             if not body.display_name.strip() or any(ord(char) < 32 for char in body.display_name):
                 fail(422, "invalid_display_name", "Enter a valid display name.")
@@ -287,27 +299,55 @@ def profile(body: Profile, request: Request, principal: User) -> dict:
             if conn.execute("SELECT 1 FROM auth_users WHERE email=?", (address,)).fetchone():
                 fail(409, "account_conflict", "This email is unavailable.")
             conn.execute(
-                "UPDATE auth_tokens SET revoked_at=? WHERE user_id=? AND purpose='change_email'",
+                "UPDATE auth_tokens SET revoked_at=? WHERE user_id=? "
+                "AND purpose IN ('change_email','verify_email','reset')",
                 (time.time(), principal.user_id),
             )
-            _, token = issue_token(conn, "change_email", user_id=principal.user_id, address=address)
-            auth_mail.enqueue(
-                conn,
-                address,
-                "Verify your new Denkzeug email",
-                "Confirm your new email address:\n\n" + auth.link("verify-email", token),
+            conn.execute(
+                "UPDATE auth_users SET email=?,email_verified=0,updated_at=? WHERE id=?",
+                (address, time.time(), principal.user_id),
             )
-            auth_mail.enqueue(
-                conn,
-                user["email"],
-                "Your Denkzeug email change was requested",
-                "A change of account email was requested. Your current email stays in place "
-                "until the new address is verified. Contact your administrator if this was not you.",
+            conn.execute(
+                "UPDATE auth_sessions SET revoked_at=? WHERE user_id=? AND id!=?",
+                (time.time(), principal.user_id, principal.session_id),
             )
+            if user["email_verified"]:
+                auth_mail.notify(
+                    conn,
+                    user["email"],
+                    "Your optional Denkzeug recovery email changed",
+                    "Your account recovery email was changed or removed. Contact your administrator "
+                    "immediately if you did not make this change.",
+                )
         audit(conn, "profile.updated", principal.user_id, principal.user_id)
+    if changing_email and address and auth_mail.available():
+        try:
+            auth.request_email_verification(principal.user_id)
+        except (OSError, ValueError, HTTPException):
+            pass  # The optional address was saved; retry verification from Profile & security.
     return {
         "user": public_user(store().one("SELECT * FROM auth_users WHERE id=?", (principal.user_id,))),
-        "verification_required": changing_email,
+        "verification_required": False,
+        "email_verification_pending": bool(changing_email and address),
+    }
+
+
+@router.post("/verify-email/request")
+def request_verification(request: Request, principal: User) -> dict:
+    require_recent(request)
+    rate(request, "verify_email.request", principal.user_id, 3)
+    auth.request_email_verification(principal.user_id)
+    return {"queued": True}
+
+
+@router.get("/security-events")
+def own_security_events(principal: User) -> dict:
+    return {
+        "events": store().query(
+            "SELECT action,created_at,actor_user_id FROM auth_audit_events "
+            "WHERE subject_user_id=? ORDER BY created_at DESC LIMIT 50",
+            (principal.user_id,),
+        )
     }
 
 
@@ -350,18 +390,16 @@ def users(
 
 
 @router.patch("/users/{user_id}")
-def update_user(user_id: str, body: UserChange, request: Request, principal: Admin) -> dict:
+async def update_user(user_id: str, body: UserChange, request: Request, principal: Admin) -> dict:
     require_recent(request)
     with store().transaction() as conn:
         row = conn.execute("SELECT * FROM auth_users WHERE id=?", (user_id,)).fetchone()
         if not row:
             fail(404, "not_found", "User not found.")
         role, status = body.role or row["role"], body.status or row["status"]
-        if body.status == "active" and not row["email_verified"]:
-            fail(409, "verification_required", "The user must verify their email before activation.")
         if row["role"] == "admin" and row["status"] == "active" and (role != "admin" or status != "active"):
             count = conn.execute(
-                "SELECT COUNT(*) FROM auth_users WHERE role='admin' AND status='active' AND email_verified=1"
+                "SELECT COUNT(*) FROM auth_users WHERE role='admin' AND status='active'"
             ).fetchone()[0]
             if count <= 1:
                 fail(409, "last_admin", "The last active administrator cannot be suspended or demoted.")
@@ -377,8 +415,55 @@ def update_user(user_id: str, body: UserChange, request: Request, principal: Adm
                     "UPDATE auth_tokens SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL",
                     (time.time(), user_id),
                 )
+        if status == "suspended" or (row["role"] == "admin" and role != "admin"):
+            conn.execute("INSERT OR REPLACE INTO access_revocations VALUES(?,?)", (user_id, time.time()))
         audit(conn, "user.access_changed", principal.user_id, user_id, f"role={role},status={status}")
-    return {"user": public_user(store().one("SELECT * FROM auth_users WHERE id=?", (user_id,)))}
+    pending = False
+    if status == "suspended" or (row["role"] == "admin" and role != "admin"):
+        from ..access import suspend_owned_work
+
+        try:
+            async with asyncio.timeout(5):
+                pending = not await suspend_owned_work(user_id)
+        except Exception:  # noqa: BLE001 - access was revoked; durable automation cleanup must retry.
+            pending = True
+    return {
+        "user": public_user(store().one("SELECT * FROM auth_users WHERE id=?", (user_id,))),
+        "automation_pause_pending": pending,
+    }
+
+
+@router.post("/users/{user_id}/recovery")
+def recovery_code(user_id: str, request: Request, principal: Admin) -> dict:
+    require_recent(request)
+    rate(request, "recovery.admin", principal.user_id, 10)
+    with store().transaction() as conn:
+        user = conn.execute("SELECT * FROM auth_users WHERE id=? AND status='active'", (user_id,)).fetchone()
+        if not user or not user["password_hash"]:
+            fail(404, "not_found", "No active password account was found.")
+        conn.execute(
+            "UPDATE auth_tokens SET revoked_at=? WHERE user_id=? AND purpose='reset'", (time.time(), user_id)
+        )
+        token_id, code = issue_token(
+            conn, "reset", user_id=user_id, address=user["email"], creator=principal.user_id
+        )
+        expires_at = conn.execute("SELECT expires_at FROM auth_tokens WHERE id=?", (token_id,)).fetchone()[0]
+        audit(conn, "password.recovery_code_issued", principal.user_id, user_id)
+        if user["email_verified"]:
+            auth_mail.notify(
+                conn,
+                user["email"],
+                "A Denkzeug administrator issued a recovery code",
+                "An administrator created a one-time password reset code for your account. "
+                "It expires in 30 minutes. Contact them if you did not request this.",
+            )
+    from ..config import settings
+
+    return {
+        "code": code,
+        "link": auth.link("reset-password", code) if settings.public_url else None,
+        "expires_at": expires_at,
+    }
 
 
 @router.get("/invitations")
@@ -399,7 +484,11 @@ def invitations(principal: Admin, offset: int = Query(default=0, ge=0)) -> dict:
 def create_invitation(body: Invitation, request: Request, principal: Admin) -> dict:
     require_recent(request)
     rate(request, "invitation.create", principal.user_id, 30)
-    address = email(body.email)
+    address = email(body.email) if body.email else None
+    if body.send_email and not address:
+        fail(
+            422, "email_required_for_delivery", "Enter an optional recipient email, or copy the code instead."
+        )
     if body.send_email and not auth_mail.available():
         fail(503, "mail_unavailable", "Configure transactional account mail before sending invitations.")
     with store().transaction() as conn:
@@ -408,8 +497,6 @@ def create_invitation(body: Invitation, request: Request, principal: Admin) -> d
             != "invite_only"
         ):
             fail(403, "registration_paused", "Enable invite-only registration before creating an invitation.")
-        if conn.execute("SELECT 1 FROM auth_users WHERE email=?", (address,)).fetchone():
-            fail(409, "account_conflict", "This email already belongs to an account.")
         # Reissuing an invitation invalidates old links/codes for the same address.
         conn.execute(
             "UPDATE auth_tokens SET revoked_at=? WHERE email=? AND purpose='invite' "
@@ -424,7 +511,10 @@ def create_invitation(body: Invitation, request: Request, principal: Admin) -> d
             creator=principal.user_id,
             ttl=body.expires_in_days * 86400,
         )
-        url = auth.link("invite", code)
+        from ..config import settings
+
+        conn.execute("UPDATE auth_tokens SET label=? WHERE id=?", (body.label.strip(), token_id))
+        url = auth.link("invite", code) if settings.public_url else None
         if body.send_email:
             auth_mail.enqueue(
                 conn,

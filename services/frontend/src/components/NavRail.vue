@@ -34,7 +34,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { draftCount, health } from '../store'
+import { draftCount, health, store } from '../store'
 import BrandMark from './BrandMark.vue'
 import AccountMenu from './AccountMenu.vue'
 import { account } from '../auth-session.js'
@@ -60,7 +60,9 @@ const items = computed(() => [
   { name: 'workflows', label: 'Workflows', icon: 'account_tree', tone: 'var(--workflow-color)', to: '/workflows', badge: draftCount.value || 0 },
   { name: 'runs', label: 'Runs', icon: 'history', tone: 'var(--workflow-color)', to: '/runs' },
   { name: 'apps', label: 'Apps', icon: 'apps', tone: 'var(--session-color)', to: { path: '/apps', query: route.query.agent ? { agent: route.query.agent } : {} } }
-].filter(item => account.user?.role === 'admin' || item.name === 'chats'))
+].filter(item => account.user?.role === 'admin' || item.name === 'chats' ||
+  (item.name === 'workflows' && store.workflows.length) || (item.name === 'runs' && store.runs.length) ||
+  (item.name === 'apps' && store.apps.length)))
 </script>
 
 <style scoped>

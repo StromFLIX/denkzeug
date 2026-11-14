@@ -16,15 +16,53 @@ from email.message import EmailMessage
 from pathlib import Path
 
 from cryptography.fernet import Fernet, InvalidToken
+from fastapi import HTTPException
 
-from .auth_store import email, identifier, store
+from .auth_store import email, fail, identifier, store
 from .config import settings
 
 log = logging.getLogger(__name__)
 
 
 def available() -> bool:
-    return bool(settings.smtp_host and settings.smtp_from and settings.public_url)
+    if not (settings.smtp_host and settings.smtp_from and settings.public_url):
+        return False
+    try:
+        email(settings.smtp_from)
+    except HTTPException:
+        return False
+    return True
+
+
+def validate_configuration() -> None:
+    supplied = any(
+        (
+            settings.smtp_host,
+            settings.smtp_from,
+            settings.smtp_username,
+            settings.smtp_password,
+            settings.smtp_password_file,
+        )
+    )
+    if supplied and not available():
+        raise ValueError("Account mail requires SMTP_HOST, a valid bare SMTP_FROM mailbox and PUBLIC_URL")
+    if supplied:
+        if settings.smtp_password and settings.smtp_password_file:
+            raise ValueError("Use either SMTP_PASSWORD_FILE or SMTP_PASSWORD, not both")
+        if settings.smtp_password_file:
+            Path(settings.smtp_password_file).read_bytes()  # Check readability without logging its value.
+        _cipher()
+
+
+def ready() -> Fernet:
+    # Run before account lookup, including unknown addresses. Global configuration
+    # or key-storage failure must never become an account-enumeration oracle.
+    if not available():
+        fail(503, "mail_unavailable", "Account email is unavailable. Contact your administrator.")
+    try:
+        return _cipher()
+    except (OSError, ValueError):
+        fail(503, "mail_unavailable", "Account email is unavailable. Contact your administrator.")
 
 
 def _cipher() -> Fernet:
@@ -42,7 +80,9 @@ def _cipher() -> Fernet:
         return Fernet(handle.read())
 
 
-def enqueue(conn, address: str, subject: str, body: str, ttl: int = 1800) -> None:
+def enqueue(
+    conn, address: str, subject: str, body: str, ttl: int = 1800, *, cipher: Fernet | None = None
+) -> None:
     if not available():
         raise RuntimeError("Transactional account mail is not configured")
     message = EmailMessage()
@@ -50,13 +90,23 @@ def enqueue(conn, address: str, subject: str, body: str, ttl: int = 1800) -> Non
     message["To"] = email(address)
     message["Subject"] = subject
     message.set_content(body)
-    encrypted = _cipher().encrypt(message.as_bytes()).decode()
+    encrypted = (cipher or _cipher()).encrypt(message.as_bytes()).decode()
     now = time.time()
     conn.execute(
         "INSERT INTO auth_mail_outbox(id,recipient,encrypted_message,created_at,expires_at) "
         "VALUES(?,?,?,?,?)",
         (identifier(), address, encrypted, now, now + ttl),
     )
+
+
+def notify(conn, address: str | None, subject: str, body: str) -> None:
+    """Best-effort security notice; optional SMTP must not block password recovery."""
+    if not address or not available():
+        return
+    try:
+        enqueue(conn, address, subject, body)
+    except (OSError, ValueError, HTTPException):
+        log.warning("Optional account security notification could not be queued")
 
 
 def send(encrypted: str) -> None:

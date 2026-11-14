@@ -180,7 +180,10 @@ def grant_scope(token: str) -> tuple[str, str]:
 
 def _active(conn: Any, scope: tuple[str, str]) -> None:
     if not conn.execute(
-        "SELECT 1 FROM chat_turns WHERE chat_id = ? AND id = ? AND state = 'running' AND stop_requested = 0",
+        "SELECT 1 FROM chat_turns t JOIN chats c ON c.id=t.chat_id "
+        "LEFT JOIN auth_users u ON u.id=c.owner_user_id WHERE t.chat_id=? AND t.id=? "
+        "AND t.state='running' AND t.stop_requested=0 "
+        "AND ((SELECT legacy_owner FROM access_state WHERE id=1) IS NULL OR u.status='active')",
         scope,
     ).fetchone():
         raise HTTPException(409, "This turn can no longer access chat outputs")

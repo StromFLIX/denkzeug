@@ -13,6 +13,7 @@ import sqlite3
 import threading
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 
 from argon2 import PasswordHasher
@@ -24,11 +25,16 @@ PASSWORDS = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=1)
 _PASSWORD_SLOTS = threading.BoundedSemaphore(2)
 # Equal-cost verification for unknown usernames. This is not an account password.
 _DUMMY_HASH = PASSWORDS.hash(secrets.token_urlsafe(32))
+_COMMON_PASSWORDS = frozenset(
+    normalized
+    for value in (Path(__file__).with_name("data") / "common-passwords.txt").read_text().splitlines()
+    if (normalized := re.sub(r"[^a-z0-9]", "", value.casefold()))
+)
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS auth_users (
  id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE,
- email TEXT NOT NULL UNIQUE COLLATE NOCASE, display_name TEXT NOT NULL,
+ email TEXT UNIQUE COLLATE NOCASE, display_name TEXT NOT NULL,
  role TEXT NOT NULL CHECK(role IN ('admin','member')),
  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','suspended','pending')),
  email_verified INTEGER NOT NULL DEFAULT 0, must_change_password INTEGER NOT NULL DEFAULT 0,
@@ -64,7 +70,7 @@ CREATE TABLE IF NOT EXISTS auth_tokens (
  id TEXT PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE,
  purpose TEXT NOT NULL CHECK(purpose IN ('setup','invite','reset','verify_email','change_email')),
  user_id TEXT REFERENCES auth_users(id) ON DELETE CASCADE,
- email TEXT, role TEXT CHECK(role IN ('admin','member')), created_by TEXT,
+ email TEXT, role TEXT CHECK(role IN ('admin','member')), label TEXT NOT NULL DEFAULT '', created_by TEXT,
  created_at REAL NOT NULL, expires_at REAL NOT NULL, consumed_at REAL, revoked_at REAL
 );
 CREATE TABLE IF NOT EXISTS auth_policy (
@@ -90,6 +96,28 @@ CREATE TABLE IF NOT EXISTS auth_mail_outbox (
 
 def install(conn: sqlite3.Connection) -> None:
     conn.executescript(_SCHEMA)
+    columns = conn.execute("PRAGMA table_info(auth_users)").fetchall()
+    if any(row[1] == "email" and row[3] for row in columns):
+        # Preserve accounts and every referencing session/membership when upgrading
+        # the initial account schema. NULL permits many email-less accounts while
+        # retaining uniqueness for addresses that are supplied.
+        conn.execute("PRAGMA foreign_keys=OFF")
+        try:
+            with conn:
+                conn.execute("BEGIN IMMEDIATE")
+                create = _SCHEMA.split("CREATE TABLE IF NOT EXISTS auth_workspaces", 1)[0].strip()
+                conn.execute(create.replace("IF NOT EXISTS auth_users", "auth_users_optional"))
+                conn.execute("INSERT INTO auth_users_optional SELECT * FROM auth_users")
+                conn.execute("DROP TABLE auth_users")
+                conn.execute("ALTER TABLE auth_users_optional RENAME TO auth_users")
+                if conn.execute("PRAGMA foreign_key_check").fetchone():
+                    raise RuntimeError("Account email migration failed foreign-key validation")
+        finally:
+            conn.execute("PRAGMA foreign_keys=ON")
+    if not any(row[1] == "label" for row in conn.execute("PRAGMA table_info(auth_tokens)")):
+        conn.execute("ALTER TABLE auth_tokens ADD COLUMN label TEXT NOT NULL DEFAULT ''")
+    conn.execute("UPDATE auth_users SET status='active' WHERE status='pending'")
+    conn.commit()
 
 
 def store():
@@ -139,9 +167,15 @@ def password_hash(password: str) -> str:
     if (
         len(set(password)) < 5
         or normalized in common
+        or normalized in _COMMON_PASSWORDS
         or any(password == password[:n] * (len(password) // n) for n in range(1, 5) if len(password) % n == 0)
     ):
         fail(422, "weak_password", "Choose a less predictable password or a long passphrase.")
+    return rehash_verified_password(password)
+
+
+def rehash_verified_password(password: str) -> str:
+    """Only for an already verified credential; new credentials use password_hash."""
     with _PASSWORD_SLOTS:
         return PASSWORDS.hash(password)
 
@@ -213,7 +247,7 @@ def valid_token(conn: sqlite3.Connection, token: str, purpose: str) -> sqlite3.R
     row = conn.execute(
         "SELECT * FROM auth_tokens WHERE token_hash=? AND purpose=? AND expires_at>? "
         "AND consumed_at IS NULL AND revoked_at IS NULL",
-        (digest(token), purpose, time.time()),
+        (digest(token.strip()), purpose, time.time()),
     ).fetchone()
     if not row:
         fail(400, "invalid_link", "This link or code has expired, was revoked, or has already been used.")

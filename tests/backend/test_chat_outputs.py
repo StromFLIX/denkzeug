@@ -270,9 +270,10 @@ def test_late_calls_are_fenced_but_committed_outputs_are_preserved(client, db, o
         assert client.delete(f"/api/chats/{chat_id}").status_code == 200
     assert client.post("/api/chat-outputs/publish", json=payload(grant, request_id="late")).status_code in {
         401,
+        404,
         409,
     }
-    assert client.post("/api/chat-outputs/read", json=grant).status_code in {401, 409}
+    assert client.post("/api/chat-outputs/read", json=grant).status_code in {401, 404, 409}
     assert len(db.list_chat_outputs(chat_id)) == (0 if state == "delete" else 1)
     if state == "delete":
         assert db.query("SELECT * FROM chat_output_revisions") == []

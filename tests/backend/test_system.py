@@ -77,9 +77,9 @@ def test_a_model_answering_once_is_remembered(client, internal_headers):
 
 
 def test_recent_events_are_replayed_to_a_new_client(client):
-    bus.publish("test.event", {"detail": "noted"})
+    bus.publish("system.test", {"detail": "noted"})
     events = client.get("/api/events/recent").json()["events"]
-    assert events[-1]["kind"] == "test.event"
+    assert events[-1]["kind"] == "system.test"
     assert events[-1]["detail"] == "noted"
 
 

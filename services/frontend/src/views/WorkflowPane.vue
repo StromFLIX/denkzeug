@@ -86,7 +86,7 @@
           ? `Next ${scheduleTime(workflow.schedule.next_run, workflow.schedule.timezone)}`
           : workflow.schedule.description }}
       </span>
-      <button class="btn btn--icon" aria-label="Workflow actions">
+      <button v-if="account.user?.role === 'admin'" class="btn btn--icon" aria-label="Workflow actions">
         <span class="material-icons" aria-hidden="true">more_vert</span>
         <q-menu anchor="bottom right" self="top right" class="pick-menu">
           <button class="pick-menu__item" :disabled="togglingDisabled" @click="toggleDisabled">
@@ -135,7 +135,7 @@
         <section v-if="disabled" class="notice">
           <span class="material-icons">pause_circle</span>
           <span class="grow">Disabled — new manual and webhook runs are blocked. Its schedule is paused when synchronized; existing runs continue.</span>
-          <button class="btn btn--sm btn--outline" :disabled="togglingDisabled" @click="toggleDisabled">Enable</button>
+          <button v-if="account.user?.role === 'admin'" class="btn btn--sm btn--outline" :disabled="togglingDisabled" @click="toggleDisabled">Enable</button>
         </section>
 
         <section class="block">
@@ -175,7 +175,7 @@
           </div>
         </section>
 
-        <section class="block schedule-block">
+        <section v-if="account.user?.role === 'admin'" class="block schedule-block">
           <h2 class="section-label">Schedule</h2>
           <p class="block__intro">Choose when this process repeats and the timezone it follows.</p>
 
@@ -262,7 +262,7 @@
           </div>
         </section>
 
-        <section class="block">
+        <section v-if="account.user?.role === 'admin'" class="block">
           <h2 class="section-label">Results go to</h2>
           <p class="block__intro">Keep results together, or start a separate conversation for each run.</p>
           <div class="row segmented" style="margin-top: 8px">
@@ -274,7 +274,7 @@
           </div>
         </section>
 
-        <section class="block">
+        <section v-if="account.user?.role === 'admin'" class="block">
           <h2 class="section-label">Trigger</h2>
           <p class="block__intro">Start this workflow from another tool with the current inputs.</p>
           <TriggerSnippet class="block__panel" :workflow="workflow.name" :inputs="payload()" />
@@ -315,6 +315,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { account } from '../auth-session.js'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import CodeViewer from '../components/CodeViewer.vue'

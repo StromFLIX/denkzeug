@@ -97,8 +97,16 @@ async def new_chat(
     if who is not None and not who.service and who.role != "admin":
         if set(payload) - {"title", "agent_id"}:
             raise HTTPException(403, "Member runtime overrides are not supported")
-        selected_id = payload.get("agent_id", runtime("default_agent_id"))
+        selected_id = payload.get("agent_id")
+        if not selected_id:
+            shared = access.visible("agent", agent_profiles.catalog_entries()["agents"])
+            if not shared:
+                raise HTTPException(403, "Ask an administrator to share an agent with your account first")
+            selected_id = next(
+                (item["id"] for item in shared if item["id"] == runtime("default_agent_id")), shared[0]["id"]
+            )
         access.require_resource("agent", selected_id)
+        payload = {**payload, "agent_id": selected_id}
     selected = agent_profiles.for_chat(payload.get("agent_id", runtime("default_agent_id")))
     overrides = {key: payload[key] for key in agent_profiles.CONFIG_KEYS if key in payload}
     for key in ("model", "agent_set"):
@@ -108,10 +116,15 @@ async def new_chat(
         agent_profiles.resolve(overrides, {key: selected[key] for key in agent_profiles.CONFIG_KEYS})
     )
     if who is not None and not who.service and who.role != "admin":
+        if config.get("agent_set") != "default":
+            raise HTTPException(
+                403, "Member conversations require the reviewed default container environment"
+            )
         for project_id in config.get("project_ids") or []:
             access.require_resource("project", project_id)
-        # Visibility grants do not authorize a credential-bearing runtime.
-        config["tools"] = []
+        # Only explicitly shared tools from this saved profile are bridged.
+        # Never inherit all tools, authoring-server authority or extensions.
+        config["tools"] = access.member_tools(config.get("tools"), who.user_id)
         config["packages"] = []
     if config["reasoning_effort"] is not None:
         _effort(config["reasoning_effort"], await catalog.model_info(config["model"]))
@@ -280,7 +293,13 @@ async def probe_chat_stream(chat_id: str) -> Response:
 @router.get("/api/chats/{chat_id}/stream")
 async def subscribe_chat(chat_id: str) -> StreamingResponse:
     _chat_or_404(chat_id)
-    return StreamingResponse(chat_snapshots(chat_id), media_type="text/event-stream", headers=SSE_HEADERS)
+    from ..account_streams import guarded
+
+    return StreamingResponse(
+        guarded(chat_snapshots(chat_id), access.principal()),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
+    )
 
 
 @router.delete("/api/chats/{chat_id}")
@@ -545,7 +564,13 @@ async def submit_message(
         bus.publish("chat.message", {"chat_id": chat_id})
     if payload.get("queue") is True or not stream:
         return JSONResponse({"message": user_message, "turn_id": message_id}, status_code=202)
-    return StreamingResponse(turn_events(message_id), media_type="text/event-stream", headers=SSE_HEADERS)
+    from ..account_streams import guarded
+
+    return StreamingResponse(
+        guarded(turn_events(message_id), access.principal()),
+        media_type="text/event-stream",
+        headers=SSE_HEADERS,
+    )
 
 
 @router.post("/api/chats/{chat_id}/stop")

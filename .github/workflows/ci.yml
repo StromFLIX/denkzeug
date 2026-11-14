@@ -58,6 +58,13 @@ jobs:
       - name: Deployment, snapshot, gateway buffers and agent image safety tests
         run: uv run pytest tests/test_account_session.py tests/test_auth_deployment.py tests/test_smoke_auth.py tests/test_chat_ttft.py tests/test_dependencies.py tests/test_playwright_ci.py tests/test_coolify_release.py tests/test_cli_oauth_deployment.py tests/test_dictation_deployment.py tests/worker/test_prepare_release.py tests/test_publish_agent_images.py tests/test_miniapp_smoke.py tests/test_workflow_lifecycle_smoke.py tests/test_staging_refresh.py tests/agentgateway tests/broker/test_broker.py tests/broker/test_chat_sessions.py tests/broker/test_chat_recovery.py tests/broker/test_sandbox_network.py
 
+      - name: Accounts, private ownership, scoped delegation and session lifecycle
+        run: >-
+          uv run pytest tests/backend/test_accounts.py tests/backend/test_email_optional_accounts.py tests/backend/test_account_identities.py
+          tests/backend/test_account_privacy_integration.py tests/backend/test_scoped_authoring.py tests/backend/test_private_access.py
+          tests/backend/test_operational.py tests/backend/test_account_session.py tests/backend/test_smoke_auth.py
+          tests/worker/test_activity_authority.py
+
       - name: Native creative app release contracts, installer isolation and Settings
         run: uv run pytest tests/lib/test_artcraft.py tests/broker/test_artcraft.py tests/broker/test_artcraft_offline.py tests/backend/test_artcraft.py tests/test_artcraft_deployment.py
 
@@ -87,7 +94,7 @@ jobs:
           fi
           echo "1b2fc01a2de29ca113bbb6258b5cae7b1eb3c724071c09d687a449132f2f42f8  $RUNNER_TEMP/agentgateway" | sha256sum --check
           chmod +x "$RUNNER_TEMP/agentgateway"
-          NAUTIONETTE_TEST_GATEWAY_BINARY="$RUNNER_TEMP/agentgateway" uv run pytest tests/backend/test_mcp_oauth_e2e.py tests/backend/test_mcp_http_oauth_e2e.py tests/agentgateway/test_stdio_runtime.py tests/agentgateway/test_failure_isolation.py
+          NAUTIONETTE_TEST_GATEWAY_BINARY="$RUNNER_TEMP/agentgateway" uv run pytest tests/backend/test_mcp_oauth_e2e.py tests/backend/test_mcp_http_oauth_e2e.py tests/agentgateway/test_stdio_runtime.py tests/agentgateway/test_failure_isolation.py tests/agentgateway/test_actor_passthrough.py
 
       - name: Agent defaults, profiles and durable chat configuration
         run: uv run pytest tests/backend/test_auth.py tests/backend/test_agent_profiles.py tests/backend/test_agent_grouping.py tests/backend/test_subagents.py tests/backend/test_delegated_chat_tree.py tests/backend/test_reasoning.py tests/backend/test_settings.py tests/backend/test_chats.py tests/backend/test_backend_mcp.py tests/backend/test_chat_inspection.py tests/backend/test_activity_timing.py
@@ -158,7 +165,7 @@ jobs:
       - name: Chat, settings, extensions and theme controls
         run: >-
           npx playwright test
-          tests/speech.spec.js tests/chat.spec.js tests/chat-branch.spec.js tests/chat-row.spec.js tests/chat-tree.spec.js tests/chat-ordering.spec.js tests/live-connection.spec.js tests/appearance.spec.js tests/workspace.spec.js
+          tests/account-auth.spec.js tests/speech.spec.js tests/chat.spec.js tests/chat-branch.spec.js tests/chat-row.spec.js tests/chat-tree.spec.js tests/chat-ordering.spec.js tests/live-connection.spec.js tests/appearance.spec.js tests/workspace.spec.js
           tests/projects.spec.js tests/settings-navigation.spec.js tests/command-palette.spec.js tests/hybrid-search.spec.js tests/website.spec.js
           tests/branding.spec.js tests/settings-redesign.spec.js tests/process-redesign.spec.js tests/skins.spec.js tests/sidebar.spec.js
           tests/workspace-polish.spec.js tests/build-version.spec.js
@@ -424,7 +431,7 @@ jobs:
             "${artcraft_mounts[@]}" \
             --env HOME=/workspace --env ARTCRAFT_REQUIRE_NATIVE=1 --tmpfs /workspace:rw,mode=1777 \
             --volume "$PWD:/source:ro" --entrypoint bash nautionette/pi-agent-default:dev -c \
-            'pi --version && node --test /source/tests/agent/test_artcraft.mjs /source/tests/agent/test_artcraft_native.mjs /source/tests/agent/test_artcraft_rpc.mjs /source/tests/agent/test_chat_files.mjs /source/tests/agent/test_chat_session.mjs /source/tests/agent/test_workflow_context.mjs /source/tests/agent/test_chat_session_rpc.mjs /source/tests/agent/test_tool_context.mjs /source/tests/agent/test_tool_context_rpc.mjs /source/tests/agent/test_outputs.mjs /source/tests/agent/test_subagents.mjs /source/tests/agent/test_outputs_rpc.mjs /source/tests/agent/test_images.mjs /source/tests/agent/test_provider.ts /source/tests/agent/test_model_api.ts /source/tests/agent/test_reasoning.ts /source/tests/agent/test_tool_selection.ts /source/tests/agent/test_mcp_transport.mjs /source/tests/agent/test_mcp_direct.mjs /source/tests/agent/test_image_transport.mjs /source/tests/agent/test_packages_rpc.mjs /source/tests/agent/test_context_usage.mjs /source/tests/agent/test_chat_control.mjs /source/tests/agent/test_chat_recovery.mjs /source/tests/agent/test_chat_recovery_rpc.mjs /source/tests/agent/test_project_git.mjs /source/tests/agent/test_telemetry.mjs'
+            'pi --version && node --test /source/tests/agent/test_artcraft.mjs /source/tests/agent/test_artcraft_native.mjs /source/tests/agent/test_artcraft_rpc.mjs /source/tests/agent/test_chat_files.mjs /source/tests/agent/test_chat_session.mjs /source/tests/agent/test_workflow_context.mjs /source/tests/agent/test_chat_session_rpc.mjs /source/tests/agent/test_tool_context.mjs /source/tests/agent/test_tool_context_rpc.mjs /source/tests/agent/test_outputs.mjs /source/tests/agent/test_subagents.mjs /source/tests/agent/test_outputs_rpc.mjs /source/tests/agent/test_images.mjs /source/tests/agent/test_provider.ts /source/tests/agent/test_model_api.ts /source/tests/agent/test_reasoning.ts /source/tests/agent/test_tool_selection.ts /source/tests/agent/test_member_tools.mjs /source/tests/agent/test_mcp_transport.mjs /source/tests/agent/test_mcp_direct.mjs /source/tests/agent/test_image_transport.mjs /source/tests/agent/test_packages_rpc.mjs /source/tests/agent/test_context_usage.mjs /source/tests/agent/test_chat_control.mjs /source/tests/agent/test_chat_recovery.mjs /source/tests/agent/test_chat_recovery_rpc.mjs /source/tests/agent/test_project_git.mjs /source/tests/agent/test_telemetry.mjs'
 
       - name: Development tools work offline as the project user
         run: |

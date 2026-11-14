@@ -20,14 +20,15 @@ async function fixture (page, state = {}) {
     if (path === '/api/auth/logout') { state.user = null; return json({ logged_out: true }) }
     if (path === '/api/auth/bootstrap') { state.user = user(body.username); return json(me(state.user)) }
     if (path === '/api/auth/invitation') return json({ email: 'invited@example.test', role: 'member', expires_at: '2030-01-01' })
-    if (path === '/api/auth/register') return json({ verification_required: true })
+    if (path === '/api/auth/register') { state.user = { ...user(body.username, 'member'), email: body.email || null, email_verified: false }; return json({ ...me(state.user), verification_required: false, ...(body.native ? { access_token: 'native-access', refresh_token: 'native-refresh' } : {}) }) }
     if (path === '/api/auth/verify-email') return json({ verified: true })
     if (path === '/api/auth/forgot-password' || path === '/api/auth/reset-password') return json({ message: 'Done' })
-    if (path === '/api/auth/change-password') { state.user.must_change_password = false; return json({ changed: true }) }
+    if (path === '/api/auth/change-password') { state.mustChange = false; state.user = null; return json({ changed: true, signed_out: true }) }
     if (path === '/api/auth/profile') { Object.assign(state.user, body); return json(me(state.user)) }
     if (path === '/api/auth/sessions') return json({ sessions: [{ id: 'other', device: 'Another browser', last_seen_at: '2026-01-01', expires_at: '2030-01-01', current: false }] })
     if (path.startsWith('/api/auth/sessions/')) return json({ revoked: true })
     if (path === '/api/auth/users') return json({ users: [state.user, user('bob', 'member')] })
+    if (path.endsWith('/recovery')) return json({ code: 'one-time-reset-code', link: 'https://workspace.test/#reset=one-time-reset-code', expires_at: 1893456000 })
     if (path.startsWith('/api/auth/users/')) return json({ updated: true })
     if (path === '/api/auth/invitations' && method === 'POST') return json({ invitation: { id: 'invite', ...body, status: 'pending', expires_at: '2030-01-01' }, code: 'new-invite-secret', link: 'https://workspace.test/#invite=new-invite-secret' })
     if (path === '/api/auth/invitations') return json({ invitations: [] })
@@ -92,25 +93,29 @@ test('bootstrap fragment is stripped, first administrator can join', async ({ pa
   await expect(page.getByRole('heading', { name: 'Set up your workspace' })).toBeVisible()
   expect(page.url()).not.toContain('setup-secret')
   await page.getByLabel('Username', { exact: true }).fill('alice')
-  await page.getByLabel('Email', { exact: true }).fill('alice@example.test')
   await page.getByLabel('New password', { exact: true }).fill('new-password-123')
   await page.getByLabel('Confirm password', { exact: true }).fill('new-password-123')
   await page.getByRole('button', { name: 'Create administrator' }).click()
   await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible()
   expect(state.calls.find(call => call.path === '/api/auth/bootstrap').body.token).toBe('setup-secret')
+  expect(state.calls.find(call => call.path === '/api/auth/bootstrap').body.email).toBeUndefined()
 })
 
 test('invitation link and manual code use the same registration flow', async ({ page }) => {
   const state = await fixture(page)
   await page.goto('/#invite=invitation-secret')
-  await expect(page.getByText('Join as invited@example.test', { exact: false })).toBeVisible()
+  await expect(page.getByText('Join this workspace as member.', { exact: false })).toBeVisible()
   expect(page.url()).not.toContain('invitation-secret')
   await page.getByLabel('Username', { exact: true }).fill('new-member')
   await page.getByLabel('New password', { exact: true }).fill('new-password-123')
   await page.getByLabel('Confirm password', { exact: true }).fill('new-password-123')
   await page.getByRole('button', { name: 'Create account' }).click()
-  await expect(page.getByRole('status')).toContainText('Check your email')
-  expect(state.calls.find(call => call.path === '/api/auth/register').body.code).toBe('invitation-secret')
+  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible()
+  const registration = state.calls.find(call => call.path === '/api/auth/register')
+  expect(registration.body.code).toBe('invitation-secret')
+  expect(registration.body.email).toBeUndefined()
+  await page.goto('/settings/account')
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click()
   await page.getByRole('button', { name: 'Use an invitation' }).click()
   await expect(page.getByLabel('Invitation code or link', { exact: true })).toBeVisible()
 })
@@ -118,10 +123,10 @@ test('invitation link and manual code use the same registration flow', async ({ 
 test('email verification, forgot and reset flows never keep URL secrets', async ({ page }) => {
   const state = await fixture(page)
   await page.goto('/#verify=verify-secret')
-  await expect(page.getByRole('status')).toContainText('Email verified')
+  await expect(page.getByRole('status')).toContainText('recovery email verified')
   expect(page.url()).not.toContain('verify-secret')
   await page.getByRole('button', { name: 'Forgot password?' }).click()
-  await page.getByLabel('Email', { exact: true }).fill('unknown@example.test')
+  await page.getByLabel('Recovery email', { exact: true }).fill('unknown@example.test')
   await page.getByRole('button', { name: 'Send reset link' }).click()
   await expect(page.getByRole('status')).toContainText('If an account matches')
   await page.goto('/#reset=reset-secret')
@@ -141,6 +146,8 @@ test('required password change blocks workspace until completed', async ({ page 
   await page.getByLabel('New password', { exact: true }).fill('new-password-123')
   await page.getByLabel('Confirm password', { exact: true }).fill('new-password-123')
   await page.getByRole('button', { name: 'Change password', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+  await signIn(page)
   await expect(page.getByRole('heading', { name: 'Profile & security' })).toBeVisible()
   expect(state.calls.find(call => call.path === '/api/auth/change-password')).toBeTruthy()
 })
@@ -153,7 +160,7 @@ test('member deep links, navigation, settings and startup are fail-closed', asyn
   await expect(page.getByRole('heading', { name: 'Profile & security' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByText('Workflows', { exact: true })).toBeHidden()
   await expect(page.getByRole('navigation', { name: 'Settings categories' }).getByText('Users', { exact: true })).toBeHidden()
-  expect(state.calls.some(call => ['/api/system', '/api/settings', '/api/auth/users', '/api/projects', '/api/workflows', '/api/mcp-oauth/status'].includes(call.path))).toBeFalsy()
+  expect(state.calls.some(call => ['/api/system', '/api/settings', '/api/auth/users', '/api/mcp-oauth/status'].includes(call.path))).toBeFalsy()
 })
 
 test('recent-auth challenge confirms password before retrying admin policy change', async ({ page }) => {
@@ -170,7 +177,7 @@ test('recent-auth challenge confirms password before retrying admin policy chang
 
 test('admin invitation secret is transient and uses backend generated fragment link', async ({ page }) => {
   await fixture(page, { user: user() }); await page.goto('/settings/invitations')
-  await page.getByLabel('Email', { exact: true }).fill('new@example.test')
+  await page.getByLabel('Send to email (optional)', { exact: true }).fill('new@example.test')
   await page.getByRole('button', { name: 'Create invitation' }).click()
   await expect(page.getByLabel('Invitation link', { exact: true })).toHaveValue('https://workspace.test/#invite=new-invite-secret')
   expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain('new-invite-secret')
@@ -202,11 +209,52 @@ test('logging into another account cannot read prior cached chats or queued mess
   await expect(page.getByText('Private Alice conversation', { exact: true })).toBeHidden()
 })
 
-test('auth screens fit a narrow viewport and remain keyboard reachable', async ({ page }) => {
+test('auth screens fit a narrow viewport and remain keyboard reachable', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 700 }); await fixture(page); await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy()
   await page.getByLabel('Username', { exact: true }).focus()
   await page.keyboard.press('Tab'); await expect(page.getByLabel('Password', { exact: true })).toBeFocused()
-  await page.screenshot({ path: '/workspace/account-mobile.png' })
+  await page.screenshot({ path: testInfo.outputPath('account-mobile.png') })
+})
+
+test('email-free invitations provide an explicit copy-code action', async ({ page }) => {
+  const state = await fixture(page, { user: user(), policy: { registration_mode: 'invite_only', mail_available: false } })
+  await page.goto('/settings/invitations')
+  await page.getByLabel('Note (optional)').fill('For Sam')
+  await page.getByRole('button', { name: 'Create invitation', exact: true }).click()
+  await expect(page.getByLabel('Invitation code', { exact: true })).toHaveValue('new-invite-secret')
+  const body = state.calls.find(call => call.path === '/api/auth/invitations' && call.method === 'POST').body
+  expect(body.email).toBeUndefined(); expect(body.send_email).toBeFalsy(); expect(body.label).toBe('For Sam')
+  await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async value => { globalThis.copiedCode = value } } }))
+  await page.getByRole('button', { name: 'Copy code', exact: true }).click()
+  expect(await page.evaluate(() => globalThis.copiedCode)).toBe('new-invite-secret')
+  expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain('new-invite-secret')
+})
+
+test('manual password reset needs only a pasted administrator code, not email', async ({ page }) => {
+  const state = await fixture(page, { policy: { registration_mode: 'invite_only', mail_available: false } })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Forgot password?', exact: true }).click()
+  await expect(page.getByText('Ask an administrator for a one-time reset code', { exact: false })).toBeVisible()
+  await page.getByRole('button', { name: 'Use a reset code', exact: true }).click()
+  await page.getByLabel('Reset code or link', { exact: true }).fill('admin-reset-code')
+  await page.getByLabel('New password', { exact: true }).fill('a new code-only passphrase 728!')
+  await page.getByLabel('Confirm password', { exact: true }).fill('a new code-only passphrase 728!')
+  await page.getByRole('button', { name: 'Reset password', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+  expect(state.calls.find(call => call.path === '/api/auth/reset-password').body.token).toBe('admin-reset-code')
+  expect(state.calls.some(call => call.path === '/api/auth/forgot-password')).toBeFalsy()
+  expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain('admin-reset-code')
+})
+
+test('administrators can create a transient recovery code for a member', async ({ page }) => {
+  const state = await fixture(page, { user: user() })
+  await page.goto('/settings/users')
+  await page.locator('.account-list li').filter({ hasText: '@bob' }).getByRole('button', { name: 'Create reset code' }).click()
+  await expect(page.getByLabel('Password reset code', { exact: true })).toHaveValue('one-time-reset-code')
+  expect(state.calls.some(call => call.path === '/api/auth/users/bob/recovery')).toBeTruthy()
+  expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain('one-time-reset-code')
+  await page.getByRole('button', { name: 'Hide reset code' }).click()
+  await expect(page.getByLabel('Password reset code', { exact: true })).toBeHidden()
 })

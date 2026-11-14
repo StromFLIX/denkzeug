@@ -10,6 +10,7 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from .. import access
 from ..conversations import turn_has_owner
 from ..db import db
 from ..security import require_user
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/api/chat-inspection", dependencies=[Depends(require_
 
 
 def _chat(chat_id: str) -> dict[str, Any]:
+    access.require_chat(chat_id)
     chat = db.get_chat(chat_id)
     if not chat:
         raise HTTPException(404, "chat not found")
@@ -91,7 +93,7 @@ def search_chats(
     Returns compact summaries and tool counts, not transcripts. Use chat IDs with
     inspect_chat, list_chat_sessions and inspect_chat_messages to drill down.
     """
-    clauses, params = [], []
+    clauses, params = ["c.owner_user_id = ?"], [access.human_id()]
     if query:
         clauses.append(
             "(instr(c.id, ?) > 0 OR instr(lower(c.title), lower(?)) > 0 OR EXISTS "
@@ -168,7 +170,7 @@ def list_chat_sessions(
     from orphaned SQL state; it is null for non-running sessions.
     Never includes prompts or private job data.
     """
-    clauses, params = [], []
+    clauses, params = ["c.owner_user_id = ?"], [access.human_id()]
     if chat_id:
         _chat(chat_id)
         clauses.append("t.chat_id = ?")
@@ -230,7 +232,7 @@ def list_chat_tools(
     Chat/session summaries include only the top 20 tools; this tool enumerates the
     complete set without transcripts, arguments or results.
     """
-    clauses, params = [], []
+    clauses, params = ["t.chat_id IN (SELECT id FROM chats WHERE owner_user_id=?)"], [access.human_id()]
     if chat_id:
         _chat(chat_id)
         clauses.append("t.chat_id = ?")
@@ -239,6 +241,7 @@ def list_chat_tools(
         turn = db.one("SELECT chat_id FROM chat_turns WHERE id = ?", (session_id,))
         if not turn or (chat_id and turn["chat_id"] != chat_id):
             raise HTTPException(404, "chat session not found")
+        _chat(turn["chat_id"])
         clauses.append("t.id = ?")
         params.append(session_id)
     where = " AND ".join(clauses) or "1"
@@ -323,6 +326,7 @@ def inspect_chat_session_events(
     turn = db.one("SELECT id, chat_id, state FROM chat_turns WHERE id = ?", (session_id,))
     if not turn:
         raise HTTPException(404, "chat session not found")
+    _chat(turn["chat_id"])
     clauses, params = ["turn_id = ?", "seq > ?"], [session_id, after_seq]
     if event_types != "all":
         kinds = list(dict.fromkeys(kind.strip() for kind in event_types.split(",") if kind.strip()))

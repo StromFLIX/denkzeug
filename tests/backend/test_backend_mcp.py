@@ -175,5 +175,22 @@ def test_real_mcp_transport_handshake_and_tool_call(backend):
             },
         )
         assert called.status_code == 200
-        assert not called.json()["result"]["isError"]
+        assert called.json()["result"]["isError"]  # Transport credentials alone are not admin authority.
+        from nautionette_backend.access import delegate, release_delegation
+        from nautionette_backend.security import Principal
+
+        actor = delegate(Principal("test-admin", "admin", "test-session"))
+        try:
+            called = client.post(
+                "/mcp/",
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 4,
+                    "method": "tools/call",
+                    "params": {"name": "restart_workers", "arguments": {"__denkzeug_actor": actor}},
+                },
+            )
+            assert not called.json()["result"]["isError"]
+        finally:
+            release_delegation(actor)
         assert backend.broker.restarts == 1

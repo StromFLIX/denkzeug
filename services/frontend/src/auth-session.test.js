@@ -48,7 +48,7 @@ test('account fencing also covers response bodies that arrive after their header
   acceptAccount(me('alice'))
   let finishBody, bodyStarted
   const started = new Promise(resolve => { bodyStarted = resolve })
-  t.mock.method(globalThis, 'fetch', async () => ({ ok: true, status: 200, json: () => { bodyStarted(); return new Promise(resolve => { finishBody = resolve }) } }))
+  t.mock.method(globalThis, 'fetch', async () => ({ ok: true, status: 200, headers: new Headers(), json: () => { bodyStarted(); return new Promise(resolve => { finishBody = resolve }) } }))
   const pending = request('/api/chats')
   await started
   clearAccount(); acceptAccount(me('bob'))
@@ -72,4 +72,24 @@ test('recent-auth challenge resumes once after password verification, not on can
 })
 test('secure persistence fails closed if native bridge is missing', async () => {
   await assert.rejects(secureSession('set', 'https://example.test', 'refresh-secret'), /Secure account storage is unavailable/)
+})
+
+test('a different server account is rejected before its response body reaches a cache', async t => {
+  acceptAccount(me('alice'))
+  let bodyRead = false
+  t.mock.method(globalThis, 'fetch', async () => ({ ok: true, status: 200, headers: new Headers({ 'x-denkzeug-account': 'bob' }), json: async () => { bodyRead = true; return { private: 'Bob' } } }))
+  await assert.rejects(request('/api/chats'), error => error.status === 409)
+  assert.equal(bodyRead, false); assert.equal(account.user, null)
+})
+
+test('native vault writes are serialized so an older secret cannot win a newer login', async t => {
+  const previous = globalThis.denkzeugDesktop, calls = []
+  let release
+  globalThis.denkzeugDesktop = { accountStore: { set: async ({ value }) => { calls.push(value); if (value === 'old') await new Promise(resolve => { release = resolve }); return {} } } }
+  t.after(() => { globalThis.denkzeugDesktop = previous })
+  const old = secureSession('set', 'https://example.test', 'old')
+  const next = secureSession('set', 'https://example.test', 'new')
+  while (!release) await new Promise(resolve => setImmediate(resolve))
+  assert.deepEqual(calls, ['old'])
+  release(); await Promise.all([old, next]); assert.deepEqual(calls, ['old', 'new'])
 })

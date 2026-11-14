@@ -2,6 +2,7 @@
 # ruff: noqa: F811 -- pytest fixtures are imported into this test module.
 
 import json
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
@@ -58,7 +59,7 @@ def test_blank_overrides_do_not_replace_saved_client_scope_or_redirect(client, h
 def test_metadata_failure_never_erases_known_setup(client, hosted, monkeypatch):
     client.post(BASE + "/prepare/example", json=options())
     original = setup.time.time
-    monkeypatch.setattr(setup.time, "time", lambda: original() + setup.MAX_AGE + 1)
+    monkeypatch.setattr(setup, "time", SimpleNamespace(time=lambda: original() + setup.MAX_AGE + 1))
 
     async def failed(_config):
         raise HTTPException(502, "Temporary metadata outage")

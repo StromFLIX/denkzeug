@@ -49,5 +49,25 @@ test('native login, bearer requests, refresh rotation and logout use only the se
     assert.throws(() => { server.url = 'http://workspace.test' }, /HTTPS/);
     clearAccount();
   `
-  assert.doesNotThrow(() => execFileSync(process.execPath, ['--input-type=module', '-e', script], { cwd: new URL('.', import.meta.url), stdio: 'pipe' }))
+  assert.doesNotThrow(() => execFileSync(process.execPath, ['--input-type=module', '-e', script], { cwd: new URL('.', import.meta.url), stdio: 'pipe', timeout: 5000 }))
+})
+
+test('a rejected rotated native access token fails instead of recursively refreshing forever', () => {
+  const script = `
+    import assert from 'node:assert/strict';
+    const stored = new Map(), secrets = new Map([['https://workspace.test', 'refresh-old']]);
+    globalThis.localStorage = { getItem: key => stored.get(key), setItem: (key, value) => stored.set(key, value), removeItem: key => stored.delete(key) };
+    globalThis.denkzeugDesktop = { accountStore: { async get({origin}) { return {value: secrets.get(origin) || ''} }, async set({origin,value}) { secrets.set(origin,value) }, async remove({origin}) { secrets.delete(origin) } } };
+    const { refreshAccount } = await import('./account.js');
+    const { account, auth } = await import('./auth-session.js');
+    const { server } = await import('./api.js'); server.url = 'https://workspace.test';
+    let rotations = 0;
+    globalThis.fetch = async url => {
+      if (url.endsWith('/refresh')) { rotations++; return Response.json({access_token:'rejected-new-access',refresh_token:'new-refresh'}); }
+      return Response.json({detail:'Account suspended during refresh'}, {status:401});
+    };
+    await assert.rejects(refreshAccount(), error => error.status === 401);
+    assert.equal(rotations,1); assert.equal(account.user,null); assert.equal(auth.token,''); assert.equal(secrets.size,0);
+  `
+  assert.doesNotThrow(() => execFileSync(process.execPath, ['--input-type=module', '-e', script], { cwd: new URL('.', import.meta.url), stdio: 'pipe', timeout: 5000 }))
 })

@@ -62,6 +62,8 @@ class Settings:
         # APP_TOKEN is retained for migration diagnostics only, never human authentication.
         self.app_token = os.environ.get("APP_TOKEN", "").strip()
         self.internal_token = os.environ.get("INTERNAL_TOKEN", "").strip()
+        if self.app_token and self.internal_token == self.app_token:
+            raise ValueError("INTERNAL_TOKEN must differ from the obsolete APP_TOKEN; use separate secrets")
         self.public_url = os.environ.get("DENKZEUG_PUBLIC_URL", self.public_url).strip().rstrip("/")
         self.bootstrap_username = os.environ.get("DENKZEUG_BOOTSTRAP_ADMIN_USERNAME", "").strip()
         self.bootstrap_email = os.environ.get("DENKZEUG_BOOTSTRAP_ADMIN_EMAIL", "").strip()

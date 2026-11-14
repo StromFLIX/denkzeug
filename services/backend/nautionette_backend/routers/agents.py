@@ -72,6 +72,7 @@ async def _validated(payload: dict[str, Any], current: dict[str, Any] | None = N
 @router.get("/api/agents")
 async def list_agents() -> dict[str, Any]:
     from .. import access
+
     result = agent_profiles.catalog_entries()
     who = access.principal()
     if who is not None and who.role != "admin":
