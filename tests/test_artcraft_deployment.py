@@ -109,15 +109,15 @@ def test_authentication_failures_fail_closed_without_retries_or_body_logging(clo
 
 def test_main_only_retries_authenticated_read_only_status_requests(clock, monkeypatch, capsys):
     monkeypatch.setenv("APP_URL", "https://stage.example")
-    monkeypatch.setenv("APP_TOKEN", "private-token")
+    monkeypatch.setenv("INTERNAL_TOKEN", "private-token")
     states = iter([system_state(worker=False), system_state()])
     calls = []
 
     class Opener:
         def open(self, request, timeout):
             assert request.get_method() == "GET" and request.data is None
-            assert request.full_url == "https://stage.example/api/system"
-            assert request.get_header("Authorization") == "Bearer private-token"
+            assert request.full_url == "https://stage.example/internal/system"
+            assert request.get_header("X-internal-token") == "private-token"
             calls.append(timeout)
             return io.BytesIO(json.dumps(next(states)).encode())
 

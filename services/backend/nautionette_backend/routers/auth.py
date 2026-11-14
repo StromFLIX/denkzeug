@@ -26,6 +26,7 @@ from ..security import (
     require_admin,
     require_recent,
     require_user,
+    secure_cookies,
     validate_origin,
     validate_public_origin,
 )
@@ -123,7 +124,9 @@ def rate(request: Request, action: str, identity: str = "", per_identity: int = 
 
 def clear_cookies(response: Response) -> None:
     for key in (SESSION_COOKIE, CSRF_COOKIE):
-        response.delete_cookie(key, path="/", secure=True, httponly=key == SESSION_COOKIE, samesite="lax")
+        response.delete_cookie(
+            key, path="/", secure=secure_cookies(), httponly=key == SESSION_COOKIE, samesite="lax"
+        )
 
 
 def _invitation(row) -> dict:
@@ -354,11 +357,11 @@ def update_user(user_id: str, body: UserChange, request: Request, principal: Adm
         if not row:
             fail(404, "not_found", "User not found.")
         role, status = body.role or row["role"], body.status or row["status"]
-        if row["status"] == "pending" and body.status == "active":
+        if body.status == "active" and not row["email_verified"]:
             fail(409, "verification_required", "The user must verify their email before activation.")
         if row["role"] == "admin" and row["status"] == "active" and (role != "admin" or status != "active"):
             count = conn.execute(
-                "SELECT COUNT(*) FROM auth_users WHERE role='admin' AND status='active'"
+                "SELECT COUNT(*) FROM auth_users WHERE role='admin' AND status='active' AND email_verified=1"
             ).fetchone()[0]
             if count <= 1:
                 fail(409, "last_admin", "The last active administrator cannot be suspended or demoted.")

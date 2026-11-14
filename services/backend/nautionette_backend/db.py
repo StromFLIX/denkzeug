@@ -597,6 +597,10 @@ class Database:
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Serialize a complete operation and commit or roll it back atomically."""
         with self._lock, self._conn:
+            # Acquire the SQLite write reservation BEFORE reading invariants.
+            # A Python lock alone cannot serialize multiple backend processes;
+            # bootstrap, one-time redemption and last-admin checks must do so.
+            self._conn.execute("BEGIN IMMEDIATE")
             yield self._conn
 
     def compact(self) -> None:

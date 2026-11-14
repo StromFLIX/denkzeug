@@ -6,7 +6,7 @@ Denkzeug is a workspace first. Keep the conversation prominent and put
 configuration one deliberate step away. Preserve capabilities; reduce their
 competition for attention.
 
-- **Denkzeug identity:** the approved nested-profile logo, Sora interface type,
+- **Denkzeug identity:** the canonical solid logo, Sora interface type,
   paper/ink surfaces and blue/lilac/amber activity roles connect the website and
   app. Rounded squares echo the tiled field without adding decorative motion to
   working screens. Brand sources and compatibility boundaries live in

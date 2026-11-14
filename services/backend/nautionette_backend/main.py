@@ -59,6 +59,8 @@ def seed_workflows() -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    if not settings.internal_token:
+        raise ValueError("INTERNAL_TOKEN is required for authenticated internal services")
     auth.initialize()
     spawn(auth_mail.maintenance(), name="account-mail-maintenance")
     Path(settings.artifacts_dir).mkdir(parents=True, exist_ok=True)
