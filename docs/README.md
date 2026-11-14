@@ -6,6 +6,8 @@
 
 - [Self-hosting](self-hosting.md) — prerequisites, Docker setup, model connections,
   HTTPS, updates and backups.
+- [Authentication](authentication.md) — first-admin claim, HTTPS, SMTP, account/device
+  access, password recovery and the trusted-workspace boundary.
 - [Configuration template](../.env.example) — existing environment variables and
   defaults. Do not copy secrets into Git or an issue.
 - [Clients and signing](reference.md#desktop-and-ios-builds) — desktop, Android and

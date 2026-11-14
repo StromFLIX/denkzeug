@@ -1,6 +1,6 @@
 """Measure the real chat POST -> first streamed text delta, retaining the test chat.
 
-BASE=https://your-instance APP_TOKEN=... uv run python scripts/benchmark_chat_ttft.py \
+BASE=https://your-instance DENKZEUG_DEVICE_TOKEN=... uv run python scripts/benchmark_chat_ttft.py \
     --project-id <selected-project-id> --samples 5
 
 Uses a dedicated chat, never the caller's active chat. First and subsequent turns
@@ -198,8 +198,8 @@ def main(argv: list[str] | None = None) -> int:
         or url.fragment
     ):
         parser.error("set BASE or --base to an HTTP(S) app origin without credentials or a query")
-    if not os.environ.get("APP_TOKEN"):
-        parser.error("set APP_TOKEN in the environment (never pass credentials on the command line)")
+    if not os.environ.get("DENKZEUG_DEVICE_TOKEN"):
+        parser.error("set DENKZEUG_DEVICE_TOKEN (never pass credentials on the command line)")
     if not 1 <= args.samples <= 100 or args.timeout <= 0:
         parser.error("samples must be 1..100 and timeout must be positive")
     config: dict[str, Any] = {
@@ -225,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
         config["tools"] = tools
     with httpx.Client(
         base_url=base,
-        headers={"Authorization": f"Bearer {os.environ['APP_TOKEN']}"},
+        headers={"Authorization": f"Bearer {os.environ['DENKZEUG_DEVICE_TOKEN']}"},
         timeout=httpx.Timeout(args.timeout, connect=15),
         follow_redirects=False,
     ) as client:

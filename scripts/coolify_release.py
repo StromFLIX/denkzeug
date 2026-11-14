@@ -87,14 +87,19 @@ def https_url(value: str) -> str:
     return value.rstrip("/")
 
 
-def request(url: str, token: str, method: str = "GET", payload: dict | None = None):
+def request(
+    url: str, token: str, method: str = "GET", payload: dict | None = None, *, internal: bool = False
+):
     if urlsplit(url).scheme != "https":
         raise ValueError("Only HTTPS is permitted")
     req = urllib.request.Request(  # noqa: S310 - HTTPS only, redirects disabled
         url,
         method=method,
         data=json.dumps(payload).encode() if payload is not None else None,
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        headers={
+            **({"X-Internal-Token": token} if internal else {"Authorization": f"Bearer {token}"}),
+            "Content-Type": "application/json",
+        },
     )
     try:
         with urllib.request.build_opener(NoRedirect()).open(req, timeout=30) as response:
@@ -207,7 +212,7 @@ def ensure_output_storage_credentials(api: Coolify, app: str) -> None:
 def healthy(target: str) -> None:
     url = https_url(required("APP_URL"))
     try:
-        state = request(url + "/api/system", required("APP_TOKEN"))
+        state = request(url + "/internal/system", required("INTERNAL_TOKEN"), internal=True)
     except (json.JSONDecodeError, UnicodeDecodeError):
         raise RuntimeError("Health endpoint returned invalid JSON") from None
     except TimeoutError:
@@ -242,7 +247,7 @@ def healthy(target: str) -> None:
     if problems:
         raise RuntimeError("Health checks failed: " + "; ".join(problems))
     try:
-        storage = request(url + "/api/settings/storage", required("APP_TOKEN"))
+        storage = request(url + "/internal/settings/storage", required("INTERNAL_TOKEN"), internal=True)
     except (json.JSONDecodeError, UnicodeDecodeError):
         raise RuntimeError("Output storage health endpoint returned invalid JSON") from None
     except TimeoutError:
@@ -419,7 +424,7 @@ def deploy(target: str, commit: str, release_tag: str = "") -> str | None:
     app = identifier(required("COOLIFY_APPLICATION_UUID"))
     # Preflight health configuration before making changes.
     https_url(required("APP_URL"))
-    required("APP_TOKEN")
+    required("INTERNAL_TOKEN")
     timeout = health_timeout()
     if api.deployed(app, commit) and build_metadata_matches(api, app, commit, release_tag):
         maintenance = temporal_maintenance(api, app, target, commit)

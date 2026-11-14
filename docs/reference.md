@@ -778,8 +778,9 @@ Chat containers use the outbound-enabled `nautionette-agent-sandboxes` network,
 shared with agentgateway but not the backend or Docker broker. Workflow containers
 continue to use the service network, which also supports outbound access. Chat
 containers still receive no internal service credential, drop all capabilities,
-and use `no-new-privileges`. Configure distinct `APP_TOKEN` and `INTERNAL_TOKEN`
-values for shared deployments.
+and use `no-new-privileges`. Configure an independent `INTERNAL_TOKEN` for private
+services and individual user accounts for people; `APP_TOKEN` grants no access.
+See [authentication and operator recovery](authentication.md).
 
 After updating, rebuild/recreate backend, docker-broker, frontend-web and
 agentgateway with `docker compose up -d --build backend docker-broker frontend-web agentgateway`.
@@ -888,8 +889,8 @@ alongside automatically registered Apps.
 
 Private keys are stored in the backend's SQLite database, never returned by the API
 or placed in an agent. The webhook secret is also backend-only. Protect the
-backend-data volume and its backups, configure `APP_TOKEN` and `INTERNAL_TOKEN`, and
-use HTTPS outside local development. The App belongs to your GitHub account or
+backend-data volume and its backups, configure individual user authentication and
+an independent `INTERNAL_TOKEN`, and use HTTPS outside local development. The App belongs to your GitHub account or
 organization; this is App registration, not a third-party OAuth service.
 
 ### Issue mentions
@@ -1071,8 +1072,8 @@ The deploy itself:
 ### Backend MCP
 
 The backend exposes streamable HTTP MCP at `/mcp/`, authenticated with a bearer
-`INTERNAL_TOKEN` or `APP_TOKEN`. With both tokens empty it follows the app's open
-development mode; configure tokens for a shared deployment. At startup it probes
+`INTERNAL_TOKEN` for the private service protocol. The obsolete `APP_TOKEN` is not
+a fallback; missing service credentials fail closed. At startup it probes
 its own endpoint and registers an authenticated `backend` target in agentgateway,
 so tools arrive as `backend_<operation>` without manual setup. `BACKEND_MCP_URL`
 defaults to `http://backend:8080/mcp/` and must be reachable from agentgateway.

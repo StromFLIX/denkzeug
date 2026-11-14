@@ -2,7 +2,7 @@
 
 Walks the promise on the front page: talk, promote, approve, run, schedule.
 
-    BASE=http://app... APP_TOKEN=... uv run --with httpx python scripts/smoke.py
+    BASE=http://app... DENKZEUG_DEVICE_TOKEN=... uv run --with httpx python scripts/smoke.py
 """
 
 import json
@@ -13,7 +13,7 @@ import time
 import httpx
 
 BASE = os.environ.get("BASE", "http://127.0.0.1:18080").rstrip("/")
-TOKEN = os.environ.get("APP_TOKEN", "")
+TOKEN = os.environ.get("DENKZEUG_DEVICE_TOKEN", "")
 WEBSITE = os.environ.get("WEBSITE", "")
 
 results: list[tuple[str, bool, str]] = []
@@ -62,7 +62,9 @@ def sse_text(response: httpx.Response) -> tuple[str, str | None]:
 
 
 def main() -> int:
-    headers = {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
+    if not TOKEN:
+        raise ValueError("Configure DENKZEUG_DEVICE_TOKEN for authenticated functional smoke checks")
+    headers = {"Authorization": f"Bearer {TOKEN}"}
     client = httpx.Client(base_url=BASE, headers=headers, timeout=httpx.Timeout(420, connect=15))
 
     if WEBSITE:
@@ -70,9 +72,8 @@ def main() -> int:
 
     check("backend is healthy", client.get("/healthz").json()["status"] == "ok")
 
-    if TOKEN:
-        anonymous = httpx.get(f"{BASE}/api/system", timeout=20)
-        check("auth is enforced", anonymous.status_code == 401, f"got {anonymous.status_code}")
+    anonymous = httpx.get(f"{BASE}/api/system", timeout=20)
+    check("auth is enforced", anonymous.status_code == 401, f"got {anonymous.status_code}")
 
     system = client.get("/api/system").json()
     down = [c["name"] for c in system["components"] if c["status"] != "ok"]

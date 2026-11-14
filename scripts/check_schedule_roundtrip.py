@@ -2,7 +2,7 @@
 
 Run this against a live backend:
 
-    BASE=http://127.0.0.1:18080 APP_TOKEN=... uv run python scripts/check_schedule_roundtrip.py
+    BASE=http://127.0.0.1:18080 DENKZEUG_DEVICE_TOKEN=... uv run python scripts/check_schedule_roundtrip.py
 """
 
 import os
@@ -11,7 +11,7 @@ import sys
 import httpx
 
 BASE = os.environ.get("BASE", "http://127.0.0.1:18080").rstrip("/")
-TOKEN = os.environ.get("APP_TOKEN", "")
+TOKEN = os.environ.get("DENKZEUG_DEVICE_TOKEN", "")
 CASES = [
     (
         "hello_world",
@@ -30,7 +30,9 @@ CASES = [
 
 
 def main() -> int:
-    headers = {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
+    if not TOKEN:
+        raise ValueError("Configure DENKZEUG_DEVICE_TOKEN for authenticated schedule checks")
+    headers = {"Authorization": f"Bearer {TOKEN}"}
     ok = True
     with httpx.Client(base_url=BASE, headers=headers, timeout=40) as client:
         for name, definition in CASES:

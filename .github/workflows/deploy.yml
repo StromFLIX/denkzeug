@@ -54,26 +54,26 @@ jobs:
           COOLIFY_STAGING_APPLICATION_UUID: ${{ vars.COOLIFY_STAGING_APPLICATION_UUID }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
           APP_URL: ${{ vars.APP_URL }}
-          APP_TOKEN: ${{ secrets.APP_TOKEN }}
+          INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN }}
           DEPLOY_HEALTH_TIMEOUT_SECONDS: ${{ vars.DEPLOY_HEALTH_TIMEOUT_SECONDS }}
         run: python3 -m scripts.coolify_release
       - name: Verify isolated mini-app lifecycle (staging only)
         if: github.event_name == 'workflow_run'
         env:
           APP_URL: ${{ vars.APP_URL }}
-          APP_TOKEN: ${{ secrets.APP_TOKEN }}
+          DENKZEUG_DEVICE_TOKEN: ${{ secrets.DENKZEUG_DEVICE_TOKEN }}
         run: python3 scripts/check_miniapps.py
       - name: Verify workflow disable and result delivery (staging only)
         if: github.event_name == 'workflow_run'
         env:
           APP_URL: ${{ vars.APP_URL }}
-          APP_TOKEN: ${{ secrets.APP_TOKEN }}
+          DENKZEUG_DEVICE_TOKEN: ${{ secrets.DENKZEUG_DEVICE_TOKEN }}
         run: python3 -m scripts.check_workflow_lifecycle
       - name: Verify CLI and HTTPS MCP OAuth compatibility (staging only)
         if: github.event_name == 'workflow_run'
         env:
           APP_URL: ${{ vars.APP_URL }}
-          APP_TOKEN: ${{ secrets.APP_TOKEN }}
+          DENKZEUG_DEVICE_TOKEN: ${{ secrets.DENKZEUG_DEVICE_TOKEN }}
         run: python3 scripts/check_cli_oauth_deployment.py
       - uses: astral-sh/setup-uv@v10.3.3
         if: github.event_name == 'workflow_run'
@@ -81,11 +81,11 @@ jobs:
         if: github.event_name == 'workflow_run'
         env:
           APP_URL: ${{ vars.APP_URL }}
-          APP_TOKEN: ${{ secrets.APP_TOKEN }}
+          DENKZEUG_DEVICE_TOKEN: ${{ secrets.DENKZEUG_DEVICE_TOKEN }}
         run: uv run --locked --package nautionette-backend python scripts/check_dictation_deployment.py
       - name: Creative-app artifact readiness diagnostics (staging only)
         if: always() && github.event_name == 'workflow_run'
         env:
           APP_URL: ${{ vars.APP_URL }}
-          APP_TOKEN: ${{ secrets.APP_TOKEN }}
+          INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN }}
         run: python3 scripts/check_artcraft_deployment.py

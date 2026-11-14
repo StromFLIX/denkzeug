@@ -40,9 +40,9 @@ class API:
             or parsed.fragment
         ):
             raise ValueError("APP_URL must be direct HTTPS")
-        self.token = os.environ["APP_TOKEN"]
+        self.token = os.environ["DENKZEUG_DEVICE_TOKEN"]
         if not self.token:
-            raise ValueError("Configure the staging APP_TOKEN secret")
+            raise ValueError("Configure a staging test user's DENKZEUG_DEVICE_TOKEN secret")
 
     def call(self, path, method="GET", body=None, expected=200):
         request = urllib.request.Request(  # noqa: S310 - validated HTTPS; redirects disabled

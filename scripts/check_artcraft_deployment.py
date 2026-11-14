@@ -14,6 +14,7 @@ class SafeRedirect(urllib.request.HTTPRedirectHandler):
         redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
         if redirected is not None:
             redirected.remove_header("Authorization")
+            redirected.remove_header("X-Internal-Token")
         return redirected
 
 
@@ -74,11 +75,11 @@ def wait_for_ready(fetch, *, timeout=180, interval=5):
 
 
 def main():
-    url, token = os.environ["APP_URL"].rstrip("/"), os.environ["APP_TOKEN"]
+    url, token = os.environ["APP_URL"].rstrip("/"), os.environ["INTERNAL_TOKEN"]
     if not url.startswith("https://"):
         raise ValueError("APP_URL must use HTTPS")
     request = urllib.request.Request(  # noqa: S310 - HTTPS is checked above; deployment-owned URL
-        url + "/api/system", headers={"Authorization": "Bearer " + token}
+        url + "/internal/system", headers={"X-Internal-Token": token}
     )
     opener = urllib.request.build_opener(SafeRedirect())
 

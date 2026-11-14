@@ -162,7 +162,7 @@ time.sleep(36000)
                 },
                 environment={
                     "APP_ENVIRONMENT": "staging",
-                    "APP_TOKEN": "fixture-only",
+                    "INTERNAL_TOKEN": "fixture-only",
                     "APP_VERSION": commit,
                     "TARGET_NETWORK": internal,
                     "WORKFLOWS_VOLUME": volumes["workflows"],

@@ -203,7 +203,7 @@ def test_cli_keeps_project_selection_and_does_not_continue_after_failure(monkeyp
             content="".join(f"data: {json.dumps(event)}\n\n" for event in events),
         )
 
-    monkeypatch.setenv("APP_TOKEN", "test-auth-only")
+    monkeypatch.setenv("DENKZEUG_DEVICE_TOKEN", "test-auth-only")
     monkeypatch.setattr(
         benchmark_chat_ttft.httpx,
         "Client",

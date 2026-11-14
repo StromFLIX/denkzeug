@@ -32,11 +32,14 @@ def main() -> None:
     legacy = (
         "MAXIO_ACCESS_KEY=nautionette-outputs\nOUTPUT_S3_BUCKET=nautionette-outputs\n"
         "MAXIO_SECRET_KEY=synthetic-compose-identity-check\n"
+        "INTERNAL_TOKEN=synthetic-compose-identity-check\n"
     )
     cases = (
         (
             "new",
-            (ROOT / ".env.example").read_text() + "\nMAXIO_SECRET_KEY=synthetic-compose-identity-check\n",
+            (ROOT / ".env.example").read_text()
+            + "\nMAXIO_SECRET_KEY=synthetic-compose-identity-check\n"
+            + "INTERNAL_TOKEN=synthetic-compose-identity-check\n",
             "denkzeug",
             "denkzeug",
             "denkzeug-outputs",

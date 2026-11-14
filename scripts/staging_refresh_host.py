@@ -130,7 +130,7 @@ def inventory(rows: list[dict], app: str, environment: str) -> dict:
         raise RuntimeError("All stack services must be running before a refresh")
     backend = groups["backend"][0]
     settings = env(backend)
-    if settings.get("APP_ENVIRONMENT") != environment or not settings.get("APP_TOKEN"):
+    if settings.get("APP_ENVIRONMENT") != environment or not settings.get("INTERNAL_TOKEN"):
         raise RuntimeError("Environment identity/authentication check failed")
     volumes = {name: volume(groups[svc][0], dest) for name, (svc, dest) in DATASETS.items()}
     if len(set(volumes.values())) != len(DATASETS):
@@ -255,8 +255,8 @@ def free_space(path: Path, production: dict, staging: dict) -> None:
 
 def health(stack: dict, expected: str, attempts: int = 60, *, migration_preflight: bool = False) -> None:
     code = """import json, os, urllib.request
-headers = {'Authorization': 'Bearer '+os.environ['APP_TOKEN']}
-r = urllib.request.Request('http://127.0.0.1:8080/api/system', headers=headers)
+headers = {'X-Internal-Token': os.environ['INTERNAL_TOKEN']}
+r = urllib.request.Request('http://127.0.0.1:8080/internal/system', headers=headers)
 s = json.load(urllib.request.urlopen(r, timeout=15))
 assert s['environment'] == os.environ['APP_ENVIRONMENT'] == EXPECTED
 assert s['auth_enabled'] is True
@@ -270,7 +270,7 @@ def healthy(c):
             and (d.get('workers') or {}).get('status') == 'ready'
             and (d.get('temporal_migration') or {}).get('phase') == 'verification_pending')
 assert all(healthy(c) for c in s['components'])
-r = urllib.request.Request('http://127.0.0.1:8080/api/settings/storage', headers=headers)
+r = urllib.request.Request('http://127.0.0.1:8080/internal/settings/storage', headers=headers)
 assert json.load(urllib.request.urlopen(r, timeout=15))['health']['status'] == 'ok'
 """.replace("EXPECTED", repr(expected)).replace("PREFLIGHT", repr(migration_preflight))
     for attempt in range(attempts):

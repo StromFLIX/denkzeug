@@ -48,6 +48,8 @@ APP_ENVIRONMENT=staging
 BACKEND_PORT=18080
 WEBSITE_PORT=18081
 APP_URL=https://app.stage.denkzeug.ai
+DENKZEUG_PUBLIC_URL=https://app.stage.denkzeug.ai
+DENKZEUG_AUTH_ALLOW_INSECURE_LOCALHOST=false
 GITHUB_APP_PUBLIC_URL=https://app.stage.denkzeug.ai
 CORS_ORIGINS=https://app.stage.denkzeug.ai
 ```
@@ -68,9 +70,12 @@ The Compose change separates mutable image tags too. Agent-set Dockerfiles use
 `ARG BASE_IMAGE`; the broker builds them against its content-addressed base image,
 not a mutable production alias. Keep that convention for additional agent sets.
 
-Retain the production `APP_TOKEN` if identical login is required; browsers will
-still ask for it on the new origin. The app uses deployment-token authentication,
-not a user-password database. Transfer secrets only through Coolify/server-side
+The identity database is part of `backend-data`; `APP_TOKEN` no longer grants
+access. Follow [authentication migration and recovery](authentication.md) before
+exposing a restored instance. Revoke copied sessions/device grants and use a
+staging SMTP test sink: never deliver production reset mail from staging. The
+operator must claim an unclaimed database; routine deployment must not create or
+replace its administrator. Transfer secrets only through Coolify/server-side
 backup mechanisms, never through chat or Git. Generate a new `INTERNAL_TOKEN` for
 staging and configure it consistently on its services. Preserve the restored
 PostgreSQL password initially (changing only an env var does not change the role
@@ -164,8 +169,9 @@ Now start staging's remaining services and check:
 
 - Both staging URLs have valid TLS; website buttons open the staging app.
 - A persistent STAGING banner appears on app and site, including before login.
-- The same access token works and representative chats, history, artifacts,
-  workflow files, project worktrees and integration settings are present.
+- Individual account login works, obsolete `APP_TOKEN` and anonymous private API
+  access are denied, and representative owned chats, history, artifacts, workflow
+  files, project worktrees and integration settings are present.
 - Authenticated `/api/system` says `environment=staging`, `auth_enabled=true`,
   and every component is `ok`.
 - Creating a chat/artifact and restarting workers in staging changes nothing in
@@ -240,7 +246,8 @@ Configure in **each** environment:
 | Variable | `APP_URL` | That environment's HTTPS app origin |
 | Variable | `DEPLOY_HEALTH_TIMEOUT_SECONDS` | Optional post-deployment readiness budget in seconds (default `600`, range `1`–`1800`) |
 | Secret | `COOLIFY_TOKEN` | Server-side Coolify API token allowing application read/update and deploy |
-| Secret | `APP_TOKEN` | That environment's Denkzeug access token for component health checks |
+| Secret | `INTERNAL_TOKEN` | That environment's service credential for read-only `/internal/system` and storage health |
+| Secret (staging only) | `DENKZEUG_DEVICE_TOKEN` | Dedicated staging test user's revocable device credential for functional smoke checks |
 
 In `production`, also set variable `COOLIFY_STAGING_APPLICATION_UUID` to the new
 staging UUID. Use GitHub's secret UI/approved secret-management channel, never chat

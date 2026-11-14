@@ -43,18 +43,21 @@ openssl rand -hex 32
 
 | Field | Set it to |
 | --- | --- |
-| `APP_TOKEN` | A new secret used to connect your clients. |
 | `INTERNAL_TOKEN` | A different secret used by private services. |
 | `POSTGRES_PASSWORD` | A different secret for Temporal’s PostgreSQL database. |
 | `MAXIO_SECRET_KEY` | A different secret for private output storage. |
 | `MAXIO_ACCESS_KEY` | Keep the supplied `nautionette-outputs` value, or choose your own nonempty access-key name. |
 
 Provider environment variables may stay empty. You can add integrations in the app
-instead. For a local-only instance, optionally set `APP_URL=http://localhost:8080`
-so the landing page points to your local app.
+instead. Set `DENKZEUG_PUBLIC_URL` and `APP_URL` to your HTTPS app origin and
+configure [authentication and password-reset SMTP](authentication.md). For an
+isolated localhost HTTP development instance, explicitly set
+`APP_ENVIRONMENT=development`, `DENKZEUG_PUBLIC_URL=http://localhost:8080`,
+`APP_URL=http://localhost:8080` and
+`DENKZEUG_AUTH_ALLOW_INSECURE_LOCALHOST=true`. Do not use this exception remotely.
 
-Keep `.env` private; it is ignored by Git. Both access tokens should be configured
-even for a new instance you initially use only from localhost. Do not change the
+Keep `.env` private; it is ignored by Git. `INTERNAL_TOKEN` is required even for
+localhost. The legacy `APP_TOKEN` no longer grants access; there is no open mode. Do not change the
 `STACK_NAMESPACE`, volume names or database credentials of an existing instance
 as a shortcut for an upgrade: that does not migrate stored data or database roles.
 
@@ -78,7 +81,9 @@ Both published ports bind to `127.0.0.1`. Internal services, databases and stora
 are not published. The optional `debug` profile also publishes Temporal UI on
 loopback; it is not needed to use Denkzeug.
 
-Open the app and enter the exact `APP_TOKEN` from `.env`. Initial builds and tool
+Open the app at the configured origin and [claim your initial administrator
+account](authentication.md#claim-a-new-or-upgraded-instance) with the local
+setup-token CLI. Later logins use your individual account. Initial builds and tool
 preparation can take time. A responsive app does not by itself mean the worker and
 agent images are ready: check **Settings > System** for component/image readiness.
 For startup failures, inspect the service that reports the problem:
@@ -116,7 +121,8 @@ Use a reverse proxy with TLS and a stable public origin:
 
 - Route the **app** domain to `http://127.0.0.1:8080` (or your `BACKEND_PORT`).
 - Optionally route a separate **website** domain to `http://127.0.0.1:8081`.
-- Set `APP_URL=https://your-app.example` in `.env`, then recreate the affected
+- Set `DENKZEUG_PUBLIC_URL=https://your-app.example` and the matching `APP_URL`
+  in `.env`, then recreate the affected
   services with `docker compose up -d --build`.
 - Support streaming responses and WebSockets through the app proxy. HTTPS is also
   required for browser microphone access outside localhost.
@@ -125,7 +131,8 @@ Use a reverse proxy with TLS and a stable public origin:
 
 For GitHub App registration/webhooks, GitHub must reach the same stable HTTPS app
 origin. You can set `GITHUB_APP_PUBLIC_URL` or enter it during project setup. Native
-clients connect with this app URL and `APP_TOKEN`, not the promotional website URL.
+clients connect with this app URL and their supported account/device sign-in,
+not the promotional website URL or obsolete `APP_TOKEN`.
 Do not use the project’s own production/staging domains for your installation.
 
 Coolify and isolated staging procedures are documented in [staging](staging.md)

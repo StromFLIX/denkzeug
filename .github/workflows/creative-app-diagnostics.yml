@@ -23,5 +23,5 @@ jobs:
       - name: Inspect creative-app readiness without printing service errors or secrets
         env:
           APP_URL: ${{ vars.APP_URL }}
-          APP_TOKEN: ${{ secrets.APP_TOKEN }}
+          INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN }}
         run: python3 scripts/check_artcraft_deployment.py

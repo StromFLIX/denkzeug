@@ -35,7 +35,7 @@ def check(base: str, token: str) -> dict:
             raise ValueError
     except (ValueError, TypeError) as exc:
         raise RuntimeError(
-            "Configure a valid HTTPS APP_URL and APP_TOKEN for the CLI OAuth staging check"
+            "Configure HTTPS APP_URL and DENKZEUG_DEVICE_TOKEN for the CLI OAuth staging check"
         ) from exc
     request = Request(  # noqa: S310 - validated configured CI application origin
         base.rstrip("/") + "/api/mcp-oauth/capabilities", headers={"Authorization": f"Bearer {token}"}
@@ -78,7 +78,7 @@ def check(base: str, token: str) -> dict:
 
 if __name__ == "__main__":
     try:
-        result = check(os.environ.get("APP_URL", ""), os.environ.get("APP_TOKEN", ""))
+        result = check(os.environ.get("APP_URL", ""), os.environ.get("DENKZEUG_DEVICE_TOKEN", ""))
     except RuntimeError as exc:
         print(str(exc))
         raise SystemExit(1) from None

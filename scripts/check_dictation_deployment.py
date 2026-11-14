@@ -1,7 +1,7 @@
 """Verify private streaming dictation through the deployed HTTPS/WebSocket route.
 
 Only the public JFK sample is used. Prints timings/counts, never tokens/transcripts.
-Run with APP_URL and APP_TOKEN, like the other staging deployment checks.
+Run with APP_URL and DENKZEUG_DEVICE_TOKEN, like the other staging deployment checks.
 """
 
 import asyncio
@@ -171,7 +171,7 @@ async def check(url, token, sample, ready_timeout=300):
 
 def main():
     url = os.environ.get("APP_URL", "").rstrip("/")
-    token = os.environ.get("APP_TOKEN", "")
+    token = os.environ.get("DENKZEUG_DEVICE_TOKEN", "")
     if not url:
         raise RuntimeError("APP_URL is required")
     with urllib.request.urlopen(SAMPLE_URL, timeout=30) as response:

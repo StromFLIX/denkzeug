@@ -27,7 +27,7 @@ def container(app, svc, *, environment=None):
             "Labels": {"com.docker.compose.project": app, "com.docker.compose.service": svc},
             "Env": [
                 f"APP_ENVIRONMENT={environment or ('production' if app == 'prod' else 'staging')}",
-                "APP_TOKEN=private",
+                "INTERNAL_TOKEN=private",
                 f"WORKFLOWS_VOLUME={app}-workflows",
                 f"TARGET_NETWORK={app}-internal",
                 "POSTGRES_USER=temporal",
@@ -113,7 +113,7 @@ def test_inventory_rejects_unsafe_or_incomplete_stacks(stacks, fault):
     if fault == "identity":
         backend["Config"]["Env"][0] = "APP_ENVIRONMENT=production"
     elif fault == "auth":
-        backend["Config"]["Env"][1] = "APP_TOKEN="
+        backend["Config"]["Env"][1] = "INTERNAL_TOKEN="
     elif fault == "workflow_volume":
         broker = next(r for r in rows if r["Id"] == "stage-docker-broker")
         broker["Config"]["Env"][2] = "WORKFLOWS_VOLUME=prod-workflows"
@@ -157,8 +157,9 @@ def test_refresh_health_checks_maxio_connectivity_before_resuming_a_stack(stacks
     host.health(prod, "production", attempts=1)
     code = calls[0][-1]
     compile(code, "refresh-health", "exec")
-    assert "/api/settings/storage" in code and "['health']['status'] == 'ok'" in code
-    assert "Bearer " in code and "private" not in code
+    assert "/internal/settings/storage" in code and "['health']['status'] == 'ok'" in code
+    assert "X-Internal-Token" in code and "APP_TOKEN" not in code
+    assert "Bearer " not in code and "private" not in code
 
 
 def test_copy_preserves_dotfiles_external_symlinks_hardlinks_permissions_and_bytes(tmp_path):

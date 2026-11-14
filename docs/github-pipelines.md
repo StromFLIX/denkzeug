@@ -44,7 +44,8 @@ are already deliberate operations.
 | Variable | `COOLIFY_APPLICATION_UUID` | `tstmjujqyyl3zkvtwb0sx8nc` |
 | Variable | `APP_URL` | `https://app.stage.denkzeug.ai` |
 | Secret | `COOLIFY_TOKEN` | Permanent Coolify API token with application read/update/deploy access |
-| Secret | `APP_TOKEN` | Existing staging Denkzeug login/access token |
+| Secret | `INTERNAL_TOKEN` | Staging service token for read-only component/storage readiness |
+| Secret | `DENKZEUG_DEVICE_TOKEN` | Revocable staging test user's device credential for functional smoke tests |
 
 ### Production environment
 
@@ -55,13 +56,40 @@ are already deliberate operations.
 | Variable | `COOLIFY_STAGING_APPLICATION_UUID` | `tstmjujqyyl3zkvtwb0sx8nc` |
 | Variable | `APP_URL` | `https://app.denkzeug.ai` |
 | Secret | `COOLIFY_TOKEN` | Permanent Coolify API token with production read/update/deploy and staging read access |
-| Secret | `APP_TOKEN` | Existing production Denkzeug login/access token |
+| Secret | `INTERNAL_TOKEN` | Production service token for read-only component/storage readiness |
 
-The two APP_TOKEN values are currently the same because staging deliberately uses
-the same login. They are **not** Coolify tokens and are **not** INTERNAL_TOKEN.
+`APP_TOKEN` is obsolete and grants no access. Keep service tokens independent
+between environments; never pass them to `/api/*` as a user bearer token. Readiness
+uses `X-Internal-Token` on `/internal/system` and `/internal/settings/storage`.
+Functional staging checks use `DENKZEUG_DEVICE_TOKEN` on normal user API routes;
+provision it through the supported account/device flow after the operator claims
+the initial administrator, grant only the needed test capabilities, and revoke or
+rotate it when appropriate. Do not copy a production device credential to staging.
+No deployment job should generate a production administrator or permanent user
+password. See [authentication](authentication.md).
 Use the narrowest abilities/resource/team scope your Coolify version supports;
 do not claim application-scoped permissions if the installed version only offers
 team-wide abilities. Never use the temporary administrator token from chat here.
+
+### First authentication-enabled deployment
+
+Before enabling the new release pipeline, back up staging and production and set
+`DENKZEUG_PUBLIC_URL` in each Coolify app to its existing HTTPS app origin. Configure
+SMTP through the deployment secret store (staging must use a test sink). Retain
+all existing volumes, namespaces and `INTERNAL_TOKEN` values; do not generate or
+rotate service credentials as part of this migration. Update the GitHub
+environment's `INTERNAL_TOKEN` secret to that environment's existing value using
+a trusted operator channel, never a chat or workflow log.
+
+Deploy the exact tested commit to staging first. The operator claims an unclaimed
+staging database using `python -m nautionette_backend.auth_cli setup-token` inside
+its backend container, then provisions the dedicated smoke device through normal
+authentication. No CI job may claim the production administrator. Once staging
+verification is green, publish/promote the stable release through the existing
+pipeline. On an unclaimed production instance, its current owner performs the
+same local claim, with their own account/password. Upgrade native clients and
+verify login, reset and revocation; old token-only builds are not compatible.
+See [authentication](authentication.md) for secret mounts and recovery commands.
 
 ### Staging-refresh environment
 

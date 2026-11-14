@@ -329,7 +329,7 @@ def api(monkeypatch):
     monkeypatch.setenv("COOLIFY_APPLICATION_UUID", "prod")
     monkeypatch.setenv("COOLIFY_STAGING_APPLICATION_UUID", "stage")
     monkeypatch.setenv("APP_URL", "https://app.nautionette.stromflix.com")
-    monkeypatch.setenv("APP_TOKEN", "test-token")
+    monkeypatch.setenv("INTERNAL_TOKEN", "test-token")
     monkeypatch.setenv("GITHUB_REPOSITORY", REPO)
     monkeypatch.delenv("DEPLOY_HEALTH_TIMEOUT_SECONDS", raising=False)
     return fake
@@ -520,13 +520,14 @@ def health_state(monkeypatch):
         ],
     }
     monkeypatch.setenv("APP_URL", "https://app.example.test")
-    monkeypatch.setenv("APP_TOKEN", "test-token")
+    monkeypatch.setenv("INTERNAL_TOKEN", "test-token")
 
-    def request(url, token):
+    def request(url, token, *, internal=False):
         assert token == "test-token"
-        if url == "https://app.example.test/api/settings/storage":
+        assert internal is True
+        if url == "https://app.example.test/internal/settings/storage":
             return {"health": {"status": "ok"}}
-        assert url == "https://app.example.test/api/system"
+        assert url == "https://app.example.test/internal/system"
         return state
 
     monkeypatch.setattr(release, "request", request)
@@ -551,9 +552,10 @@ def test_health_requires_authenticated_environment_and_all_components(health_sta
 def test_unhealthy_output_storage_fails_the_release_without_echoing_details(
     health_state, monkeypatch, storage
 ):
-    def request(url, token):
+    def request(url, token, *, internal=False):
         assert token == "test-token"
-        return health_state if url.endswith("/api/system") else storage
+        assert internal is True
+        return health_state if url.endswith("/internal/system") else storage
 
     monkeypatch.setattr(release, "request", request)
     with pytest.raises(RuntimeError, match="Output storage health check failed") as caught:
@@ -570,8 +572,9 @@ def test_unhealthy_output_storage_fails_the_release_without_echoing_details(
     ],
 )
 def test_output_storage_endpoint_failures_fail_verification(health_state, monkeypatch, error, diagnostic):
-    def request(url, token):
-        if url.endswith("/api/system"):
+    def request(url, token, *, internal=False):
+        assert internal is True
+        if url.endswith("/internal/system"):
             return health_state
         raise error
 
@@ -633,7 +636,7 @@ def test_health_reports_all_problems_without_echoing_sensitive_response(health_s
 
 @pytest.mark.parametrize("response", [None, [], "credential-do-not-log"])
 def test_health_rejects_non_object_json(health_state, monkeypatch, response):
-    monkeypatch.setattr(release, "request", lambda *args: response)
+    monkeypatch.setattr(release, "request", lambda *args, **kwargs: response)
     with pytest.raises(RuntimeError, match="non-object response"):
         release.healthy("production")
 
@@ -648,7 +651,7 @@ def test_health_rejects_non_object_json(health_state, monkeypatch, response):
     ],
 )
 def test_health_endpoint_errors(health_state, monkeypatch, error, diagnostic):
-    def fail(*args):
+    def fail(*args, **kwargs):
         raise error
 
     monkeypatch.setattr(release, "request", fail)

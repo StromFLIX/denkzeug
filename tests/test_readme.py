@@ -85,7 +85,7 @@ def test_readme_and_setup_use_the_real_compose_entrypoint_and_required_secrets()
     assert "WEBSITE_PORT=8081" in env
     assert '"127.0.0.1:${BACKEND_PORT:-8080}:8080"' in compose
     for text in [readme, setup]:
-        for key in ["APP_TOKEN", "INTERNAL_TOKEN", "POSTGRES_PASSWORD", "MAXIO_SECRET_KEY"]:
+        for key in ["DENKZEUG_PUBLIC_URL", "INTERNAL_TOKEN", "POSTGRES_PASSWORD", "MAXIO_SECRET_KEY"]:
             assert f"`{key}`" in text
             assert f"{key}=" in env
         for command in [

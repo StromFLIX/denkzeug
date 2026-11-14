@@ -90,7 +90,6 @@ Edit `.env` before starting. Generate a **different** strong value for each of:
 
 | Variable | Purpose |
 | --- | --- |
-| `APP_TOKEN` | The access token you enter when connecting a client. |
 | `INTERNAL_TOKEN` | Private communication between the stack’s services. |
 | `POSTGRES_PASSWORD` | Temporal’s PostgreSQL database password. |
 | `MAXIO_SECRET_KEY` | Private storage for output files. |
@@ -98,6 +97,11 @@ Edit `.env` before starting. Generate a **different** strong value for each of:
 Run `openssl rand -hex 32` separately for each value. Keep `.env` private and never
 commit it. Leave `MAXIO_ACCESS_KEY` at its supplied value unless you intentionally
 change it. Provider credentials can be added in the app after startup.
+
+Set `DENKZEUG_PUBLIC_URL` (and `APP_URL`) to your HTTPS app origin. For a local-only
+HTTP development instance at `http://localhost:8080`, explicitly configure the
+localhost-only development settings in [authentication](docs/authentication.md). Authentication is always on;
+the obsolete `APP_TOKEN` no longer grants access.
 
 ### 3. Start the stack
 
@@ -107,9 +111,10 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Open **[the app at localhost:8080](http://localhost:8080)** and enter `APP_TOKEN`.
-The landing page is at [localhost:8081](http://localhost:8081). Both ports bind to
-loopback by default.
+Open your configured app origin and [claim the initial administrator
+account](docs/authentication.md#claim-a-new-or-upgraded-instance) using the local
+operator setup-token CLI. The landing page is at
+[localhost:8081](http://localhost:8081). Both ports bind to loopback by default.
 
 The first start builds or acquires agent images and prepares tools. The app can
 open before agents are ready; check **Settings > System** or follow startup with
@@ -125,15 +130,16 @@ from Denkzeug.
 [Full setup, HTTPS, updates and backups](docs/self-hosting.md) ·
 [Configuration template](.env.example)
 
-> **Before making it public:** use HTTPS and a stable `APP_URL`, keep service ports
+> **Before making it public:** use HTTPS and a stable `DENKZEUG_PUBLIC_URL`, keep service ports
 > private, and treat agent tools as trusted automation. This is actively developed
 > self-hosted software, not a hardened multi-tenant service. See the
 > [security and storage notes](docs/self-hosting.md#security-and-data).
 
 ## Use it from your devices
 
-Every client connects to an **existing server** with its URL and access token;
-installing a desktop or phone client does not install the backend.
+Every client connects to an **existing server** at its app URL using an individual
+account and supported device sign-in. Upgrade old token-only clients; installing
+a desktop or phone client does not install the backend.
 
 | Client | Availability |
 | --- | --- |
