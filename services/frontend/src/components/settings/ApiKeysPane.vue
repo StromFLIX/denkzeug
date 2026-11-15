@@ -6,6 +6,7 @@
     </header>
     <p v-if="error" class="api-keys__error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status" class="api-keys__notice">{{ notice }}</p>
+    <p v-if="catalog?.warnings?.length" role="status" class="caption api-keys__warning">{{ catalog.warnings.join(' ') }}</p>
     <div id="api-keys" class="api-keys__inventory">
       <div class="api-keys__toolbar">
         <label class="grow">Find a key<input v-model="query" type="search" class="field" placeholder="Name or prefix" /></label>

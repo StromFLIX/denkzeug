@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from typing import Any
 from urllib.parse import quote
 
+import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -16,6 +18,7 @@ from ..auth_store import audit, store, throttle
 from ..clients import authoring
 from ..config import settings
 from ..security import require_user
+from ..workflow_control import workflow_lock
 
 router = APIRouter(dependencies=[Depends(require_user)], tags=["API keys"])
 
@@ -39,14 +42,46 @@ def who(request):
     return principal
 
 
+async def workflow_definition(name: str):
+    try:
+        return await authoring.get_workflow(name)
+    except httpx.HTTPStatusError as error:
+        if error.response.status_code == 404:
+            raise HTTPException(404, "Workflow not found") from error
+        raise HTTPException(503, "Workflow authoring is unavailable; try again when it is ready") from error
+    except httpx.TransportError as error:
+        raise HTTPException(503, "Workflow authoring is unavailable; try again when it is ready") from error
+
+
 @router.get("/api/tokens/catalog")
 async def catalog(request: Request):
     principal = who(request)
     resources = []
-    for workflow in await authoring.list_workflows():
-        name = workflow["name"]
-        if access.allowed("workflow", name, principal):
-            resources.append({"kind": "workflow", "id": api_keys.workflow_identity(name), "name": name})
+    warnings = []
+    try:
+        # Resource discovery must not prevent emergency key revocation during
+        # an authoring outage, nor assign an ID from a stale deleted inventory.
+        async with asyncio.timeout(3):
+            for workflow in await authoring.list_workflows():
+                name = workflow["name"]
+                if not access.allowed("workflow", name, principal):
+                    continue
+                async with workflow_lock(name):
+                    try:
+                        await workflow_definition(name)
+                    except HTTPException as error:
+                        if error.status_code != 404:
+                            raise
+                        continue
+                    except httpx.HTTPStatusError as error:
+                        if error.response.status_code != 404:
+                            raise
+                        continue
+                    resources.append(
+                        {"kind": "workflow", "id": api_keys.workflow_identity(name), "name": name}
+                    )
+    except (TimeoutError, HTTPException, httpx.HTTPError):
+        warnings.append("Workflow resource lookup is unavailable. Existing keys can still be managed.")
     for row in store().query("SELECT * FROM access_resources WHERE kind IN ('agent','project','app')"):
         if access.allowed(row["kind"], row["resource_id"], principal):
             table, label = {
@@ -99,6 +134,7 @@ async def catalog(request: Request):
             )
         ],
         "resources": resources,
+        "warnings": warnings,
         "policy": {
             "default_days": api_keys.DEFAULT_DAYS,
             "max_days": api_keys.MAX_DAYS,
@@ -211,9 +247,14 @@ def usage(token_id: str, request: Request):
 
 @router.post("/api/workflows/{name}/webhook-token", status_code=201)
 async def webhook_token(name: str, request: Request, body: WebhookCreate = Body(default=WebhookCreate())):
+    async with workflow_lock(name):
+        return await _webhook_token(name, request, body)
+
+
+async def _webhook_token(name: str, request: Request, body: WebhookCreate):
     principal = who(request)
     access.require_resource("workflow", name, principal)
-    await authoring.get_workflow(name)  # Do not mint credentials for a nonexistent workflow.
+    await workflow_definition(name)  # Do not mint credentials for a nonexistent workflow.
     if not settings.public_url:
         raise HTTPException(503, "Configure the public instance URL before creating webhook links")
     throttle("api-key-create:" + principal.user_id, 30, window=3600)

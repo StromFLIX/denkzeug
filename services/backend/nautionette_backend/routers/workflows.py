@@ -111,6 +111,11 @@ async def deploy_workflow(name: str, payload: WorkflowSource) -> dict[str, Any]:
 
 @router.delete("/api/workflows/{name}")
 async def delete_workflow(name: str) -> dict[str, Any]:
+    async with workflow_lock(name):
+        return await _delete_workflow(name)
+
+
+async def _delete_workflow(name: str) -> dict[str, Any]:
     # Stop Temporal before removing the definition. If Temporal is unavailable,
     # leave the file/settings intact so deletion can be retried safely.
     try:

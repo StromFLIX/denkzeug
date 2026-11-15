@@ -85,6 +85,20 @@ SCOPES["mcp:manage"]["resource_kind"] = None
 SCOPES["mcp:execute"]["description"] = (
     "Execute selected backend MCP tools (also requires each tool's API scope)"
 )
+# Only the static frontend and session-protected documentation are unscoped.
+# A future API must choose a domain even if it only accepts human sessions.
+UNSCOPED = frozenset(
+    {
+        "GET /{path:path}",
+        "HEAD /{path:path}",
+        "GET /api/docs",
+        "HEAD /api/docs",
+        "GET /api/docs/oauth2-redirect",
+        "HEAD /api/docs/oauth2-redirect",
+        "GET /api/openapi.json",
+        "HEAD /api/openapi.json",
+    }
+)
 AUTHENTICATION = {
     "account",
     "session",
@@ -115,8 +129,8 @@ def validate_routes(app, prefix: str = "") -> None:
                 raise RuntimeError(f"Unknown API scope: {key}: {policy.scope}")
             if policy.authentication not in AUTHENTICATION:
                 raise RuntimeError(f"Unknown authentication policy: {key}")
-            if policy.scope is None and policy.authentication in {"account", "internal", "capability", "mcp"}:
-                raise RuntimeError(f"Authenticated API operation must declare its scope: {key}")
+            if policy.scope is None and key not in UNSCOPED:
+                raise RuntimeError(f"Every API operation must declare its scope: {key}")
         if isinstance(route.original_route, Mount):
             mounted = route.original_route.app
             if not hasattr(mounted, "routes"):
@@ -157,6 +171,12 @@ def resolve(request: HTTPConnection, app, prefix: str = ""):
         policy = POLICIES.get(key)
         if policy is None:
             raise HTTPException(403, "This operation has no security policy")
+        if (
+            (policy.scope is None and key not in UNSCOPED)
+            or (policy.scope is not None and policy.scope not in SCOPES)
+            or policy.authentication not in AUTHENTICATION
+        ):
+            raise HTTPException(403, "This operation has no valid security scope")
         if isinstance(route.original_route, Mount):
             mounted = route.original_route.app
             if not hasattr(mounted, "routes"):

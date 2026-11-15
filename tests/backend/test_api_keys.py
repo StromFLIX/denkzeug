@@ -34,7 +34,7 @@ def external(secret):
     return TestClient(main.app, headers={"Authorization": f"Bearer {secret}"})
 
 
-def test_every_operation_has_a_reviewed_policy():
+def test_every_operation_has_a_reviewed_policy(monkeypatch):
     validate_routes(main.app)
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
@@ -43,6 +43,11 @@ def test_every_operation_has_a_reviewed_policy():
         return {}
 
     with pytest.raises(RuntimeError, match="no explicit authentication"):
+        validate_routes(app)
+    from nautionette_backend.api_policy import Policy
+
+    monkeypatch.setitem(POLICIES, "GET /api/unreviewed", Policy(None, "session"))
+    with pytest.raises(RuntimeError, match="must declare its scope"):
         validate_routes(app)
     assert POLICIES["POST /api/workflows/{name}/run"].scope == "workflows:trigger"
     assert POLICIES["POST /api/workflows/{name}/deploy"].scope == "workflows:write"
@@ -480,3 +485,90 @@ def test_live_delegated_session_is_not_a_human_key_management_credential(client,
         assert "webhook_token" not in main.backend_mcp.operations
     finally:
         release_delegation(grant)
+
+
+@pytest.mark.parametrize("scope", [[], {}, None, 123])
+def test_malformed_scope_types_are_validation_errors_not_server_errors(client, scope):
+    response = client.post("/api/tokens", json={"name": "Malformed", "grants": [{"scope": scope}]})
+    assert response.status_code == 422, response.text
+
+
+def test_native_clients_can_read_admission_errors_and_refresh_expired_sessions(client, anonymous):
+    origin = settings.cors_origins[0]
+    response = anonymous.get("/api/system", headers={"Origin": origin})
+    assert response.status_code == 401
+    assert response.headers["access-control-allow-origin"] == origin
+    key = create(client)
+    response = external(key["secret"]).get("/api/settings", headers={"Origin": origin})
+    assert response.status_code == 403
+    assert response.headers["access-control-allow-origin"] == origin
+    response = anonymous.options(
+        "/api/unknown",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert response.status_code == 404
+    assert response.headers["access-control-allow-origin"] == origin
+
+
+def test_authoring_outage_does_not_block_key_management(client, backend, monkeypatch):
+    import httpx
+
+    created = create(client)
+
+    async def unavailable():
+        raise httpx.ConnectError("do not expose internal connection details")
+
+    from nautionette_backend.clients import authoring
+
+    monkeypatch.setattr(authoring, "list_workflows", unavailable)
+    response = client.get("/api/tokens/catalog")
+    assert response.status_code == 200, response.text
+    assert response.json()["warnings"]
+    assert "internal connection details" not in response.text
+    assert client.get("/api/tokens").status_code == 200
+    assert client.delete(f"/api/tokens/{created['token']['id']}").status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_workflow_deletion_and_webhook_issue_share_the_same_generation_lock(backend, monkeypatch):
+    import asyncio
+
+    from nautionette_backend.routers.tokens import WebhookCreate, webhook_token
+    from nautionette_backend.workflow_control import workflow_lock
+    from starlette.requests import Request
+
+    backend.authoring.workflows["locked-hook"] = {"name": "locked-hook", "code": "", "manifest": {}}
+    monkeypatch.setattr(settings, "public_url", "https://testserver")
+    called = asyncio.Event()
+    original = backend.authoring.get_workflow
+
+    async def get(name):
+        called.set()
+        if name not in backend.authoring.workflows:
+            raise HTTPException(404, "Workflow not found")
+        return await original(name)
+
+    from nautionette_backend.clients import authoring
+
+    monkeypatch.setattr(authoring, "get_workflow", get)
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/workflows/locked-hook/webhook-token",
+            "headers": [],
+            "state": {"principal": Principal("test-admin", "admin", "test-session")},
+        }
+    )
+    async with workflow_lock("locked-hook"):
+        pending = asyncio.create_task(webhook_token("locked-hook", request, WebhookCreate()))
+        await asyncio.sleep(0)
+        assert not called.is_set()
+        backend.authoring.workflows.pop("locked-hook")
+    with pytest.raises(HTTPException) as response:
+        await pending
+    assert response.value.status_code == 404
+    assert api_keys.store().one("SELECT id FROM api_resource_ids WHERE name='locked-hook'") is None

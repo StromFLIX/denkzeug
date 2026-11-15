@@ -183,6 +183,36 @@ class AccountBoundaryMiddleware:
     def __init__(self, app):
         self.app = app
 
+    async def reject(self, request: Request, status: int, detail, receive, send, extra_headers=None):
+        """Admission errors still need native-client CORS and safe response headers."""
+        from starlette.datastructures import Headers
+        from starlette.middleware.cors import CORSMiddleware
+        from starlette.responses import JSONResponse
+
+        headers = {
+            **(extra_headers or {}),
+            "Cache-Control": "no-store",
+            "Referrer-Policy": "no-referrer",
+            "X-Content-Type-Options": "nosniff",
+        }
+        who = getattr(request.state, "principal", None)
+        if who is not None and not who.service:
+            headers["X-Denkzeug-Account"] = who.user_id
+        response = JSONResponse({"detail": detail}, status_code=status, headers=headers)
+        request_headers = Headers(scope=request.scope)
+        if not request_headers.get("origin"):
+            return await response(request.scope, receive, send)
+        cors = CORSMiddleware(
+            response,
+            allow_origins=settings.cors_origins,
+            allow_credentials=False,
+            allow_methods=["*"],
+            allow_headers=["*"],
+            expose_headers=["X-Denkzeug-Account"],
+        )
+        # Do not re-run preflight admission: preserve an invalid preflight's status.
+        return await cors.simple_response(request.scope, receive, send, request_headers=request_headers)
+
     async def websocket(self, scope, receive, send):
         from starlette.requests import HTTPConnection
 
@@ -270,8 +300,6 @@ class AccountBoundaryMiddleware:
             ):
                 # A preflight is not an API invocation; CORS may answer only for
                 # an explicitly registered operation, never an unreviewed URL.
-                from starlette.responses import JSONResponse
-
                 from .api_policy import resolve
                 from .main import app as root_app
 
@@ -283,9 +311,7 @@ class AccountBoundaryMiddleware:
                 try:
                     resolve(Request(probe_scope), root_app)
                 except HTTPException as exc:
-                    return await JSONResponse({"detail": exc.detail}, status_code=exc.status_code)(
-                        scope, receive, send
-                    )
+                    return await self.reject(request, exc.status_code, exc.detail, receive, send, exc.headers)
                 return await self.app(scope, receive, send)
             credential_json = request.url.path.startswith(
                 ("/api/auth/", "/api/tokens")
@@ -303,15 +329,11 @@ class AccountBoundaryMiddleware:
                     chunk = message.get("body", b"")
                     size += len(chunk)
                     if size > maximum:
-                        from starlette.responses import JSONResponse
-
                         audit_id = api_keys.begin_request(request)
                         api_keys.finish_request(audit_id, 413, time.monotonic() - started, request)
-                        return await JSONResponse(
-                            {"detail": "Credential request is too large"},
-                            status_code=413,
-                            headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
-                        )(scope, receive, send)
+                        return await self.reject(
+                            request, 413, "Credential request is too large", receive, send
+                        )
                     chunks.append(chunk)
                     if not message.get("more_body", False):
                         break
@@ -342,15 +364,9 @@ class AccountBoundaryMiddleware:
                 if request.url.path in {"/api/docs", "/api/docs/oauth2-redirect", "/api/openapi.json"}:
                     await require_admin(request)
             except HTTPException as exc:
-                from starlette.responses import JSONResponse
-
                 audit_id = api_keys.begin_request(request)
                 api_keys.finish_request(audit_id, exc.status_code, time.monotonic() - started, request)
-                return await JSONResponse(
-                    {"detail": exc.detail},
-                    status_code=exc.status_code,
-                    headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
-                )(scope, receive, send)
+                return await self.reject(request, exc.status_code, exc.detail, receive, send, exc.headers)
             audit_id = api_keys.begin_request(request)
             # Ownership guards may have parsed JSON. Replay its cached body to the
             # router's Request, without ever losing bytes or re-consuming a stream.

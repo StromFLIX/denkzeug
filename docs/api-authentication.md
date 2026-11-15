@@ -10,7 +10,8 @@ rejects unclassified routes even if they were installed after startup.
 ## Trust boundaries
 
 - **User sessions**: HttpOnly browser cookies with origin/CSRF checks; native
-  access/refresh sessions retain their existing lifecycle.
+  access/refresh sessions retain their existing lifecycle. Admission errors retain
+  CORS headers so packaged clients can read 401 responses and refresh sessions.
 - **API keys**: opaque `dz_key_…` bearer credentials, owned by an account. They
   never become sessions or administrator bypasses.
 - **Workflow links**: opaque `dz_wht_…` credentials accepted only for
@@ -94,7 +95,10 @@ connection management.
 Workflow names are not credential identities. Deleting a workflow invalidates
 its generation ID; recreating it under the same name does not revive old keys.
 Workflow generation IDs are returned by `GET /api/tokens/catalog` and are
-never chosen by the client.
+never chosen by the client. Deployment, deletion, resource lookup and webhook
+issuance share the workflow's lifecycle lock, so stale inventory cannot mint a
+credential for a deleted/recreated definition. Resource discovery is bounded and
+can return a warning during an authoring outage without blocking key revocation.
 
 ## Creating and using a key
 

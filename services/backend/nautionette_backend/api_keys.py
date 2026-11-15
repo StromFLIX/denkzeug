@@ -131,7 +131,7 @@ def validate_grants(grants: list, who) -> list:
         if not isinstance(grant, dict) or set(grant) - {"scope", "resources"}:
             raise HTTPException(422, "Invalid permission grant")
         scope, resources = grant.get("scope"), grant.get("resources")
-        if scope not in SCOPES or scope in seen:
+        if not isinstance(scope, str) or scope not in SCOPES or scope in seen:
             raise HTTPException(422, "Unknown or duplicate permission")
         if who.role != "admin" and scope not in MEMBER_SCOPES:
             raise HTTPException(403, "You cannot delegate this permission")
