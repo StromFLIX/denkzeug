@@ -57,6 +57,13 @@ jobs:
           INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN }}
           DEPLOY_HEALTH_TIMEOUT_SECONDS: ${{ vars.DEPLOY_HEALTH_TIMEOUT_SECONDS }}
         run: python3 -m scripts.coolify_release
+      - name: Verify token usage analytics (staging only)
+        if: github.event_name == 'workflow_run'
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          DENKZEUG_SMOKE_USERNAME: ${{ secrets.DENKZEUG_SMOKE_USERNAME }}
+          DENKZEUG_SMOKE_PASSWORD: ${{ secrets.DENKZEUG_SMOKE_PASSWORD }}
+        run: python3 -m scripts.check_usage_deployment
       - name: Verify isolated mini-app lifecycle (staging only)
         if: github.event_name == 'workflow_run'
         env:

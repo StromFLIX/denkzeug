@@ -456,6 +456,16 @@
     "authentication": "account",
     "resource": null
   },
+  "GET /api/settings/usage": {
+    "scope": "settings:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/settings/usage/export": {
+    "scope": "settings:read",
+    "authentication": "session",
+    "resource": null
+  },
   "GET /api/settings/worktrees": {
     "scope": "settings:read",
     "authentication": "account",

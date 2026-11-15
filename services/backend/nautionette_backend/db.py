@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS messages (
     created_at REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS messages_chat ON messages(chat_id, created_at);
+CREATE INDEX IF NOT EXISTS messages_created ON messages(created_at, id);
 CREATE TABLE IF NOT EXISTS chat_images (
     id TEXT PRIMARY KEY,
     chat_id TEXT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
@@ -238,6 +239,7 @@ CREATE TABLE IF NOT EXISTS chat_turns (
     status TEXT NOT NULL DEFAULT ''
 );
 CREATE UNIQUE INDEX IF NOT EXISTS chat_turn_running ON chat_turns(chat_id) WHERE state = 'running';
+CREATE INDEX IF NOT EXISTS chat_turn_user ON chat_turns(user_id);
 CREATE INDEX IF NOT EXISTS chat_turn_activity ON chat_turns(state, chat_id)
     WHERE state IN ('running', 'queued');
 CREATE TABLE IF NOT EXISTS chat_turn_events (
@@ -246,6 +248,8 @@ CREATE TABLE IF NOT EXISTS chat_turn_events (
     payload TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS chat_turn_events_turn ON chat_turn_events(turn_id, seq);
+CREATE INDEX IF NOT EXISTS chat_turn_usage ON chat_turn_events(turn_id, seq)
+    WHERE json_extract(payload, '$.type') IN ('usage','result');
 -- Keep identity tombstones after chat deletion: a workflow retry must not replay side effects.
 CREATE TABLE IF NOT EXISTS workflow_agent_tasks (
     key TEXT PRIMARY KEY,
@@ -268,6 +272,7 @@ CREATE TABLE IF NOT EXISTS runs (
 );
 CREATE INDEX IF NOT EXISTS runs_workflow ON runs(workflow, created_at);
 CREATE INDEX IF NOT EXISTS runs_workflow_id ON runs(workflow_id);
+CREATE INDEX IF NOT EXISTS runs_created ON runs(created_at, workflow_id);
 -- Completion and delivery are separate durable obligations. Old terminal runs
 -- are intentionally not backfilled: that would replay historical notifications.
 CREATE TABLE IF NOT EXISTS run_deliveries (
@@ -605,6 +610,16 @@ class Database:
             # bootstrap, one-time redemption and last-admin checks must do so.
             self._conn.execute("BEGIN IMMEDIATE")
             yield self._conn
+
+    @contextmanager
+    def read_snapshot(self) -> Iterator[sqlite3.Connection]:
+        """A consistent read across related projections without a write reservation."""
+        with self._lock:
+            self._conn.execute("BEGIN")
+            try:
+                yield self._conn
+            finally:
+                self._conn.rollback()
 
     def compact(self) -> None:
         """Explicitly reclaim pages freed by legacy output migration/cleanup."""

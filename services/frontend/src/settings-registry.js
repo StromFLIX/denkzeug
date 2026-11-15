@@ -123,6 +123,15 @@ export const SETTINGS_SECTIONS = [
     ]
   },
   {
+    key: 'usage', label: 'Usage', icon: 'bar_chart', group: 'Run & manage', scope: 'Account & workspace',
+    scopeNote: 'Your account usage. Administrators can also view workspace totals.',
+    load: () => import('./components/settings/UsagePane.vue'),
+    entries: [
+      entry('usage-overview', 'Token consumption', 'Reported tokens, model responses and agent executions over time.', 'usage consumption input output cache tokens analytics'),
+      entry('usage-breakdown', 'Usage breakdown', 'Explore consumption by model, agent, workflow or account, and export CSV.', 'users overall statistics daily trends export')
+    ]
+  },
+  {
     key: 'app-runtimes', label: 'App runtimes', icon: 'apps', group: 'Run & manage', scope: 'Instance',
     load: () => import('./components/settings/MiniAppsPane.vue'),
     entries: [entry('app-runtimes', 'App runtimes & resources', 'Running, sleeping and archived apps with memory, CPU, SQLite storage and image usage.', 'mini apps agents containers diagnostics debug limits RAM OOM processes')]

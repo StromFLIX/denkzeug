@@ -57,6 +57,11 @@ workflow's Run controls rather than duplicating scheduling or delivery forms.
 Keyboard entry points are **Ctrl/Command + ,** for Settings and **/** to focus its
 search field. On narrow screens, a grouped category selector replaces the tree.
 
+**Run & manage → Usage** shows token composition, a time chart and filtered
+model/agent/workflow/account breakdowns. Workflow drilldowns show runs; members
+see only their own usage. The page uses theme tokens, collapses filters on mobile,
+and supports filtered CSV downloads. See [Usage](usage.md) for the accounting and API contract.
+
 ## Device preferences
 
 `preferences-schema.js` describes workspace controls, their defaults and allowed

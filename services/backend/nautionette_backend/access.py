@@ -505,6 +505,8 @@ async def authorize_request(request: Request, who) -> None:
         require_resource("workflow", parts[3], who)
         execution_scope.set(("workflow", parts[3]))
         return
+    if path in {"/api/settings/usage", "/api/settings/usage/export"} and method == "GET":
+        return  # Session-only analytics; the service constrains every member projection.
     if path == "/api/catalog" and method == "GET":
         return
     if path.startswith("/api/speech") and method in {"GET", "POST"}:
