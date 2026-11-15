@@ -337,9 +337,16 @@ def test_preflight_is_public_but_only_for_reviewed_operations(anonymous, monkeyp
     )
 
 
-def test_key_catalog_has_delegable_scopes_and_zero_usage_for_new_keys(client):
+def test_key_catalog_has_delegable_scopes_and_zero_usage_for_new_keys(client, db):
+    db.execute(
+        "INSERT INTO projects(id,repository_id,full_name,default_branch,status) "
+        "VALUES('project-catalog',98765,'owner/repository','main','ready')"
+    )
     result = client.get("/api/tokens/catalog")
     assert result.status_code == 200, result.text
+    assert {"kind": "project", "id": "project-catalog", "name": "owner/repository"} in result.json()[
+        "resources"
+    ]
     scopes = {item["scope"] for item in result.json()["scopes"]}
     assert "workflows:trigger" in scopes and "mcp:execute" in scopes
     assert "accounts:manage" not in scopes and "tokens:manage" not in scopes

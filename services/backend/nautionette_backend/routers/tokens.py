@@ -51,7 +51,7 @@ async def catalog(request: Request):
         if access.allowed(row["kind"], row["resource_id"], principal):
             table, label = {
                 "agent": ("agent_profiles", "name"),
-                "project": ("projects", "name"),
+                "project": ("projects", "full_name"),
                 "app": ("mini_apps", "title"),
             }[row["kind"]]
             named = store().one(f"SELECT {label} AS name FROM {table} WHERE id=?", (row["resource_id"],))  # noqa: S608
