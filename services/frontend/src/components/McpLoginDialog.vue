@@ -15,6 +15,7 @@
         </button>
       </header>
       <p id="mcp-login-description" class="mcp-login-description">{{ selected?.requests?.length ? 'A tool is waiting for sign-in (up to 3 minutes). Skip or snooze to fail this call without running it.' : 'Reconnect with your saved settings.' }}</p>
+      <p class="caption dim">Account access and tools are shared across this instance.</p>
       <p v-if="!supported()" class="mcp-login-notice caption" role="alert">{{ oauthClientMessage }}</p>
       <p v-if="stage && busy" class="mcp-login-status caption" role="status">
         <span class="material-icons" aria-hidden="true">hourglass_top</span>
@@ -65,12 +66,12 @@ import { useQuasar } from 'quasar'
 import { api, server } from '../api'
 import { account } from '../auth-session.js'
 import { actions, store } from '../store'
-import { desktopOAuth, oauthClientMessage, oauthConnection } from '../mcp-oauth.js'
+import { oauthSupported, oauthClientMessage, oauthConnection } from '../mcp-oauth.js'
 
 const $q = useQuasar()
 const selected = computed(() => store.mcpAuth.prompt)
 const visible = computed(() => Boolean(selected.value) && account.user?.role === 'admin')
-const supported = () => Boolean(desktopOAuth())
+const supported = () => oauthSupported({ ...selected.value, ...selected.value?.oauth })
 const busy = ref(false),
   stage = ref(''),
   error = ref(''),

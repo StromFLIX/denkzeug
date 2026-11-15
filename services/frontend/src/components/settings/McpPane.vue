@@ -63,21 +63,36 @@
               Provider settings are detected automatically. Only override these if the provider requires a
               custom client.
             </p>
+            <label class="integration-field">
+              <span class="caption">OAuth grant</span>
+              <select v-model="httpConfig.grant_type" class="field" aria-label="OAuth grant" :disabled="Boolean(busy)">
+                <option value="authorization_code">Authorization code — browser sign-in</option>
+                <option value="device_code">Device code — enter a code in your browser</option>
+                <option value="client_credentials">Client credentials — service account</option>
+              </select>
+            </label>
+            <label v-if="httpConfig.grant_type === 'authorization_code'" class="integration-field">
+              <span class="caption">Callback destination</span>
+              <select v-model="httpConfig.callback_mode" class="field" aria-label="Callback destination" :disabled="Boolean(busy)">
+                <option value="desktop">Desktop app — local callback</option>
+                <option value="web">Web — backend callback</option>
+              </select>
+            </label>
             <label class="integration-field"
-              ><span class="caption">Public OAuth client ID</span
+              ><span class="caption">OAuth client ID</span
               ><input
                 v-model="httpConfig.client_id"
                 class="field mono"
-                aria-label="Public OAuth client ID"
+                aria-label="OAuth client ID"
                 :disabled="Boolean(busy)"
                 placeholder="Automatic"
             /></label>
-            <label class="integration-field"
+            <label v-if="httpConfig.grant_type === 'authorization_code'" class="integration-field"
               ><span class="caption">Callback URI</span
               ><input
                 v-model="httpConfig.redirect_uri"
                 class="field mono"
-                aria-label="Loopback redirect URI"
+                aria-label="Callback URI"
                 :disabled="Boolean(busy)"
                 placeholder="Provider default"
             /></label>
@@ -90,7 +105,7 @@
                 :disabled="Boolean(busy)"
                 placeholder="Provider default"
             /></label>
-            <label class="integration-field"
+            <label v-if="httpConfig.grant_type === 'authorization_code'" class="integration-field"
               ><span class="caption">Callback response mode</span
               ><select
                 v-model="httpConfig.response_mode"
@@ -103,6 +118,69 @@
                 <option value="form_post">Form POST</option>
               </select></label
             >
+            <label class="integration-field">
+              <span class="caption">Token endpoint authentication</span>
+              <select v-model="httpConfig.token_endpoint_auth_method" class="field" aria-label="Token endpoint authentication" :disabled="Boolean(busy)">
+                <option value="none">None — public client</option>
+                <option value="client_secret_basic">Client secret — HTTP Basic</option>
+                <option value="client_secret_post">Client secret — request body</option>
+                <option value="private_key_jwt">Private key JWT</option>
+                <option value="client_secret_jwt">Client secret JWT</option>
+              </select>
+            </label>
+            <label v-if="httpConfig.token_endpoint_auth_method.startsWith('client_secret')" class="integration-field">
+              <span class="caption">Client secret</span>
+              <input v-model="httpConfig.client_secret" type="password" class="field" aria-label="Client secret" autocomplete="new-password" :disabled="Boolean(busy)" :placeholder="storedOAuth.client_secret_configured ? 'Stored — leave blank to keep' : 'Client secret'" />
+            </label>
+            <template v-if="httpConfig.token_endpoint_auth_method === 'private_key_jwt'">
+              <label class="integration-field">
+                <span class="caption">Private key (PEM, write-only)</span>
+                <textarea v-model="httpConfig.private_key" class="field mono" aria-label="Private key (PEM)" rows="3" autocomplete="off" spellcheck="false" :disabled="Boolean(busy)" :placeholder="storedOAuth.private_key_configured ? 'Stored — leave blank to keep' : 'Paste PEM private key'" />
+              </label>
+            </template>
+            <label v-if="httpConfig.token_endpoint_auth_method.endsWith('_jwt')" class="integration-field">
+              <span class="caption">Key ID (optional)</span>
+              <input v-model="httpConfig.key_id" class="field mono" aria-label="Key ID" :disabled="Boolean(busy)" />
+            </label>
+            <label class="integration-field">
+              <span class="caption">Provider metadata</span>
+              <select v-model="httpConfig.metadata_mode" class="field" aria-label="Provider metadata" :disabled="Boolean(busy)">
+                <option value="discovery">Discovery</option>
+                <option value="manual">Manual endpoints</option>
+              </select>
+            </label>
+            <label class="integration-field">
+              <span class="caption">Issuer</span>
+              <input v-model="httpConfig.issuer" class="field mono" aria-label="Issuer" placeholder="https://login.example.com" :disabled="Boolean(busy)" />
+            </label>
+            <template v-if="httpConfig.metadata_mode === 'manual'">
+              <label v-for="field in endpointFields.filter(field => field.grant === httpConfig.grant_type || !field.grant)" :key="field.key" class="integration-field">
+                <span class="caption">{{ field.label }}</span>
+                <input v-model="httpConfig[field.key]" class="field mono" :aria-label="field.label" placeholder="https://login.example.com/…" :disabled="Boolean(busy)" />
+              </label>
+            </template>
+            <label class="integration-field">
+              <span class="caption">Resource parameter</span>
+              <select v-model="httpConfig.resource_parameter" class="field" aria-label="Resource parameter" :disabled="Boolean(busy)">
+                <option value="resource">resource</option>
+                <option value="audience">audience</option>
+                <option value="none">None</option>
+              </select>
+            </label>
+            <label v-if="httpConfig.resource_parameter !== 'none'" class="integration-field">
+              <span class="caption">Resource value (optional)</span>
+              <input v-model="httpConfig.resource_value" class="field mono" aria-label="Resource value" placeholder="Server URL by default" :disabled="Boolean(busy)" />
+            </label>
+            <label class="integration-field">
+              <span class="caption">Authorization parameters (JSON object)</span>
+              <textarea v-model="authorizationParamsText" class="field mono" aria-label="Authorization parameters" rows="2" :disabled="Boolean(busy)" placeholder='{"prompt":"consent"}' />
+            </label>
+            <p class="caption dim">Supported keys: prompt, login_hint, domain_hint, access_type, audience, organization. Use string values; do not include secrets.</p>
+            <p v-if="parsedAuthorizationParams === null" class="caption field-hint--bad" role="alert">Enter a JSON object with supported keys and string values.</p>
+            <label class="integration-field">
+              <span class="caption">Registration access token (write-only, optional)</span>
+              <input v-model="httpConfig.registration_access_token" type="password" class="field" aria-label="Registration access token" autocomplete="new-password" :disabled="Boolean(busy)" placeholder="Leave blank to keep a stored token" />
+            </label>
           </template>
         </template>
         <template v-else>
@@ -339,6 +417,7 @@ import { actions, store } from '../../store'
 import { api, server as instance } from '../../api'
 import { account } from '../../auth-session.js'
 import { oauthConnection } from '../../mcp-oauth.js'
+import { hostedOAuthDraft, hostedOAuthPayload, parseAuthorizationParams } from '../../mcp-oauth-config.js'
 const $q = useQuasar()
 const state = reactive({ servers: [], fields: [], stdio_fields: [], oauth_connections: {}, writable: false })
 const capabilities = reactive({})
@@ -354,7 +433,14 @@ const error = ref(''),
   toolQuery = ref(''),
   transport = ref('http'),
   authentication = ref('auto')
-const httpConfig = reactive({ client_id: '', redirect_uri: '', scope: '', response_mode: '' })
+const httpConfig = reactive(hostedOAuthDraft())
+const storedOAuth = ref({}), authorizationParamsText = ref('{}')
+const parsedAuthorizationParams = computed(() => parseAuthorizationParams(authorizationParamsText.value))
+const endpointFields = [
+  { key: 'authorization_endpoint', label: 'Authorization endpoint', grant: 'authorization_code' },
+  { key: 'token_endpoint', label: 'Token endpoint' },
+  { key: 'device_authorization_endpoint', label: 'Device authorization endpoint', grant: 'device_code' },
+]
 const argsText = ref('[]'),
   environment = ref([]),
   loginArgsText = ref('[]'),
@@ -411,6 +497,7 @@ const environmentError = computed(() => {
 const valid = computed(
   () =>
     draftIsValid(basicFields.value, draft) &&
+    (transport.value !== 'http' || authentication.value === 'token' || parsedAuthorizationParams.value !== null) &&
     (transport.value !== 'stdio' ||
       (parsedArgs.value !== null &&
         !environmentError.value &&
@@ -462,12 +549,12 @@ function openForm(server) {
   advanced.value = Boolean(server)
   error.value = stage.value = ''
   resetDraft(draft, [...state.fields, ...state.stdio_fields], server || {})
-  Object.assign(httpConfig, {
-    client_id: server?.oauth?.client_id || '',
-    redirect_uri: server?.oauth?.redirect_uri || '',
-    scope: server?.oauth?.scope || '',
-    response_mode: server?.oauth?.response_mode || '',
-  })
+  storedOAuth.value = {
+    client_secret_configured: Boolean(server?.oauth?.client_secret_configured),
+    private_key_configured: Boolean(server?.oauth?.private_key_configured),
+  }
+  Object.assign(httpConfig, hostedOAuthDraft(server?.oauth))
+  authorizationParamsText.value = JSON.stringify(server?.oauth?.authorization_params || {}, null, 2)
   argsText.value = JSON.stringify(server?.args || [], null, 2)
   environment.value = Object.keys(server?.env || {}).map((key) => ({
     id: nextVariable++,
@@ -488,7 +575,11 @@ function configureCli() {
     eulaStored.value = false
   }
 }
+function clearOAuthSecrets() {
+  httpConfig.client_secret = httpConfig.private_key = httpConfig.registration_access_token = ''
+}
 function cancel() {
+  clearOAuthSecrets()
   const name = busy.value
   attempt++
   controller?.cancel()
@@ -533,8 +624,9 @@ async function connect() {
         authentication: authentication.value,
         ...(authentication.value === 'token'
           ? { token: draft.token }
-          : Object.fromEntries(Object.entries(httpConfig).filter(([, value]) => value))),
+          : hostedOAuthPayload(httpConfig, parsedAuthorizationParams.value)),
       })
+      if (id === attempt && initial === context()) clearOAuthSecrets()
       config = result.status === 'oauth_required' ? result.config : null
     }
     if (id !== attempt || initial !== context()) return
@@ -553,7 +645,7 @@ async function connect() {
     if (id === attempt) {
       error.value = failure.message
       if (failure.detail?.code === 'oauth_client_required') {
-        draft.authentication = 'oauth'
+        authentication.value = 'oauth'
         advanced.value = true
       }
     }

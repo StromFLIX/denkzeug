@@ -8,7 +8,7 @@ const fields = [{ key: 'name', label: 'Name', pattern: '[a-z0-9][a-z0-9-]{0,23}'
   { key: 'url', label: 'Endpoint URL', pattern: 'https?://.+', placeholder: 'https://mcp.example.com/mcp' },
   { key: 'token', label: 'Access token', kind: 'secret', optional: true, pattern: '.+' }]
 async function mock (context) {
-  const state = { starts: [], prepares: [], connects: [], callbacks: [], servers: [], profiles: {}, dismissed: [], demand: true, failConnect: false, failLogin: false, clientRequired: false }
+  const state = { starts: [], prepares: [], connects: [], callbacks: [], servers: [], profiles: {}, dismissed: [], demand: true, failConnect: false, failLogin: false, clientRequired: false, config: { ...config }, polls: 0, autoComplete: false }
   await context.route('**/api/**', route => {
     if (new URL(route.request().url()).pathname.startsWith('/api/auth/')) return fulfillAccount(route)
     const path = new URL(route.request().url()).pathname, method = route.request().method()
@@ -27,21 +27,25 @@ async function mock (context) {
       state.connects.push(payload)
       if (state.clientRequired && !payload.client_id) return route.fulfill({ status: 400, json: { detail: { code: 'oauth_client_required', message: 'Enter your approved public client ID once in Advanced settings.' } } })
       if (state.failConnect) return route.fulfill({ status: 502, json: { detail: 'Connection temporarily unavailable' } })
-      return route.fulfill({ json: { status: 'oauth_required', config: { ...config, url: payload.url } } })
+      return route.fulfill({ json: { status: 'oauth_required', config: { ...state.config, url: payload.url } } })
     }
     if (path.startsWith('/api/mcp-oauth/prepare/')) {
       state.prepares.push(route.request().postDataJSON())
-      return route.fulfill({ json: config })
+      return route.fulfill({ json: state.config })
     }
     if (path.startsWith('/api/mcp-oauth/start/')) { state.starts.push(route.request().postDataJSON()); return route.fulfill({ json: { id: 'http-login' } }) }
     if (path === '/api/mcp-oauth/login/http-login') {
       if (method === 'DELETE') return route.fulfill({ status: 204 })
       if (state.failLogin) return route.fulfill({ json: { status: 'failed', message: 'Provider unavailable; try again' } })
-      if (state.callbacks.length) {
-        state.profiles.workiq = { ...config, mode: 'https', status: 'connected', revision: 'new', refreshable: true }
+      state.polls++
+      if (state.callbacks.length || state.autoComplete && state.polls > 2) {
+        state.profiles.workiq = { ...state.config, mode: 'https', status: 'connected', revision: 'new', refreshable: true }
         state.servers = [{ name: 'workiq', url, transport: 'http', managed: true, tool_count: 1, oauth: state.profiles.workiq, credential: { mode: 'stored' } }]
         return route.fulfill({ json: { status: 'complete' } })
       }
+      if (state.config.grant_type === 'device_code') return route.fulfill({ json: { status: 'authorizing', device: { verification_uri: 'https://login.example.test/device', verification_uri_complete: 'https://login.example.test/device?code=ABCD', user_code: 'ABCD-EFGH', expires_in: 600, interval: 1 } } })
+      if (state.config.grant_type === 'client_credentials') return route.fulfill({ json: { status: 'authorizing', message: 'Authenticating service account…' } })
+      if (state.config.callback_mode === 'web') return route.fulfill({ json: { status: 'authorizing', authorization: { id: 'web-capture', callback_mode: 'web', authorization_url: 'https://login.example.test/authorize' } } })
       return route.fulfill({ json: { status: 'authorizing', authorization: { id: 'capture', port: 12798, redirect_uri: config.redirect_uri,
         authorization_url: 'https://login.example.test/authorize', state: 'state', response_mode: 'query' } } })
     }
@@ -83,7 +87,7 @@ for (const width of [1440, 390]) {
     await expect(page.getByRole('button', { name: 'Use WorkIQ HTTPS' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Discover OAuth' })).toHaveCount(0)
     await expect(page.getByRole('checkbox')).toHaveCount(0)
-    await expect(page.getByLabel('Public OAuth client ID')).toBeHidden()
+    await expect(page.getByLabel('OAuth client ID')).toBeHidden()
     if (width === 1440) await page.screenshot({ path: test.info().outputPath('mcp-simple-connect.png') })
     await page.locator('.integration-add').getByRole('button', { name: 'Connect', exact: true }).click()
     await expect(page.locator('.integration-add [role=status]')).toContainText('local port 12798')
@@ -239,7 +243,7 @@ test('generic providers request a client ID only once and reveal the right advan
   await page.getByPlaceholder('https://mcp.example.com/mcp').fill('https://mcp.example.test/mcp')
   await page.locator('.integration-add').getByRole('button', { name: 'Connect', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('approved public client ID')
-  await page.getByLabel('Public OAuth client ID').fill('approved-client')
+  await page.getByLabel('OAuth client ID').fill('approved-client')
   await page.getByRole('button', { name: 'Try again', exact: true }).click()
   await expect(page.locator('.integration-add [role=status]')).toContainText('local port')
   expect(state.connects[1].client_id).toBe('approved-client')
@@ -312,4 +316,93 @@ test('failed relogin retries saved setup in the same popup', async ({ page, cont
   await page.evaluate(() => globalThis.finishLogin())
   await expect(dialog).toHaveCount(0)
   expect(state.prepares).toEqual([{}, {}])
+})
+
+async function browserOnly (context) {
+  await context.addInitScript(() => {
+    globalThis.openedOAuth = []
+    globalThis.open = url => { globalThis.openedOAuth.push(url) }
+  })
+}
+
+for (const [grant, callback] of [['authorization_code', 'web'], ['device_code', 'desktop'], ['client_credentials', 'desktop']]) {
+  test(`web client reconnects saved ${grant} without desktop callbacks`, async ({ page, context }) => {
+    const state = await mock(context); await browserOnly(context)
+    state.config = { ...config, grant_type: grant, callback_mode: callback }
+    state.profiles.workiq = { ...state.config, mode: 'https', status: 'reauth_required', revision: 'expired' }
+    state.autoComplete = true
+    await page.goto('/chats')
+    const dialog = page.locator('.mcp-login-dialog')
+    await expect(dialog).toContainText('shared across this instance')
+    await expect(dialog.getByRole('button', { name: 'Login', exact: true })).toBeEnabled()
+    await expect(dialog.getByRole('alert')).toHaveCount(0)
+    await dialog.getByRole('button', { name: 'Login', exact: true }).click()
+    if (grant === 'device_code') {
+      await expect(dialog.getByRole('status')).toContainText('ABCD-EFGH')
+      await expect(dialog.getByRole('status')).toContainText('https://login.example.test/device')
+    } else if (grant === 'authorization_code') await expect(dialog.getByRole('status')).toContainText('web callback')
+    await expect(dialog).toHaveCount(0)
+    expect(state.starts).toHaveLength(1)
+    expect(state.starts[0].desktop_bridge_version).toBeUndefined()
+    expect(state.callbacks).toEqual([])
+    expect(await page.evaluate(() => globalThis.openedOAuth)).toEqual(grant === 'client_credentials' ? [] : [grant === 'device_code' ? 'https://login.example.test/device?code=ABCD' : 'https://login.example.test/authorize'])
+  })
+}
+
+for (const width of [1440, 390]) {
+  test(`advanced hosted configuration validates JSON and submits write-only credentials at ${width}px`, async ({ page, context }) => {
+    const state = await mock(context); await browserOnly(context)
+    state.config = { ...config, grant_type: 'device_code' }; state.autoComplete = true
+    await page.setViewportSize({ width, height: 1000 }); await add(page)
+    await page.getByText('Advanced settings', { exact: true }).click()
+    await page.getByLabel('Authentication', { exact: true }).selectOption('oauth')
+    await page.getByLabel('OAuth grant').selectOption('device_code')
+    await expect(page.getByLabel('Callback URI', { exact: true })).toHaveCount(0)
+    await page.getByLabel('OAuth client ID').fill('confidential-client')
+    await page.getByLabel('Token endpoint authentication').selectOption('client_secret_jwt')
+    await expect(page.getByLabel('Client secret', { exact: true })).toHaveAttribute('type', 'password')
+    await page.getByLabel('Client secret', { exact: true }).fill('synthetic-secret')
+    await page.getByLabel('Provider metadata').selectOption('manual')
+    await page.getByLabel('Issuer', { exact: true }).fill('https://login.example.test')
+    await page.getByLabel('Token endpoint', { exact: true }).fill('https://login.example.test/token')
+    await page.getByLabel('Device authorization endpoint', { exact: true }).fill('https://login.example.test/device')
+    await page.getByLabel('Resource parameter').selectOption('audience')
+    await page.getByLabel('Resource value', { exact: true }).fill('https://api.example.test')
+    await page.getByLabel('Registration access token', { exact: true }).fill('synthetic-registration')
+    await page.getByLabel('Authorization parameters', { exact: true }).fill('{"state":"not-allowed"}')
+    const connect = page.locator('.integration-add').getByRole('button', { name: 'Connect', exact: true })
+    await expect(connect).toBeDisabled()
+    await expect(page.getByRole('alert')).toContainText('supported keys')
+    await page.getByLabel('Authorization parameters', { exact: true }).fill('{"prompt":"consent","organization":"team"}')
+    await expect(connect).toBeEnabled()
+    await page.screenshot({ path: test.info().outputPath(`mcp-advanced-${width}.png`), fullPage: true })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await connect.click()
+    await expect(page.getByText('workiq connected', { exact: true })).toBeVisible()
+    expect(state.connects[0]).toMatchObject({ grant_type: 'device_code', token_endpoint_auth_method: 'client_secret_jwt', client_secret: 'synthetic-secret', metadata_mode: 'manual', issuer: 'https://login.example.test', token_endpoint: 'https://login.example.test/token', device_authorization_endpoint: 'https://login.example.test/device', resource_parameter: 'audience', resource_value: 'https://api.example.test', authorization_params: { prompt: 'consent', organization: 'team' }, registration_access_token: 'synthetic-registration' })
+    expect(state.callbacks).toEqual([])
+  })
+}
+
+test('editing stored private-key settings leaves secrets blank and preserves configured flags', async ({ page, context }) => {
+  const state = await mock(context); await browserOnly(context)
+  state.config = { ...config, grant_type: 'client_credentials', token_endpoint_auth_method: 'private_key_jwt', private_key_configured: true, client_secret_configured: true, key_id: 'stored-key', metadata_mode: 'manual', token_endpoint: 'https://login.example.test/token', resource_parameter: 'none', authorization_params: { audience: 'api' } }
+  state.autoComplete = true
+  state.profiles.workiq = { ...state.config, status: 'connected', mode: 'https' }
+  state.servers = [{ name: 'workiq', url, transport: 'http', managed: true, tool_count: 1, oauth: state.profiles.workiq }]
+  await page.goto('/settings/mcp')
+  await page.getByRole('button', { name: 'Connection settings', exact: true }).click()
+  await expect(page.getByLabel('OAuth grant')).toHaveValue('client_credentials')
+  await expect(page.getByLabel('Private key (PEM)', { exact: true })).toHaveValue('')
+  await expect(page.getByLabel('Private key (PEM)', { exact: true })).toHaveAttribute('placeholder', 'Stored — leave blank to keep')
+  await expect(page.getByLabel('Key ID', { exact: true })).toHaveValue('stored-key')
+  await expect(page.getByLabel('Token endpoint', { exact: true })).toHaveValue('https://login.example.test/token')
+  await expect(page.getByLabel('Authorization parameters', { exact: true })).toHaveValue(JSON.stringify({ audience: 'api' }, null, 2))
+  await page.getByRole('button', { name: 'Save connection', exact: true }).click()
+  await expect(page.getByText('workiq connected', { exact: true })).toBeVisible()
+  expect(state.connects[0].private_key).toBeUndefined()
+  expect(state.connects[0].client_secret).toBeUndefined()
+  expect(state.connects[0].registration_access_token).toBeUndefined()
+  expect(state.connects[0].private_key_configured).toBeUndefined()
+  expect(state.connects[0].key_id).toBe('stored-key')
 })

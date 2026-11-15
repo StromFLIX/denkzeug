@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { desktopOAuth, oauthConnection } from './mcp-oauth.js'
+import { desktopOAuth, oauthConnection, oauthSupported, requiresDesktopOAuth } from './mcp-oauth.js'
 const authorization = (id = 'capture-1', port = 40001) => ({ id, port, redirect_uri: `http://localhost:${port}`,
   authorization_url: 'https://login.example.test/authorize', state: 'state', response_mode: 'form_post' })
 
@@ -113,4 +113,122 @@ test('no desktop bridge cannot start the CLI', async () => {
   const f = fixture()
   await assert.rejects(oauthConnection({ ...f, bridge: null, context: () => 'instance' }).connect('example', {}), /desktop app/)
   assert.equal(f.calls.length, 0)
+})
+
+test('hosted grant support is independent of desktop markers; legacy CLI stays desktop-only', () => {
+  for (const config of [
+    { transport: 'http', callback_mode: 'web' },
+    { mode: 'https', grant_type: 'device_code' },
+    { transport: 'http', grant_type: 'client_credentials' },
+  ]) {
+    assert.equal(requiresDesktopOAuth(config), false)
+    assert.equal(oauthSupported(config, null), true)
+  }
+  for (const config of [{}, { mode: 'cli', grant_type: 'device_code' }, { transport: 'http' }]) {
+    assert.equal(oauthSupported(config, null), false)
+  }
+})
+
+function hostedFixture (result) {
+  const f = fixture(), opened = [], stages = []
+  let polls = 0
+  f.backend.pollMcpOAuth = async () => ++polls > 2 ? { status: 'complete' } : result
+  f.bridge.prepare = async () => { throw new Error('Must not prepare a local receiver') }
+  f.bridge.authorize = async () => { throw new Error('Must not capture callbacks') }
+  return { ...f, opened, stages, openBrowser: async url => { opened.push(url) } }
+}
+
+test('hosted web callback opens once and polls without bridge or callback forwarding', async () => {
+  const f = hostedFixture({ status: 'authorizing', authorization: { id: 'web-capture', callback_mode: 'web', authorization_url: 'https://login.example.test/authorize' } })
+  await oauthConnection({ ...f, bridge: null, interval: 1, context: () => 'instance' }).connect('web', { transport: 'http', callback_mode: 'web' }, value => f.stages.push(value))
+  assert.deepEqual(f.opened, ['https://login.example.test/authorize'])
+  assert.ok(f.stages.some(value => value.includes('web callback')))
+  assert.equal('desktop_bridge_version' in f.calls[0][2], false)
+  assert.equal(f.calls.some(c => c[0] === 'forward'), false)
+})
+
+test('device code displays the code, opens the complete verification URL once and never forwards', async () => {
+  const device = { verification_uri: 'https://login.example.test/device', verification_uri_complete: 'https://login.example.test/device?code=ABCD', user_code: 'ABCD-EFGH', expires_in: 600, interval: 0.001 }
+  const f = hostedFixture({ status: 'authorizing', device })
+  await oauthConnection({ ...f, bridge: null, interval: 1, context: () => 'instance' }).connect('device', { transport: 'http', grant_type: 'device_code' }, value => f.stages.push(value))
+  assert.deepEqual(f.opened, [device.verification_uri_complete])
+  assert.ok(f.stages.some(value => value.includes('ABCD-EFGH') && value.includes(device.verification_uri)))
+  assert.equal(f.calls.some(c => c[0] === 'forward'), false)
+  assert.equal('desktop_bridge_version' in f.calls[0][2], false)
+})
+
+test('device verification URI works when there is no complete URL', async () => {
+  const f = hostedFixture({ status: 'authorizing', device: { verification_uri: 'https://login.example.test/device', user_code: '1234', interval: 0.001 } })
+  await oauthConnection({ ...f, interval: 1, context: () => 'instance' }).connect('device', { transport: 'http', grant_type: 'device_code' })
+  assert.deepEqual(f.opened, ['https://login.example.test/device'])
+})
+
+test('client credentials polls without a browser, even if an authorization is returned', async () => {
+  const f = hostedFixture({ status: 'authorizing', authorization: authorization() })
+  await oauthConnection({ ...f, bridge: null, interval: 1, context: () => 'instance' }).connect('service', { transport: 'http', grant_type: 'client_credentials' })
+  assert.deepEqual(f.opened, [])
+  assert.equal(f.calls.some(c => c[0] === 'forward'), false)
+})
+
+test('non-desktop hosted failure cancels the backend job', async () => {
+  const f = hostedFixture({ status: 'expired', message: 'Device code expired' })
+  await assert.rejects(oauthConnection({ ...f, bridge: null, interval: 1, context: () => 'instance' }).connect('device', { transport: 'http', grant_type: 'device_code' }), /Device code expired/)
+  assert.ok(f.calls.some(c => c[0] === 'cancel'))
+})
+
+test('web callback mode mismatch does not capture or forward a callback', async () => {
+  const f = hostedFixture({ status: 'authorizing', authorization: authorization() })
+  await assert.rejects(oauthConnection({ ...f, bridge: null, interval: 1, context: () => 'instance' }).connect('web', { transport: 'http', callback_mode: 'web' }), /Unexpected OAuth callback mode/)
+  assert.deepEqual(f.opened, [])
+  assert.equal(f.calls.some(c => c[0] === 'forward'), false)
+})
+
+test('instance changes while opening a device browser stop polling without cancelling the new instance', async () => {
+  const f = hostedFixture({ status: 'authorizing', device: { verification_uri: 'https://login.example.test/device', user_code: '1234' } })
+  let context = 'old'
+  f.openBrowser = async () => { context = 'new' }
+  await assert.rejects(oauthConnection({ ...f, bridge: null, interval: 1, context: () => context }).connect('device', { transport: 'http', grant_type: 'device_code' }), /Instance or credentials changed/)
+  assert.equal(f.calls.some(c => c[0] === 'cancel'), false)
+})
+
+test('cancel during a non-desktop hosted slow start cancels the late-created job', async () => {
+  const f = fixture()
+  let resolve
+  f.backend.startMcpOAuth = () => new Promise(r => { resolve = r })
+  const controller = oauthConnection({ ...f, bridge: null, interval: 1, context: () => 'instance' })
+  const running = controller.connect('web', { transport: 'http', callback_mode: 'web' })
+  const rejected = assert.rejects(running, /cancelled/)
+  await controller.cancel()
+  resolve({ id: 'late-web-login' })
+  await rejected
+  assert.ok(f.calls.some(c => c[0] === 'cancel' && c[1] === 'late-web-login'))
+})
+
+test('device polling respects the provider interval and does not cancel an unused desktop bridge', async () => {
+  const f = hostedFixture({ status: 'authorizing', device: { verification_uri: 'https://login.example.test/device', user_code: '1234', interval: 0.02 } })
+  let cancels = 0, lastPoll = 0, count = 0
+  f.bridge.cancel = async () => { cancels++ }
+  f.backend.pollMcpOAuth = async () => {
+    if (lastPoll) assert.ok(performance.now() - lastPoll >= 18)
+    lastPoll = performance.now()
+    return ++count > 2 ? { status: 'complete' } : { status: 'authorizing', device: { verification_uri: 'https://login.example.test/device', user_code: '1234', interval: 0.02 } }
+  }
+  await oauthConnection({ ...f, interval: 1, context: () => 'instance' }).connect('device', { transport: 'http', grant_type: 'device_code' })
+  assert.equal(cancels, 0)
+})
+
+test('the browser opener refuses unsafe provider URLs before opening anything', async () => {
+  const original = globalThis.open, opened = []
+  globalThis.open = (...args) => opened.push(args)
+  try {
+    for (const url of ['javascript:alert(1)', 'http://login.example.test', 'https://secret@login.example.test']) {
+      const f = hostedFixture({ status: 'authorizing', authorization: { id: 'web', callback_mode: 'web', authorization_url: url } })
+      await assert.rejects(oauthConnection({ ...f, openBrowser: undefined, bridge: null, interval: 1, context: () => 'instance' }).connect('web', { transport: 'http', callback_mode: 'web' }), /HTTPS without credentials/)
+      assert.ok(f.calls.some(c => c[0] === 'cancel'))
+    }
+    assert.deepEqual(opened, [])
+    const f = hostedFixture({ status: 'authorizing', authorization: { id: 'web', callback_mode: 'web', authorization_url: 'https://login.example.test/authorize' } })
+    await oauthConnection({ ...f, openBrowser: undefined, bridge: null, interval: 1, context: () => 'instance' }).connect('web', { transport: 'http', callback_mode: 'web' })
+    assert.deepEqual(opened, [['https://login.example.test/authorize', '_blank', 'noopener,noreferrer']])
+  } finally { globalThis.open = original }
 })
