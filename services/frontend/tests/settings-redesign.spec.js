@@ -4,7 +4,7 @@ import { SETTINGS_GROUPS, SETTINGS_SECTIONS } from '../src/settings-registry.js'
 import { THEMES } from '../src/themes.js'
 
 const groups = [
-  ['Account & workspace', ['account', 'users', 'invitations', 'access']],
+  ['Account & workspace', ['account', 'api-keys', 'users', 'invitations', 'access']],
   ['Your experience', ['general', 'appearance', 'workspace']],
   ['Build & connect', ['agents', 'packages', 'creative-apps', 'mcp', 'projects', 'git']],
   ['Run & manage', ['automation', 'app-runtimes', 'storage', 'system', 'activity']]
@@ -62,7 +62,7 @@ for (const width of [1440, 320]) {
     await search.press('Escape')
     await expect(depth).toHaveValue('7')
     await search.fill('access token')
-    await expect(page.getByRole('link', { name: /Access token/ })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: /Account & workspace \/ API keys/ })).toBeVisible()
     await search.fill('conversation memory')
     await page.getByRole('link', { name: /Conversation memory/ }).click()
     await expect(page.locator('#history')).toHaveAttribute('open', '')

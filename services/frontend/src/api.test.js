@@ -33,6 +33,21 @@ test('storage deletion always sends the reviewed plan ID and explicit confirmati
   assert.deepEqual(JSON.parse(requests[0].body), { plan_id: 'a'.repeat(32), confirm: true })
 })
 
+test('API key helpers use authenticated routes, encoded IDs and exact mutation bodies', async t => {
+  const calls = []
+  t.mock.method(globalThis, 'fetch', async (path, options) => { calls.push({ path, ...options }); return Response.json({ ok: true }) })
+  const payload = { name: 'Report', expires_at: 1234, grants: [{ scope: 'workflows:run', resources: ['immutable-id'] }] }
+  await api.tokenCatalog(); await api.tokens(); await api.createToken(payload)
+  await api.rotateToken('key/id'); await api.revokeToken('key/id')
+  await api.tokenRequests('key/id', 50, 50); await api.tokenUsage('key/id')
+  await api.workflowWebhookToken('workflow/name')
+  assert.deepEqual(calls.map(call => call.path), ['/api/tokens/catalog', '/api/tokens', '/api/tokens', '/api/tokens/key%2Fid/rotate', '/api/tokens/key%2Fid', '/api/tokens/key%2Fid/requests?offset=50&limit=50', '/api/tokens/key%2Fid/usage', '/api/workflows/workflow%2Fname/webhook-token'])
+  assert.equal(calls[2].method, 'POST'); assert.deepEqual(JSON.parse(calls[2].body), payload)
+  assert.equal(calls[3].method, 'POST'); assert.equal(calls[4].method, 'DELETE')
+  assert.equal(calls[7].method, 'POST'); assert.deepEqual(JSON.parse(calls[7].body), { days: 7 })
+  assert.ok(calls.every(call => call.credentials === 'same-origin'))
+})
+
 test('web streams stay same-origin without URL secrets and ignore malformed frames', async t => {
   const storage = new Map(), sources = [], probes = [], snapshots = [], events = [], errors = []
   const previous = { localStorage: globalThis.localStorage, EventSource: globalThis.EventSource }

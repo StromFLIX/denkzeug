@@ -11,6 +11,16 @@ export const SETTINGS_SECTIONS = [
     load: () => import('./components/settings/AccountPane.vue'),
     entries: [entry('account-profile', 'Profile', 'Your display name and optional recovery email.', 'account username identity email optional recovery'), entry('account-password', 'Password', 'Change your password.', 'security'), entry('account-sessions', 'Devices & sessions', 'End sessions and sign out.', 'logout security')]
   },
+  {
+    key: 'api-keys', label: 'API keys', icon: 'key', group: 'Account & workspace', scope: 'Your account',
+    scopeNote: 'Keys act as you, within the permissions and resources you choose. They never grant more access than your account.',
+    load: () => import('./components/settings/ApiKeysPane.vue'),
+    entries: [
+      entry('api-keys', 'API keys', 'Create scoped keys for scripts and integrations. Choose resources and an expiry.', 'access token bearer credentials permissions grants secret'),
+      entry('api-key-activity', 'Key activity', 'Review daily requests, failures and recent usage. Rotate or revoke a key.', 'audit history retention security'),
+      entry('api-keys', 'Webhook tokens', 'Manage expiring workflow trigger links created from a workflow.', 'automation revoke expiry URL')
+    ]
+  },
   ...[
     ['users', 'Users', 'group', 'account-users', 'Manage accounts and issue one-time password reset codes.'],
     ['invitations', 'Invitations', 'vpn_key', 'account-invitations', 'Create copy/paste invitation codes. No email required.'],
