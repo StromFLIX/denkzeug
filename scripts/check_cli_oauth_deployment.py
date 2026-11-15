@@ -66,6 +66,38 @@ def _check(base: str, session: AccountSession) -> dict:
             or value.get("http", {}).get("available") is not True
         ):
             raise ValueError
+        hosted = value.get("http", {})
+        if not {"authorization_code", "device_code", "client_credentials"}.issubset(
+            hosted.get("grant_types", [])
+        ) or not {
+            "none",
+            "client_secret_basic",
+            "client_secret_post",
+            "private_key_jwt",
+            "client_secret_jwt",
+        }.issubset(hosted.get("token_endpoint_auth_methods", [])):
+            raise ValueError
+        callback = hosted.get("web_callback")
+        if (
+            not isinstance(callback, str)
+            or not callback.startswith("https://")
+            or not callback.endswith("/api/mcp-oauth/web-callback")
+        ):
+            raise ValueError
+        metadata_request = Request(  # noqa: S310 - same validated application origin, never a callback mutation
+            base.rstrip("/") + "/api/mcp-oauth/client-metadata"
+        )
+        with session.open(metadata_request, timeout=30) as response:  # noqa: S310
+            raw_metadata = response.read(65537)
+        if len(raw_metadata) > 65536:
+            raise ValueError
+        metadata = json.loads(raw_metadata)
+        if (
+            metadata.get("client_id") != callback.rsplit("/", 1)[0] + "/client-metadata"
+            or metadata.get("redirect_uris") != [callback]
+            or metadata.get("token_endpoint_auth_method") != "none"
+        ):
+            raise ValueError
         discovery = Request(  # noqa: S310 - same validated application origin, read-only metadata
             base.rstrip("/") + "/api/mcp-oauth/discover",
             method="POST",
@@ -87,7 +119,15 @@ def _check(base: str, session: AccountSession) -> dict:
         raise RuntimeError(
             "CLI OAuth staging check failed: deploy the matching authenticated gateway/backend images"
         ) from exc
-    return {"available": True, "desktop_bridge_version": 1, "https_oauth": True, "workiq_discovery": True}
+    return {
+        "available": True,
+        "desktop_bridge_version": 1,
+        "https_oauth": True,
+        "workiq_discovery": True,
+        "generic_oauth_grants": True,
+        "confidential_clients": True,
+        "web_callback_metadata": True,
+    }
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ administrator. It cannot choose an endpoint, publish a target or return tokens.
 
 from __future__ import annotations
 
+import asyncio
 import secrets
 from urllib.parse import parse_qs
 
@@ -17,6 +18,7 @@ from .. import mcp_http_oauth, mcp_oauth
 from .. import mcp_oauth_provider as provider
 
 router = APIRouter()
+CALLBACK_BODY_SECONDS = 10
 
 
 def headers():
@@ -54,10 +56,11 @@ async def browser_return(request: Request):
             ):
                 raise HTTPException(400, "Invalid OAuth return format")
             body = bytearray()
-            async for block in request.stream():
-                body.extend(block)
-                if len(body) > mcp_http_oauth.LIMIT:
-                    raise HTTPException(400, "OAuth return is too large")
+            async with asyncio.timeout(CALLBACK_BODY_SECONDS):
+                async for block in request.stream():
+                    body.extend(block)
+                    if len(body) > mcp_http_oauth.LIMIT:
+                        raise HTTPException(400, "OAuth return is too large")
             raw = body.decode("utf-8")
         else:
             raw = request.url.query
@@ -69,7 +72,7 @@ async def browser_return(request: Request):
         async with mcp_oauth._lock:
             await mcp_http_oauth.web_callback({k: v[0] for k, v in parsed.items()}, request.method)
         status, message = 200, "Authorization received. Return to the app to finish checking the connection."
-    except (HTTPException, ValueError, UnicodeError):
+    except (HTTPException, ValueError, UnicodeError, TimeoutError):
         status, message = (
             400,
             "Authorization could not be completed. Return to the app and start a new login.",

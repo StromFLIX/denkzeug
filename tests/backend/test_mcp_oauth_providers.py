@@ -36,7 +36,7 @@ def generic(hosted, monkeypatch):  # noqa: F811 - imported pytest fixture
                 {
                     "client_id": "dcr-client",
                     "client_secret": "issued-secret",
-                    "redirect_uris": json_body["redirect_uris"],
+                    "redirect_uris": json_body.get("redirect_uris", []),
                     "token_endpoint_auth_method": json_body["token_endpoint_auth_method"],
                 },
             )
@@ -295,6 +295,7 @@ def test_confidential_dynamic_registration_seals_returned_secret(client, backend
     request = generic.requests[0]
     assert request[2]["Authorization"] == "Bearer registration-secret"
     assert request[3]["token_endpoint_auth_method"] == "client_secret_post"
+    assert request[3]["application_type"] == "native"
     auth = client.get(BASE + "/login/" + identifier).json()["authorization"]
     assert forward(client, identifier, auth).status_code == 200
     assert generic.requests[-1][1]["client_secret"] == "issued-secret"
@@ -440,3 +441,158 @@ def test_login_owner_check_rejects_other_accounts_without_consuming_login(client
     finally:
         current_principal.reset(reset)
     assert identifier in oauth._sessions and not generic.requests
+
+
+@pytest.mark.parametrize("grant", ["device_code", "client_credentials"])
+def test_noninteractive_grants_do_not_require_a_bound_callback(client, generic, grant):
+    response = client.post(
+        BASE + "/prepare/example",
+        json={
+            "url": URL,
+            "client_id": "client",
+            "grant_type": grant,
+            **(
+                {"token_endpoint_auth_method": "client_secret_post", "client_secret": "service-secret"}
+                if grant == "client_credentials"
+                else {}
+            ),
+        },
+    )
+    assert response.status_code == 200, response.text
+    config = response.json()
+    assert config["redirect_uri"] == "http://127.0.0.1:0/callback"
+    identifier = start(client, config)
+    assert client.get(BASE + "/login/" + identifier).status_code == 200
+
+
+def test_entra_service_account_preserves_default_scope_without_oidc_scopes(client, generic):
+    issuer = "https://login.microsoftonline.com/common/v2.0"
+    response = client.post(
+        BASE + "/prepare/example",
+        json={
+            "url": URL,
+            "client_id": "client",
+            "grant_type": "client_credentials",
+            "metadata_mode": "manual",
+            "issuer": issuer,
+            "token_endpoint": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "token_endpoint_auth_method": "client_secret_post",
+            "client_secret": "service-secret",
+            "scope": "https://resource.example/.default",
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["scope"] == "https://resource.example/.default"
+    start(client, response.json())
+    assert generic.requests[-1][1]["scope"] == "https://resource.example/.default"
+
+
+@pytest.mark.parametrize(
+    "query", ["code_challenge_method=plain", "code_challenge_method=", "response_mode=form_post", "state="]
+)
+def test_web_authorization_rejects_duplicate_protocol_parameters(client, generic, query):
+    generic.metadata["authorization_endpoint"] = ISSUER + "/authorize?" + query
+    response = client.post(
+        BASE + "/prepare/example", json={"url": URL, "client_id": "client", "callback_mode": "web"}
+    )
+    assert response.status_code == 400 and not generic.requests and not oauth._sessions
+
+
+def test_changed_authenticated_device_destination_drops_stored_client_secret(client, generic):
+    prepare(
+        client,
+        grant_type="device_code",
+        token_endpoint_auth_method="client_secret_post",
+        client_secret="device-client-secret",
+    )
+    generic.metadata["device_authorization_endpoint"] = "https://other.example.test/device"
+    config = prepare(client, refresh_metadata=True)
+    assert not config["client_secret_configured"]
+    response = client.post(BASE + "/start/example", json=config)
+    assert response.status_code == 400 and not generic.requests
+
+
+def test_changed_registration_destination_drops_stored_access_token(client, generic):
+    generic.metadata["registration_endpoint"] = ISSUER + "/register"
+    assert prepare(client, client_id="", registration_access_token="registration-secret")[
+        "registration_access_token_configured"
+    ]
+    generic.metadata["registration_endpoint"] = "https://other.example.test/register"
+    config = prepare(client, client_id="", refresh_metadata=True)
+    assert not config["registration_access_token_configured"] and not generic.requests
+
+
+@pytest.mark.parametrize(
+    "endpoint_key", ["token_endpoint", "device_authorization_endpoint", "registration_endpoint"]
+)
+def test_encrypted_bindings_are_checked_immediately_before_using_credentials(client, generic, endpoint_key):
+    from nautionette_backend.mcp_oauth_setup import saved
+
+    generic.metadata["registration_endpoint"] = ISSUER + "/register"
+    prepare(
+        client,
+        grant_type="device_code",
+        token_endpoint_auth_method="client_secret_post",
+        client_secret="client-secret",
+        registration_access_token="registration-secret",
+    )
+    profile = saved("example")["profile"]
+    profile[endpoint_key] = "https://other.example.test/destination"
+    with pytest.raises(HTTPException) as error:
+        if endpoint_key == "registration_endpoint":
+            provider.registration_token(profile)
+        elif endpoint_key == "device_authorization_endpoint":
+            provider.authenticate(profile, {}, endpoint=profile[endpoint_key])
+        else:
+            provider.authenticate(profile, {})
+    assert error.value.status_code == 400 and not generic.requests
+
+
+@pytest.mark.asyncio
+async def test_public_callback_body_read_has_a_sanitized_deadline(generic, monkeypatch):
+    import asyncio
+
+    from nautionette_backend.routers import mcp_oauth_public
+    from starlette.requests import Request
+
+    monkeypatch.setattr(mcp_oauth_public, "CALLBACK_BODY_SECONDS", 0.01)
+
+    async def stalled():
+        await asyncio.sleep(1)
+        return {"type": "http.request", "body": b"private-code", "more_body": True}
+
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/mcp-oauth/web-callback",
+            "headers": [(b"content-type", b"application/x-www-form-urlencoded")],
+            "query_string": b"",
+            "scheme": "https",
+            "server": ("app.example.test", 443),
+        },
+        stalled,
+    )
+    result = await mcp_oauth_public.browser_return(request)
+    assert result.status_code == 400 and b"private-code" not in result.body
+    assert result.headers["cache-control"] == "no-store" and not generic.requests
+
+
+def test_device_dynamic_registration_omits_unused_callback_fields(client, generic):
+    generic.metadata["registration_endpoint"] = ISSUER + "/register"
+    response = client.post(BASE + "/prepare/example", json={"url": URL, "grant_type": "device_code"})
+    assert response.status_code == 200, response.text
+    start(client, response.json())
+    metadata = generic.requests[0][3]
+    assert metadata["application_type"] == "native"
+    assert "redirect_uris" not in metadata and "response_types" not in metadata
+    assert metadata["grant_types"][0] == "urn:ietf:params:oauth:grant-type:device_code"
+
+
+def test_web_dynamic_registration_uses_web_application_type(client, generic):
+    generic.metadata["registration_endpoint"] = ISSUER + "/register"
+    config = prepare(client, client_id="", callback_mode="web", registration_access_token="initial-token")
+    identifier = start(client, config)
+    assert generic.requests[0][3]["application_type"] == "web"
+    assert generic.requests[0][3]["redirect_uris"] == [provider.callback_url()]
+    assert not provider.credentials(oauth._sessions[identifier].profile).get("registration_access_token")
