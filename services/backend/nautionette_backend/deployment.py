@@ -7,9 +7,10 @@ from typing import Any
 import httpx
 from fastapi import HTTPException
 from pydantic import BaseModel
+from temporalio.service import RPCError, RPCStatusCode
 
 from . import access, api_keys
-from .clients import authoring
+from .clients import authoring, temporal
 from .events import bus
 from .runs import restart_worker
 from .workflow_control import workflow_lock
@@ -27,6 +28,33 @@ async def deploy(name: str, code: str, message: str = "") -> dict[str, Any]:
 
 async def _deploy(name: str, code: str, message: str) -> dict[str, Any]:
     access.require_execution()
+    from nautionette.source import SourceError, parse_manifest
+
+    from .workflow_inputs import resource_fields
+
+    try:
+        candidate = parse_manifest(code)
+    except (SourceError, SyntaxError, ValueError):
+        candidate = {}  # The authoring validator returns its existing detailed errors.
+    if resource_fields(candidate.get("inputs")):
+        try:
+            schedule = await temporal.schedule(name)
+        except RPCError as exc:
+            if exc.status != RPCStatusCode.NOT_FOUND:
+                raise HTTPException(
+                    503, "Cannot verify schedule state. Resource input workflows must be manual-only."
+                ) from exc
+            schedule = None
+        except Exception as exc:
+            raise HTTPException(
+                503, "Cannot verify schedule state. Resource input workflows must be manual-only."
+            ) from exc
+        if schedule:
+            raise HTTPException(
+                409,
+                "Remove the schedule before deploying resource input fields; "
+                "they currently support manual runs only.",
+            )
     access.register_resource("workflow", name)
     try:
         result = await authoring.deploy(name, code)

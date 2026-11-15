@@ -69,13 +69,13 @@ test('shows the scheduler-owned next run on desktop', async ({ page }) => {
     next_runs: [nextRun]
   })
   await page.goto('/workflows/morning_digest')
-  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
 
   await expect(page.locator('.schedule-current')).toContainText('Every day at 07:30')
   await expect(page.locator('.schedule-current')).toContainText('Europe/Berlin')
   await expect(page.locator('.schedule-current')).toContainText('Next run')
   await expect(page.locator('.schedule-current')).not.toContainText('Calculating')
-  await expect(page.getByLabel('topic')).toHaveValue('engineering')
+  await expect(page.getByLabel('topic', { exact: true })).toHaveValue('engineering')
   await page.screenshot({ path: '/tmp/nautionette-schedule-desktop.png', fullPage: true })
 })
 
@@ -83,7 +83,7 @@ test('creates a timezone-aware schedule without a hidden default on mobile', asy
   await page.setViewportSize({ width: 320, height: 700 })
   const state = await mockApi(page)
   await page.goto('/workflows/morning_digest')
-  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
 
   await expect(page.getByLabel('At', { exact: true })).toHaveValue('')
   await expect(page.getByRole('button', { name: 'Save schedule' })).toBeDisabled()
@@ -101,7 +101,7 @@ test('creates a timezone-aware schedule without a hidden default on mobile', asy
     timezone: 'Europe/Berlin',
     input: {}
   })
-  await expect(page.getByRole('button', { name: 'Run', exact: true })).toHaveClass(/tab--active/)
+  await expect(page.getByRole('button', { name: 'Settings', exact: true })).toHaveClass(/tab--active/)
   await expect(page.locator('.schedule-current')).toContainText('Tue, Thu at 07:15')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({ path: '/tmp/nautionette-schedule-mobile.png', fullPage: true })
@@ -117,7 +117,7 @@ test('requires an explicit replace action for an advanced existing schedule', as
     next_runs: [nextRun]
   })
   await page.goto('/workflows/morning_digest')
-  await page.getByRole('button', { name: 'Run', exact: true }).click()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
 
   await expect(page.getByRole('button', { name: 'Replace schedule' })).toBeVisible()
   await expect(page.getByLabel('Repeat')).toHaveCount(0)

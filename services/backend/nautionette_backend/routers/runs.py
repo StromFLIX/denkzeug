@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+import base64
+import json
+import math
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 
@@ -27,11 +30,55 @@ async def run_workflow(
 
 
 @router.get("/api/runs", dependencies=[Depends(require_user)])
-async def list_runs(workflow: str | None = None) -> dict[str, Any]:
+async def list_runs(
+    workflow: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    cursor: Annotated[str, Query(max_length=256)] = "",
+    status: Annotated[str, Query(max_length=32)] = "",
+    trigger: Annotated[str, Query(max_length=32)] = "",
+    q: Annotated[str, Query(max_length=120)] = "",
+    compact: bool = False,
+) -> dict[str, Any]:
     owner = access.human_id()
     if owner is None:
         raise HTTPException(403, "User account required")
-    local = db.list_runs(workflow, owner_user_id=owner)
+    before = None
+    if cursor:
+        try:
+            value = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
+            if (
+                not isinstance(value, list)
+                or len(value) != 2
+                or not isinstance(value[0], (int, float))
+                or not math.isfinite(value[0])
+                or not isinstance(value[1], str)
+                or len(value[1]) > 128
+            ):
+                raise ValueError
+            before = (value[0], value[1])
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(422, "Invalid run cursor") from exc
+    local = db.list_runs(
+        workflow, limit + 1, owner_user_id=owner, before=before, status=status, trigger=trigger, search=q
+    )
+    more = len(local) > limit
+    local = local[:limit]
+    next_cursor = ""
+    if more and local:
+        next_cursor = (
+            base64.urlsafe_b64encode(json.dumps([local[-1]["created_at"], local[-1]["id"]]).encode())
+            .decode()
+            .rstrip("=")
+        )
+    if compact:
+        # Persisted states are also used for filters. Do not overlay a different
+        # status from Temporal after filtering, or fetch histories per table row.
+        columns = {"workflow_id", "workflow", "trigger", "status", "created_at", "updated_at"}
+        return {
+            "runs": [{key: value for key, value in row.items() if key in columns} for row in local],
+            "next_cursor": next_cursor,
+            "temporal": [],
+        }
     try:
         remote = await temporal.recent(50)
     except Exception:  # noqa: BLE001
@@ -45,7 +92,7 @@ async def list_runs(workflow: str | None = None) -> dict[str, Any]:
             run["status"] = live["status"].lower()
             run["start_time"] = live["start_time"]
             run["close_time"] = live["close_time"]
-    return {"runs": local, "temporal": remote}
+    return {"runs": local, "temporal": remote, "next_cursor": next_cursor}
 
 
 @router.get("/api/runs/{workflow_id}", dependencies=[Depends(require_user)])
@@ -64,7 +111,20 @@ async def get_run(workflow_id: str) -> dict[str, Any]:
             info["result"] = await temporal.result(workflow_id, timeout=10)
         except Exception:  # noqa: BLE001
             info["result"] = None
-    return {"run": row, "temporal": info, "statistics": run_statistics.statistics(workflow_id, row)}
+    delivery = db.one(
+        "SELECT d.state,d.chat_id FROM run_deliveries d JOIN runs r ON r.id=d.run_id WHERE r.workflow_id=?",
+        (workflow_id,),
+    )
+    if delivery and delivery["chat_id"]:
+        chat = db.one("SELECT owner_user_id FROM chats WHERE id=?", (delivery["chat_id"],))
+        if not chat or chat["owner_user_id"] != access.human_id():
+            delivery["chat_id"] = None
+    return {
+        "run": row,
+        "temporal": info,
+        "delivery": delivery,
+        "statistics": run_statistics.statistics(workflow_id, row),
+    }
 
 
 @router.get("/api/runs/{workflow_id}/graph", dependencies=[Depends(require_user)])

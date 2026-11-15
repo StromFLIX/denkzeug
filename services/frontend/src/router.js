@@ -7,7 +7,9 @@ const routes = [
   { path: '/', redirect: { path: '/chats', query: { welcome: '1' } } },
   { path: '/chats/:id?', name: 'chats', component: () => import('./views/ChatPane.vue') },
   { path: '/workflows/:name?', name: 'workflows', component: () => import('./views/WorkflowPane.vue') },
-  { path: '/runs/:id?', name: 'runs', component: () => import('./views/RunPane.vue') },
+  { path: '/workflows/:name/runs/:id', name: 'workflow-run', meta: { section: 'workflows' }, component: () => import('./views/RunPane.vue') },
+  { path: '/runs', redirect: '/workflows?view=runs' },
+  { path: '/runs/:id', name: 'runs', meta: { section: 'workflows' }, component: () => import('./views/RunPane.vue') },
   { path: '/apps/:id?', name: 'apps', component: () => import('./views/MiniAppPane.vue') },
   { path: '/settings/:tab?', name: 'settings', component: () => import('./views/SettingsPane.vue') },
   { path: '/:catchAll(.*)', redirect: '/chats' }
@@ -23,7 +25,7 @@ router.beforeEach(to => {
 })
 
 // The list a view sits on top of, and so the place its back button belongs.
-const UNDER = { chats: '/chats', workflows: '/workflows', runs: '/runs', apps: '/apps', settings: '/chats' }
+const UNDER = { chats: '/chats', workflows: '/workflows', runs: '/workflows?view=runs', 'workflow-run': '/workflows?view=runs', apps: '/apps', settings: '/chats' }
 
 /**
  * Opening straight onto a detail view (deep link, reload, Android cold start) leaves
@@ -36,14 +38,15 @@ export async function seedHistory () {
   await router.isReady()
   const entry = router.currentRoute.value
   const list = UNDER[entry.name]
-  const welcome = entry.name === 'chats' && entry.query.welcome === '1'
+  const welcome = (entry.name === 'chats' && entry.query.welcome === '1') || (entry.name === 'workflows' && entry.query.view === 'runs')
   // Vue Router persists its back entry across reloads. Keep that real origin
   // (including agent filters and settings callers) instead of inserting a new
   // list/detail pair every time the page or native webview is restored.
   if (window.history.state?.back || !list || (entry.path === list && !welcome)) return
-  const query = ['chats', 'apps'].includes(entry.name) ? { ...entry.query } : {}
+  const parent = router.resolve(list)
+  const query = ['chats', 'apps'].includes(entry.name) ? { ...parent.query, ...entry.query } : { ...parent.query }
   delete query.welcome
-  await router.replace({ path: list, query })
+  await router.replace({ path: parent.path, query })
   await router.push(entry.fullPath)
 }
 

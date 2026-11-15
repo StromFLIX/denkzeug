@@ -1,5 +1,9 @@
 <template>
-  <EmptyState v-if="!name" icon="account_tree" tone="workflow" :title="store.workflows.length ? 'Choose a workflow' : 'Make a process repeatable'"
+  <div v-if="!name && route.query.view === 'runs'" class="stack grow process-pane">
+    <header class="pane-head"><button class="btn btn--icon" aria-label="Back to workflows" @click="backTo('/workflows')"><span class="material-icons">arrow_back</span></button><div class="pane-head__title">All runs</div></header>
+    <div class="pane-body scroll-y grow"><WorkflowRuns /></div>
+  </div>
+  <EmptyState v-else-if="!name" icon="account_tree" tone="workflow" :title="store.workflows.length ? 'Choose a workflow' : 'Make a process repeatable'"
     :description="store.workflows.length ? 'Workflows are repeatable processes. Select one to inspect its steps, run it, or set a schedule.' : 'Describe a task in chat and ask your agent to turn it into a workflow. Run it when you need it, or give it a schedule.'"
     to="/chats" action="Open chats" />
 
@@ -86,6 +90,9 @@
           ? `Next ${scheduleTime(workflow.schedule.next_run, workflow.schedule.timezone)}`
           : workflow.schedule.description }}
       </span>
+      <button ref="runTrigger" class="btn btn--primary btn--sm run-action" aria-label="Run workflow" :disabled="disabled" @click="openRun">
+        <span class="material-icons" aria-hidden="true">play_arrow</span><span class="run-action-label">Run workflow</span>
+      </button>
       <button v-if="account.user?.role === 'admin'" class="btn btn--icon" aria-label="Workflow actions">
         <span class="material-icons" aria-hidden="true">more_vert</span>
         <q-menu anchor="bottom right" self="top right" class="pick-menu">
@@ -112,7 +119,10 @@
       >{{ item }}</button>
     </nav>
 
-    <template v-if="tab === 'Flow'">
+    <nav v-if="tab === 'Definition'" class="tabs definition-tabs" aria-label="Definition views">
+      <button v-for="item in ['Flow', 'Code']" :key="item" class="tab" :class="{ 'tab--active': definitionTab === item }" @click="definitionTab = item">{{ item }}</button>
+    </nav>
+    <template v-if="tab === 'Definition' && definitionTab === 'Flow'">
       <ExecutionFlow v-if="selectedRun" :key="selectedRun" :workflow-id="selectedRun">
         <template #source>
           <select v-model="selectedRun" class="field flow-picker" aria-label="Flow source">
@@ -131,53 +141,41 @@
       </WorkflowGraph>
     </template>
     <div v-else class="pane-body scroll-y grow">
-      <template v-if="tab === 'Run'">
+      <template v-if="tab === 'Overview'">
+        <section class="block overview-intro"><h2>A process, and everything it has done.</h2><p class="block__intro">Run once, inspect the result, or leave it on a schedule.</p></section>
+        <section class="block overview-schedule">
+          <div><h2 class="section-label">Next execution</h2>
+            <p v-if="workflow.schedule_status === 'unavailable'">Schedule unavailable. Retry when the scheduler is ready.</p>
+            <p v-else-if="disabled">Disabled. Existing executions continue.</p>
+            <template v-else-if="workflow.schedule"><strong>{{ workflow.schedule.next_run ? scheduleTime(workflow.schedule.next_run, workflow.schedule.timezone) : workflow.schedule.description }}</strong><p class="caption dim">{{ workflow.schedule.timezone }}</p></template>
+            <p v-else class="caption dim">{{ account.user?.role === 'admin' ? 'Run when needed. No schedule is saved.' : 'Schedule configuration is managed by an administrator.' }}</p>
+          </div>
+          <button v-if="account.user?.role === 'admin'" class="btn btn--outline" @click="tab = 'Settings'">Edit schedule</button>
+        </section>
+        <section class="block"><h2 class="section-label">Latest execution</h2>
+          <div v-if="latestRun" class="latest-run">
+            <span class="chip" :class="`chip--${RUN_TONE[latestRun.status] || ''}`">{{ latestRun.status }}</span>
+            <p class="caption dim">{{ fullTime(latestRun.created_at) }} · {{ latestRun.trigger }}</p>
+            <p v-if="latestSummary" class="latest-summary">{{ latestSummary }}</p>
+            <RouterLink class="btn btn--outline" :to="runLocation(name, latestRun.workflow_id)">View result</RouterLink>
+          </div>
+          <p v-else class="caption dim">No runs yet. Run this workflow to create its first execution record.</p>
+        </section>
+        <section class="block block--wide"><WorkflowRuns :workflow="name" preview @run="openRun" /></section>
+      </template>
+      <template v-else-if="tab === 'Settings'">
         <section v-if="disabled" class="notice">
           <span class="material-icons">pause_circle</span>
           <span class="grow">Disabled — new manual and webhook runs are blocked. Its schedule is paused when synchronized; existing runs continue.</span>
           <button v-if="account.user?.role === 'admin'" class="btn btn--sm btn--outline" :disabled="togglingDisabled" @click="toggleDisabled">Enable</button>
         </section>
 
-        <section class="block">
-          <h2 class="section-label">Run this workflow</h2>
-          <p class="block__intro">{{ Object.keys(inputProperties).length ? 'Review the inputs for this execution. Scheduled runs use the inputs saved with their schedule.' : 'This workflow needs no inputs. Start a run to follow its steps and inspect the result.' }}</p>
-          <div v-for="(schema, key) in inputProperties" :key="key" class="field-row">
-            <label class="field-row__label" :for="`workflow-input-${key}`">
-              {{ key }}
-              <span v-if="(workflow.manifest?.inputs?.required || []).includes(key)" class="dim">*</span>
-            </label>
-            <select
-              v-if="schema.type === 'boolean'"
-              :id="`workflow-input-${key}`" v-model="inputs[key]" class="field"
-              :title="schema.description || ''"
-            >
-              <option :value="undefined">{{ schema.default === undefined ? 'Not set' : `Use default (${schema.default})` }}</option>
-              <option :value="true">true</option>
-              <option :value="false">false</option>
-            </select>
-            <input
-              v-else-if="schema.type === 'integer' || schema.type === 'number'"
-              :id="`workflow-input-${key}`" v-model.number="inputs[key]" class="field" type="number"
-              :step="schema.type === 'integer' ? 1 : 'any'" :min="schema.minimum" :max="schema.maximum"
-              :placeholder="schema.description || String(schema.default ?? schema.type)"
-            />
-            <input
-              v-else
-              :id="`workflow-input-${key}`" v-model="inputs[key]" class="field"
-              :placeholder="schema.description || schema.type || ''"
-            />
-          </div>
-          <div class="row" style="margin-top: 14px">
-            <button class="btn btn--primary" :disabled="running || disabled" @click="run">
-              <span class="material-icons" style="font-size: 1.0625rem" aria-hidden="true">play_arrow</span>
-              {{ running ? 'Starting…' : 'Run now' }}
-            </button>
-          </div>
-        </section>
+        <p v-if="account.user?.role !== 'admin'" class="block__intro">Persistent workflow settings are managed by an administrator.</p>
 
         <section v-if="account.user?.role === 'admin'" class="block schedule-block">
           <h2 class="section-label">Schedule</h2>
           <p class="block__intro">Choose when this process repeats and the timezone it follows.</p>
+          <p v-if="workflow.schedule_status === 'unavailable'" class="notice" role="alert">Schedule state is unavailable. Do not assume this workflow is unscheduled.<button class="btn btn--sm" @click="refreshSchedule">Retry</button></p>
 
           <div v-if="workflow.schedule" class="schedule-current">
             <span class="material-icons schedule-current__icon">event_repeat</span>
@@ -239,6 +237,12 @@
             </div>
           </div>
 
+          <section class="scheduled-inputs">
+            <h3 class="section-label">Inputs for scheduled runs</h3>
+            <p class="block__intro">These inputs are independent of manual runs.</p>
+            <p v-if="hasResourceInputs" class="notice">Resource fields currently support manual runs only. Unattended resource authorization is not yet available.</p>
+            <WorkflowInputForm ref="scheduleForm" :key="`${name}-schedule`" v-model="scheduleInputs" :schema="inputSchema" :workflow="name" :server-errors="scheduleErrors" />
+          </section>
           <div class="row schedule-actions">
             <button
               v-if="scheduleFrequency === 'custom'" class="btn btn--primary"
@@ -276,35 +280,27 @@
 
         <section v-if="account.user?.role === 'admin'" class="block">
           <h2 class="section-label">Trigger</h2>
-          <p class="block__intro">Start this workflow from another tool with the current inputs.</p>
-          <TriggerSnippet class="block__panel" :workflow="workflow.name" :inputs="payload()" />
+          <p class="block__intro">Start this workflow from another tool. This preview uses the schedule input draft, not a manual run draft.</p>
+          <TriggerSnippet class="block__panel" :workflow="workflow.name" :inputs="scheduleInputs" />
         </section>
       </template>
 
-      <section v-else-if="tab === 'Code'" class="block block--wide">
+      <section v-else-if="tab === 'Definition' && definitionTab === 'Code'" class="block block--wide">
         <CodeViewer :files="files" />
       </section>
 
-      <section v-else class="block">
-        <h2 class="section-label">Execution history</h2>
-        <p class="block__intro">Each run records the inputs, steps, and outcome of one execution.</p>
-        <RouterLink
-          v-for="entry in workflow.runs || []" :key="entry.workflow_id"
-          class="run-row" :to="`/runs/${entry.workflow_id}`"
-        >
-          <span class="chip" :class="`chip--${RUN_TONE[entry.status] || ''}`">{{ entry.status }}</span>
-          <span class="mono grow truncate">{{ entry.workflow_id }}</span>
-          <span class="caption dim">{{ entry.trigger }}</span>
-          <span class="caption dim">{{ fullTime(entry.created_at) }}</span>
-        </RouterLink>
-        <div v-if="!workflow.runs?.length" class="history-empty">
-          <span class="material-icons" aria-hidden="true">history</span>
-          <h3>No runs yet</h3>
-          <p>Run this workflow to create its first execution record.</p>
-          <button class="btn btn--outline" @click="tab = 'Run'">Configure a run</button>
-        </div>
-      </section>
+      <section v-else-if="tab === 'Runs'" class="block block--wide"><WorkflowRuns :workflow="name" @run="openRun" /></section>
     </div>
+    <q-dialog v-model="runOpen" persistent no-route-dismiss @escape-key="closeRun">
+      <div class="run-dialog" role="dialog" aria-labelledby="manual-run-title">
+        <header class="run-dialog__head"><div><h2 id="manual-run-title">Run {{ workflow.title || workflow.name }}</h2><p>Run once. Your scheduled inputs will not change.</p></div><button class="btn btn--icon" aria-label="Close run form" :disabled="running" @click="closeRun"><span class="material-icons">close</span></button></header>
+        <div class="run-dialog__body scroll-y">
+          <div v-if="runError" class="notice" role="alert">{{ runError }}</div>
+          <WorkflowInputForm ref="manualForm" :key="`${name}-manual`" v-model="inputs" :schema="inputSchema" :workflow="name" :server-errors="runErrors" />
+        </div>
+        <footer class="run-dialog__footer"><button v-if="workflow.schedule?.input" class="btn btn--outline" :disabled="running" @click="copyScheduledInputs">Use scheduled inputs</button><span class="grow" /><button class="btn btn--outline" :disabled="running" @click="closeRun">Cancel</button><button class="btn btn--primary" :disabled="running || disabled" @click="run">{{ running ? 'Starting…' : 'Run now' }}</button></footer>
+      </div>
+    </q-dialog>
   </div>
 
   <div v-else class="empty">
@@ -314,33 +310,45 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { account } from '../auth-session.js'
 import { useQuasar } from 'quasar'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import CodeViewer from '../components/CodeViewer.vue'
 import EmptyState from '../components/EmptyState.vue'
 import TriggerSnippet from '../components/TriggerSnippet.vue'
 import WorkflowGraph from '../components/WorkflowGraph.vue'
 import ExecutionFlow from '../components/ExecutionFlow.vue'
+import WorkflowInputForm from '../components/WorkflowInputForm.vue'
+import WorkflowRuns from '../components/WorkflowRuns.vue'
+import { initialInputs, inputKey, runLocation } from '../workflow-inputs'
 import { compareGraphs } from '../flow'
 import { RUN_TONE, diffLines, fullTime, scheduleTime } from '../format'
 import { backTo } from '../router'
-import { actions, store } from '../store'
+import { actions, onLiveEvent, store } from '../store'
 import { api } from '../api'
 
 const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
 
-const tabs = ['Flow', 'Run', 'Code', 'History']
+const tabs = ['Overview', 'Runs', 'Definition', 'Settings']
 const chatModes = [
   { value: 'same', label: 'One chat' },
   { value: 'new', label: 'A chat per run' }
 ]
 const tab = computed({
-  get: () => [...tabs, 'Code diff'].includes(route.query.tab) ? route.query.tab : 'Flow',
-  set: value => router.replace({ query: { ...route.query, tab: value === 'Flow' ? undefined : value } })
+  get: () => draft.value ? (route.query.tab === 'Code diff' ? 'Code diff' : 'Flow') :
+    ({ Flow: 'Definition', Code: 'Definition', History: 'Runs', Run: 'Settings' }[route.query.tab] || (tabs.includes(route.query.tab) ? route.query.tab : 'Overview')),
+  set: value => router.replace({ query: { ...route.query, tab: value === 'Overview' ? undefined : value } })
+})
+const definitionTab = computed({
+  get: () => route.query.tab === 'Code' || route.query.source === 'Code' ? 'Code' : 'Flow',
+  set: value => router.replace({ query: { ...route.query, tab: 'Definition', source: value } })
+})
+const runOpen = computed({
+  get: () => route.query.run === 'new',
+  set: value => router.replace({ query: { ...route.query, run: value ? 'new' : undefined } })
 })
 const selectedRun = ref('')
 const draftMode = ref('changes')
@@ -350,6 +358,11 @@ const workflow = ref(null)
 const draft = ref(null)
 const validation = ref(null)
 const inputs = ref({})
+const scheduleInputs = ref({})
+const manualForm = ref(null), scheduleForm = ref(null), runTrigger = ref(null)
+const runErrors = ref({}), scheduleErrors = ref({}), runError = ref('')
+const initialManual = ref('{}')
+const manualDirty = computed(() => JSON.stringify(inputs.value) !== initialManual.value)
 const running = ref(false)
 const scheduling = ref(false)
 const approving = ref(false)
@@ -377,11 +390,17 @@ const timezones = [...new Set([
 ])]
 
 const name = computed(() => route.params.name || '')
-const inputProperties = computed(() => workflow.value?.manifest?.inputs?.properties || {})
+const inputSchema = computed(() => workflow.value?.manifest?.inputs || {})
+const hasResourceInputs = computed(() => Object.values(inputSchema.value.properties || {}).some(field => field.x_resource))
+const latestRun = computed(() => workflow.value?.runs?.[0])
+const latestSummary = computed(() => {
+  const result = latestRun.value?.result
+  return typeof result?.summary === 'string' ? result.summary : typeof result === 'string' ? result : ''
+})
 const disabled = computed(() => Boolean(workflow.value?.settings?.disabled))
 const chatMode = computed(() => workflow.value?.settings?.chat_mode || 'same')
 const scheduleReady = computed(() => {
-  if (!scheduleTimezone.value) return false
+  if (!scheduleTimezone.value || hasResourceInputs.value || workflow.value?.schedule_status === 'unavailable') return false
   if (scheduleFrequency.value === 'custom') return false
   if (scheduleFrequency.value === 'hourly') {
     return scheduleMinute.value >= 0 && scheduleMinute.value <= 59
@@ -432,36 +451,57 @@ async function load () {
     const result = await api.workflow(name.value)
     if (version !== loadVersion) return
     workflow.value = result
-    inputs.value = { ...(result.schedule?.input || {}) }
+    const previous = store.workflowInputDraft
+    const reuse = previous?.name === result.name && previous.account === account.user?.id
+    inputs.value = initialInputs(result.manifest?.inputs || {}, reuse ? previous.input : {})
+    if (reuse) store.workflowInputDraft = null
+    initialManual.value = JSON.stringify(inputs.value)
+    scheduleInputs.value = initialInputs(result.manifest?.inputs || {}, result.schedule?.input || {})
+    runErrors.value = {}; scheduleErrors.value = {}; runError.value = reuse ? 'Review these previous inputs against the current workflow before starting a new execution.' : ''
     loadSchedule(result.schedule)
   } catch (error) {
     if (version === loadVersion) loadError.value = error.message
   }
 }
 
-function payload () {
-  return Object.fromEntries(Object.entries(inputs.value).filter(([, value]) => value !== '' && value != null))
+function openRun () { runErrors.value = {}; runError.value = ''; runOpen.value = true }
+function copyScheduledInputs () { inputs.value = initialInputs(inputSchema.value, workflow.value.schedule.input); runErrors.value = {} }
+function confirmDiscard () {
+  return new Promise(resolve => $q.dialog({ title: 'Discard run inputs?', message: 'Your unsaved manual inputs will be discarded.', cancel: true })
+    .onOk(() => resolve(true)).onCancel(() => resolve(false)).onDismiss(() => resolve(false)))
 }
-
+async function closeRun () {
+  if (running.value || (manualDirty.value && !await confirmDiscard())) return
+  inputs.value = initialInputs(inputSchema.value); initialManual.value = JSON.stringify(inputs.value)
+  runOpen.value = false
+  await nextTick(); runTrigger.value?.focus()
+}
+function fieldErrors (error) { return Object.fromEntries((error.detail?.field_errors || []).map(item => [inputKey(item.path), item.message])) }
 async function run () {
+  runErrors.value = {}; runError.value = ''
+  if (!manualForm.value?.validate()) { runError.value = 'Review the highlighted inputs before starting.'; return }
   running.value = true
+  const version = loadVersion, target = workflow.value
   try {
-    const started = await api.runWorkflow(workflow.value.name, payload())
-    router.push(`/runs/${started.workflow_id}`)
+    const started = await api.runWorkflow(target.name, inputs.value)
+    if (version !== loadVersion) return
+    initialManual.value = JSON.stringify(inputs.value)
+    router.push(runLocation(target.name, started.workflow_id))
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.message })
-  } finally {
-    running.value = false
-  }
+    runErrors.value = fieldErrors(error)
+    runError.value = error.detail?.input?.join(' · ') || error.message
+  } finally { running.value = false }
 }
 
 async function schedule () {
+  scheduleErrors.value = {}
+  if (!scheduleForm.value?.validate()) { $q.notify({ type: 'negative', message: 'Review the scheduled inputs.' }); return }
   scheduling.value = true
   try {
     const definition = {
       frequency: scheduleFrequency.value,
       timezone: scheduleTimezone.value,
-      input: payload()
+      input: scheduleInputs.value
     }
     if (scheduleFrequency.value === 'hourly') definition.minute = scheduleMinute.value
     else definition.at = scheduleAt.value
@@ -472,10 +512,15 @@ async function schedule () {
     loadSchedule(saved)
     await actions.loadWorkflows()
   } catch (error) {
-    $q.notify({ type: 'negative', message: error.message })
-  } finally {
-    scheduling.value = false
-  }
+    scheduleErrors.value = fieldErrors(error)
+    $q.notify({ type: 'negative', message: error.detail?.input?.join(' · ') || error.message })
+  } finally { scheduling.value = false }
+}
+
+async function refreshSchedule () {
+  const target = workflow.value
+  try { const result = await api.workflow(target.name); if (target === workflow.value) { target.schedule = result.schedule; target.schedule_status = result.schedule_status } }
+  catch (error) { $q.notify({ type: 'negative', message: error.message }) }
 }
 
 async function unschedule () {
@@ -570,12 +615,43 @@ async function discard () {
   router.push('/workflows')
 }
 
+onBeforeRouteLeave(async () => !runOpen.value || !manualDirty.value || await confirmDiscard())
+onBeforeRouteUpdate(async to => !runOpen.value || !manualDirty.value || (to.params.name === name.value && to.query.run === 'new') || await confirmDiscard())
+watch(inputs, () => { runErrors.value = {}; runError.value = '' })
+watch(scheduleInputs, () => { scheduleErrors.value = {} })
 watch(name, load)
 watch(() => store.drafts.some((item) => item.name === name.value), load)
-onMounted(load)
+watch(() => store.workflows.find(item => item.name === name.value)?.settings, settings => { if (settings && workflow.value) workflow.value.settings = settings })
+let off = () => {}, refreshVersion = 0
+onMounted(() => {
+  load()
+  off = onLiveEvent(async event => {
+    if (!event.kind?.startsWith('run.') || (event.workflow && event.workflow !== name.value) || !workflow.value) return
+    const target = workflow.value, version = ++refreshVersion
+    try { const result = await api.workflow(target.name); if (workflow.value === target && version === refreshVersion) target.runs = result.runs }
+    catch { /* The run list keeps its independent retry/error state. */ }
+  })
+})
+onUnmounted(() => { loadVersion++; refreshVersion++; off() })
 </script>
 
 <style scoped>
+.overview-intro { border: 0; padding-bottom: 0; }
+.overview-intro h2 { font-size: 1.25rem; margin: 0 0 12px; }
+.overview-schedule { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-panel); }
+.latest-run { padding: 22px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-panel); }
+.latest-summary { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.875rem; line-height: 1.6; }
+.definition-tabs { background: var(--surface-panel); }
+.process-pane > .tabs { min-width: 0; overflow-x: auto; }
+@media (max-width: 560px) { .process-pane > .tabs { padding-inline: 4px; } .process-pane > .tabs .tab { padding-inline: 8px; font-size: 0.75rem; min-height: 44px; } }
+.scheduled-inputs { padding-top: 24px; margin-top: 24px; border-top: 1px solid var(--border); }
+.run-dialog { display: flex; flex-direction: column; width: min(820px, calc(100vw - 32px)); max-width: 820px; max-height: 90dvh; background: var(--surface-panel); color: var(--text); border-radius: var(--radius-lg); }
+.run-dialog__head { display: flex; justify-content: space-between; gap: 16px; padding: 24px; border-bottom: 1px solid var(--border); }
+.run-dialog__head h2 { margin: 0 0 8px; font-size: 1.25rem; }
+.run-dialog__head p { margin: 0; font-size: 0.8125rem; color: var(--text-muted); }
+.run-dialog__body { padding: 24px; min-height: 0; }
+.run-dialog__footer { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 18px 24px; border-top: 1px solid var(--border); }
+@media (max-width: 560px) { .run-action-label { display: none; } .run-action { min-width: 44px; min-height: 44px; padding: 8px; } .pane-head .avatar-sq { display: none; } .overview-schedule { flex-wrap: wrap; } .run-dialog { max-height: calc(100dvh - 24px); } .run-dialog__head, .run-dialog__body { padding: 16px; } .run-dialog__footer { padding: 14px; } }
 .flow-picker {
   width: 100%;
   max-width: 290px;

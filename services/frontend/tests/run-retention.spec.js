@@ -53,7 +53,7 @@ for (const width of [1440, 320]) {
 
 test('expired workflow flow keeps its source picker and links to saved run details', async ({ page }) => {
   const state = await mockApi(page, 'running') // Even a stale saved status must not poll forever.
-  await page.goto('/workflows/digest')
+  await page.goto('/workflows/digest?tab=Flow')
   await page.getByRole('combobox', { name: 'Flow source' }).selectOption('old-run')
   await expect(page.getByText('Execution history expired', { exact: true })).toBeVisible()
   await expect(page.getByRole('combobox', { name: 'Flow source' })).toBeVisible()

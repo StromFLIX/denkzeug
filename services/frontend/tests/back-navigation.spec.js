@@ -80,7 +80,7 @@ for (const [detail, list] of [
   ['/chats?welcome=1', '/chats'],
   ['/chats/alpha', '/chats'],
   ['/workflows/digest?tab=Code', '/workflows'],
-  ['/runs/example', '/runs'],
+  ['/runs/example', '/workflows?view=runs'],
   ['/apps/example?agent=agent-1', '/apps?agent=agent-1'],
   ['/settings/general', '/chats']
 ]) {
@@ -102,7 +102,7 @@ for (const [detail, list] of [
     expect(await page.evaluate(() => history.state.position)).toBe(position)
     await page.goBack()
     await expect(page).toHaveURL(new URL(list, 'http://127.0.0.1:9012').href)
-    await expect(page.locator('#shell-sidebar')).toBeVisible()
+    await expect(page.locator(detail.startsWith('/runs/') ? '.shell__main' : '#shell-sidebar')).toBeVisible()
     await settled()
     await page.goForward()
     await expect(page).toHaveURL(new URL(detail, 'http://127.0.0.1:9012').href)

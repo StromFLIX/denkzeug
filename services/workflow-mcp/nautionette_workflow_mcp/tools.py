@@ -24,7 +24,11 @@ INSTRUCTIONS = (
     "every step it took. write_workflow validates and deploys directly, without approval. "
     "Check ready and worker_restart, then use run_workflow and read_run to verify real results. "
     "Repair failures and redeploy as needed. Do not ask for routine permissions or confirmations. "
-    "Use the backend MCP tools for system diagnostics and configuration repairs."
+    "Use the backend MCP tools for system diagnostics and configuration repairs. "
+    "Make manual input forms human-readable with JSON Schema title, description, types and enum choices. "
+    "Top-level string inputs may use x_resource: {kind: agent|chat} for searchable stable-ID references; "
+    "resource input workflows are manual-only and cannot retain a schedule. JSON Schema defaults do not "
+    "automatically populate runtime inputs."
 )
 
 

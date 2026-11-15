@@ -583,7 +583,9 @@ async def authorize_request(request: Request, who) -> None:
                 execution_scope.set((kind, resource_id))
                 return
             if method == "GET" and (
-                len(parts) == 4 or (collection == "miniapps" and len(parts) == 5 and parts[4] == "status")
+                len(parts) == 4
+                or (collection == "miniapps" and len(parts) == 5 and parts[4] == "status")
+                or (collection == "workflows" and len(parts) == 5 and parts[4] == "input-options")
             ):
                 return
             break

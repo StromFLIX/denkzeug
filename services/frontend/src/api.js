@@ -227,6 +227,8 @@ export const api = {
 
   workflows: () => request('/api/workflows'),
   workflow: (name) => request(`/api/workflows/${name}`),
+  workflowInputOptions: (name, field, params = {}, signal) => request(
+    `/api/workflows/${encodeURIComponent(name)}/input-options?${new URLSearchParams({ field, ...params })}`, { signal }),
   workflowSettings: (name, payload) =>
     request(`/api/workflows/${name}/settings`, { method: 'PATCH', ...json(payload) }),
   deleteWorkflow: (name) => request(`/api/workflows/${name}`, { method: 'DELETE' }),
@@ -240,7 +242,7 @@ export const api = {
   approveDraft: (name) => request(`/api/drafts/${name}/approve`, { method: 'POST' }),
   discardDraft: (name) => request(`/api/drafts/${name}`, { method: 'DELETE' }),
 
-  runs: (workflow) => request(`/api/runs${workflow ? `?workflow=${encodeURIComponent(workflow)}` : ''}`),
+  runs: (workflow, params = {}, signal) => request(`/api/runs?${new URLSearchParams({ ...(workflow ? { workflow } : {}), ...params })}`, { signal }),
   run: (id) => request(`/api/runs/${id}`),
   runGraph: (id, signal) => request(`/api/runs/${encodeURIComponent(id)}/graph`, { signal }),
   cancelRun: (id) => request(`/api/runs/${id}/cancel`, { method: 'POST' }),

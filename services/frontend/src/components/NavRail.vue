@@ -53,15 +53,14 @@ defineExpose({
 })
 
 const route = useRoute()
-const active = computed(() => route.name)
+const active = computed(() => route.meta.section || route.name)
 
 const items = computed(() => [
   { name: 'chats', label: 'Chats', icon: 'chat_bubble_outline', tone: 'var(--agent-color)', to: chatLocation() },
   { name: 'workflows', label: 'Workflows', icon: 'account_tree', tone: 'var(--workflow-color)', to: '/workflows', badge: draftCount.value || 0 },
-  { name: 'runs', label: 'Runs', icon: 'history', tone: 'var(--workflow-color)', to: '/runs' },
   { name: 'apps', label: 'Apps', icon: 'apps', tone: 'var(--session-color)', to: { path: '/apps', query: route.query.agent ? { agent: route.query.agent } : {} } }
 ].filter(item => account.user?.role === 'admin' || item.name === 'chats' ||
-  (item.name === 'workflows' && store.workflows.length) || (item.name === 'runs' && store.runs.length) ||
+  (item.name === 'workflows' && (store.workflows.length || store.runs.length)) ||
   (item.name === 'apps' && store.apps.length)))
 </script>
 

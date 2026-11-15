@@ -30,7 +30,6 @@ test('empty process views explain workflows, runs, and apps with real next steps
   await mockProcesses(context)
   for (const [path, title, action] of [
     ['/workflows', 'Choose a workflow', 'Open chats'],
-    ['/runs', 'Inspect an execution', 'Open workflows'],
     ['/apps', 'An interface for your task', 'Open chats']
   ]) {
     await page.goto(path)
@@ -65,7 +64,7 @@ test('workflow disable shows saved intent and retries schedule synchronization w
   await page.getByRole('button', { name: 'Disable', exact: true }).click()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('alert')).toContainText('schedule synchronization is pending')
-  await expect(page.getByRole('button', { name: 'Run now', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Run workflow', exact: true })).toBeDisabled()
   await page.getByRole('button', { name: 'Retry sync', exact: true }).click()
   await expect(page.getByRole('alert')).toHaveCount(0)
   expect(writes).toEqual([{ disabled: true }, { disabled: true }])
@@ -77,7 +76,7 @@ test.describe('touch process controls', () => {
   test.use({ hasTouch: true, viewport: { width: 320, height: 700 } })
   test('graph targets and workflow fields accommodate touch without overflowing', async ({ page, context }) => {
     await mockProcesses(context)
-    await page.goto('/workflows/digest')
+    await page.goto('/workflows/digest?tab=Flow')
     const targets = page.locator('.flow__toolbar .btn--icon, .flow__zoom .btn--icon')
     await expect(targets.first()).toBeVisible()
     for (const target of await targets.all()) {
@@ -86,7 +85,7 @@ test.describe('touch process controls', () => {
       expect(box.height).toBeGreaterThanOrEqual(44)
     }
     await noOverflow(page)
-    await page.getByRole('button', { name: 'Run', exact: true }).click()
+    await page.getByRole('button', { name: 'Settings', exact: true }).click()
     const fields = page.locator('.schedule-grid .field')
     await expect(fields.first()).toBeVisible()
     for (const field of await fields.all()) {
@@ -107,9 +106,9 @@ for (const theme of THEMES) {
       const errors = []
       page.on('pageerror', error => errors.push(error.message))
       await page.goto('/workflows/digest?tab=History')
-      await expect(page.getByRole('heading', { name: 'No runs yet', exact: true })).toBeVisible()
-      await page.getByRole('button', { name: 'Configure a run', exact: true }).click()
-      await expect(page.getByRole('heading', { name: 'Run this workflow', exact: true })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Runs', exact: true })).toBeVisible()
+      await page.getByRole('button', { name: 'Run workflow', exact: true }).click()
+      await expect(page.getByRole('heading', { name: 'Run Morning digest', exact: true })).toBeVisible()
       await expect(page.getByRole('button', { name: 'Run now', exact: true })).toBeVisible()
       await expect(page.locator('.avatar-sq')).toHaveCSS('clip-path', 'none')
       await noOverflow(page)

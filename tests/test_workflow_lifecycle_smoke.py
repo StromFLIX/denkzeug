@@ -1,6 +1,7 @@
 """The staging probe touches only its UUID resources and never calls a model."""
 
 import pytest
+from nautionette import input_problems
 from nautionette_workflow_mcp.validate import run_checks
 
 from scripts import check_workflow_lifecycle as smoke
@@ -13,6 +14,8 @@ class API:
         self.calls = []
         self.settings = {"disabled": False, "chat_id": None}
         self.schedule = None
+        self.inputs = None
+        self.manifest = None
 
     def call(self, path, method="GET", body=None, expected=200):
         self.calls.append((path, method, body))
@@ -25,6 +28,7 @@ class API:
             assert name.startswith("lifecycle_smoke_")
             checked = run_checks(name, body["code"])
             assert checked["valid"], checked
+            self.manifest = checked["manifest"]
             assert "execute_activity" not in body["code"]
             return {"ready": True}
         if path.endswith("/schedule"):
@@ -36,15 +40,19 @@ class API:
             self.settings.update(body)
             self.schedule["paused"] = body["disabled"]
         elif path.endswith("/run"):
+            if expected == 400:
+                assert input_problems(self.manifest["inputs"], body["input"])
+                return None
             if expected == 409:
                 assert self.settings["disabled"]
                 return None
             if self.lost_start:
                 raise RuntimeError("Reply lost")
+            self.inputs = body["input"]
             self.settings["chat_id"] = "owned-chat"
             return {"workflow_id": "owned-run"}
         elif path == "/api/runs/owned-run":
-            return {"run": {"status": "completed"}}
+            return {"run": {"status": "completed", "input": self.inputs}}
         elif path == "/api/chats/owned-chat":
             return {
                 "messages": [
@@ -68,7 +76,8 @@ def test_probe_checks_disable_reenable_and_delivery_and_cleans_only_its_resource
     assert api.calls[-2][:2] == ("/api/chats/owned-chat", "DELETE")
     assert api.calls[-1][1] == "DELETE"
     assert api.calls[-1][0].startswith("/api/workflows/lifecycle_smoke_")
-    assert len([c for c in api.calls if c[0].endswith("/run") and c[2] == {}]) == 2  # refused + accepted
+    assert len([c for c in api.calls if c[0].endswith("/run")]) == 3  # disabled, invalid enum, accepted
+    assert api.inputs == {"mode": "preview", "zero": 0, "notes": None, "label": "", "silent": False}
 
 
 def test_probe_refuses_production_before_any_mutation():
@@ -82,4 +91,4 @@ def test_probe_never_retries_an_ambiguous_start():
     api = API(lost_start=True)
     with pytest.raises(RuntimeError, match="Reply lost"):
         smoke.check(api)
-    assert len([c for c in api.calls if c[0].endswith("/run")]) == 2  # refused + one lost reply
+    assert len([c for c in api.calls if c[0].endswith("/run")]) == 3  # disabled, invalid enum, one lost reply

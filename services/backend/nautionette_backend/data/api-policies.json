@@ -511,6 +511,11 @@
     "authentication": "account",
     "resource": "workflow:name"
   },
+  "GET /api/workflows/{name}/input-options": {
+    "scope": "workflows:read",
+    "authentication": "session",
+    "resource": "workflow:name"
+  },
   "GET /healthz": {
     "scope": "system:read",
     "authentication": "public",

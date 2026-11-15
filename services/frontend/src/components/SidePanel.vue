@@ -120,6 +120,8 @@
 
       <!-- workflows -->
       <template v-else-if="section === 'workflows'">
+        <RouterLink to="/workflows" class="row-item" :class="{ 'row-item--active': !route.params.name && route.query.view !== 'runs' && !route.params.id }"><span class="material-icons" aria-hidden="true">account_tree</span><span>All workflows</span></RouterLink>
+        <RouterLink to="/workflows?view=runs" class="row-item" :class="{ 'row-item--active': route.query.view === 'runs' }"><span class="material-icons" aria-hidden="true">history</span><span>All runs</span></RouterLink>
         <template v-if="filteredDrafts.length">
           <div class="side__group section-label">Waiting for review</div>
           <RouterLink
@@ -166,30 +168,6 @@
         </p>
       </template>
 
-      <!-- runs -->
-      <template v-else-if="section === 'runs'">
-        <RouterLink
-          v-for="run in filteredRuns" :key="run.workflow_id" :to="`/runs/${run.workflow_id}`"
-          class="row-item" :class="{ 'row-item--active': route.params.id === run.workflow_id }"
-        >
-          <div class="avatar avatar--square avatar--workflow">
-            <span class="material-icons">bolt</span>
-          </div>
-          <div class="grow">
-            <div class="row">
-              <span class="row-item__title grow truncate">{{ run.workflow }}</span>
-              <span class="row-item__time">{{ shortTime(run.created_at) }}</span>
-            </div>
-            <div class="row">
-              <span class="chip" :class="`chip--${RUN_TONE[run.status] || ''}`">{{ run.status }}</span>
-              <span class="row-item__sub dim truncate">{{ run.trigger }}</span>
-            </div>
-          </div>
-        </RouterLink>
-        <p v-if="!filteredRuns.length" class="side__empty caption">
-          {{ query ? 'Nothing matches that.' : 'No runs yet.' }}
-        </p>
-      </template>
     </div>
   </div>
 </template>
@@ -197,7 +175,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { RUN_TONE, scheduleTime, shortTime } from '../format'
+import { scheduleTime } from '../format'
 import { actions, health, store } from '../store'
 import { account } from '../auth-session.js'
 import { api } from '../api'
@@ -290,7 +268,7 @@ async function setUnread (chat, unread) {
   }
 }
 
-const section = computed(() => route.name || 'chats')
+const section = computed(() => route.meta.section || route.name || 'chats')
 const selectedAgent = computed(() => ['chats', 'apps'].includes(section.value) ? store.agentNavigation.agents.find(agent => agent.id === route.query.agent) : null)
 const heading = computed(() => selectedAgent.value?.name || ({ chats: 'Chats', workflows: 'Workflows', runs: 'Runs', apps: 'Apps' }[section.value]))
 
@@ -316,9 +294,6 @@ const filteredDrafts = computed(() =>
   store.drafts.filter((draft) => matches(`${draft.name} ${draft.description || ''}`)))
 
 const filteredApps = computed(() => store.apps.filter(app => belongsToAgent(app, route.query.agent) && matches(`${app.title} ${app.id}`)))
-
-const filteredRuns = computed(() =>
-  store.runs.filter((run) => matches(`${run.workflow} ${run.status} ${run.trigger}`)))
 
 async function startChat () {
   // Keep the list beneath the draft even if clicked during initial lazy routing.

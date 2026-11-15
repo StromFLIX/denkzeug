@@ -1278,6 +1278,10 @@ class Database:
         limit: int = 100,
         *,
         owner_user_id: str | None = None,
+        before: tuple[float, str] | None = None,
+        status: str = "",
+        trigger: str = "",
+        search: str = "",
     ) -> list[dict[str, Any]]:
         predicates, values = [], []
         if workflow:
@@ -1286,9 +1290,21 @@ class Database:
         if owner_user_id is not None:
             predicates.append("owner_user_id = ?")
             values.append(owner_user_id)
+        if before:
+            predicates.append("(created_at < ? OR (created_at = ? AND id < ?))")
+            values.extend((before[0], before[0], before[1]))
+        if status:
+            predicates.append("status = ?")
+            values.append(status)
+        if trigger:
+            predicates.append("trigger = ?")
+            values.append(trigger)
+        if search:
+            predicates.append("instr(lower(workflow || ' ' || workflow_id), ?) > 0")
+            values.append(search.lower())
         where = " WHERE " + " AND ".join(predicates) if predicates else ""
         rows = self.query(
-            "SELECT * FROM runs" + where + " ORDER BY created_at DESC LIMIT ?",  # noqa: S608
+            "SELECT * FROM runs" + where + " ORDER BY created_at DESC, id DESC LIMIT ?",  # noqa: S608
             (*values, limit),
         )
         for row in rows:

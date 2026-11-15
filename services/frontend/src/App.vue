@@ -72,7 +72,7 @@ const authFragment = ref(initialAuthFragment)
 const gate = computed(() => !account.ready || !account.user || account.user.must_change_password || Boolean(authFragment.value))
 
 const welcomeOpen = computed(() => route.name === 'chats' && !route.params.id && route.query.welcome === '1')
-const hasSelection = computed(() => Boolean(route.params.id || route.params.name) || welcomeOpen.value)
+const hasSelection = computed(() => Boolean(route.params.id || route.params.name) || welcomeOpen.value || (route.name === 'workflows' && route.query.view === 'runs'))
 // Settings replaces the list, but keeps the desktop navigation in reach.
 const fullPage = computed(() => route.name === 'settings')
 const mobileMedia = window.matchMedia('(max-width: 900px)')

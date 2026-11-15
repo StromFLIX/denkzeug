@@ -3,25 +3,26 @@
 
   <div v-else-if="detail" class="stack grow run-pane">
     <header class="pane-head" data-skin-part="header">
-      <button class="btn btn--icon pane-head__back" aria-label="Back to runs" @click="backTo('/runs')">
+      <button class="btn btn--icon pane-head__back" aria-label="Back to workflow runs" @click="backTo(backLocation)">
         <span class="material-icons">arrow_back</span>
       </button>
       <div class="run-identity" aria-hidden="true"><span class="material-icons">history</span></div>
       <div class="grow">
-        <div class="pane-head__title truncate">{{ run?.workflow || temporal?.workflow_type || id }}</div>
+        <div class="pane-head__title truncate">{{ workflowTitle || run?.workflow || temporal?.workflow_type || id }}</div>
         <div class="caption dim mono truncate">{{ id }}</div>
       </div>
       <span class="chip" :class="`chip--${RUN_TONE[status] || ''}`">{{ status }}</span>
-      <RouterLink v-if="run?.workflow" class="btn btn--icon" :to="`/workflows/${run.workflow}`" title="Open workflow" aria-label="Open workflow">
+      <RouterLink v-if="visibleWorkflow" class="btn btn--icon" :to="`/workflows/${run.workflow}`" title="Open workflow" aria-label="Open workflow">
         <span class="material-icons">account_tree</span>
       </RouterLink>
-      <button v-if="isLive" class="btn btn--danger btn--sm" @click="cancel">Cancel</button>
+      <button v-if="isLive" class="btn btn--danger btn--sm" :disabled="cancelPending" @click="cancel">{{ cancelPending ? 'Cancellation requested' : 'Cancel' }}</button>
     </header>
 
     <div v-if="detail.history_status === 'expired'" class="run-history-notice" role="status">
       <span class="material-icons" aria-hidden="true">history</span>
       <span>{{ detail.note }}</span>
     </div>
+    <div class="run-context"><RouterLink :to="backLocation">{{ run?.workflow || 'Workflows' }} / Runs</RouterLink><RouterLink v-if="visibleWorkflow && !visibleWorkflow.settings?.disabled" class="btn btn--outline btn--sm" :to="{ path: `/workflows/${encodeURIComponent(run.workflow)}`, query: { run: 'new' } }" @click="prepareRerun">Run again…</RouterLink></div>
     <nav class="tabs" aria-label="Run views">
       <button v-for="item in ['Flow', 'Details', 'Statistics']" :key="item" class="tab" :class="{ 'tab--active': tab === item }" @click="tab = item">{{ item }}</button>
     </nav>
@@ -30,6 +31,7 @@
       <RunStatistics :statistics="detail.statistics" />
     </div>
     <div v-else class="pane-body scroll-y grow">
+      <section v-if="['failed', 'terminated', 'timed_out'].includes(status)" class="run-failure" role="status"><strong>This execution {{ status.replaceAll('_', ' ') }}.</strong><p v-if="typeof run?.result?.summary === 'string'">{{ run.result.summary }}</p></section>
       <section class="block">
         <div class="facts">
           <div class="fact-cell">
@@ -57,6 +59,7 @@
         <pre class="code" style="margin-top: 8px">{{ pretty(run?.result ?? temporal?.result) }}</pre>
       </section>
 
+      <section v-if="detail.delivery" class="block"><h2 class="section-label">Delivery</h2><p>{{ { pending: 'Delivery pending. The saved result will be retried without rerunning this workflow.', delivered: 'Result delivered to its conversation.', skipped: 'No reply requested.' }[detail.delivery.state] || 'Delivery status unavailable.' }}</p><RouterLink v-if="detail.delivery.chat_id" class="btn btn--outline" :to="`/chats/${detail.delivery.chat_id}`">Open conversation</RouterLink></section>
       <details class="block run-diagnostics">
         <summary>Temporal details</summary>
         <pre class="code" style="margin-top: 8px">{{ pretty(temporal) }}</pre>
@@ -75,8 +78,10 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
 import { RUN_TONE, fullTime } from '../format'
+import { account } from '../auth-session.js'
+import { cloneInputs } from '../workflow-inputs'
 import { backTo } from '../router'
-import { actions, onLiveEvent } from '../store'
+import { actions, onLiveEvent, store } from '../store'
 import { api } from '../api'
 import ExecutionFlow from '../components/ExecutionFlow.vue'
 import EmptyState from '../components/EmptyState.vue'
@@ -85,7 +90,9 @@ import RunStatistics from '../components/RunStatistics.vue'
 const $q = useQuasar()
 const route = useRoute()
 const detail = ref(null)
-const tab = ref('Flow')
+const defaultTab = () => route.query.tab === 'Flow' || route.name === 'runs' ? 'Flow' : 'Details'
+const tab = ref(defaultTab())
+const cancelPending = ref(false)
 const loadError = ref('')
 let loadVersion = 0
 let off = () => {}
@@ -93,6 +100,13 @@ let refreshTimer
 
 const id = computed(() => route.params.id || '')
 const run = computed(() => detail.value?.run)
+const visibleWorkflow = computed(() => store.workflows.find(item => item.name === run.value?.workflow))
+const workflowTitle = computed(() => visibleWorkflow.value?.title)
+const backLocation = computed(() => {
+  const all = route.query.view === 'runs' || !visibleWorkflow.value
+  return { path: all ? '/workflows' : `/workflows/${encodeURIComponent(run.value.workflow)}`, query: { ...route.query, run: undefined, tab: all ? undefined : 'Runs', view: all ? 'runs' : undefined } }
+})
+function prepareRerun () { store.workflowInputDraft = { name: run.value.workflow, input: cloneInputs(run.value.input || {}), account: account.user?.id } }
 const temporal = computed(() => detail.value?.temporal)
 const status = computed(() => (temporal.value?.status || run.value?.status || 'unknown').toLowerCase())
 const isLive = computed(() => detail.value?.history_status !== 'expired' && ['running', 'started'].includes(status.value))
@@ -104,6 +118,7 @@ async function load () {
   try {
     const result = await api.run(id.value)
     if (version === loadVersion) {
+      if (route.params.name && result.run?.workflow !== route.params.name) { loadError.value = 'This run does not belong to the selected workflow.'; return }
       detail.value = result
       if (result.history_status === 'expired' && tab.value === 'Flow') tab.value = 'Details'
     }
@@ -123,6 +138,7 @@ function pretty (value) {
 async function cancel () {
   try {
     await api.cancelRun(id.value)
+    cancelPending.value = true
     $q.notify({ type: 'positive', message: 'Cancellation requested' })
   } catch (error) {
     $q.notify({ type: 'negative', message: error.message })
@@ -131,7 +147,7 @@ async function cancel () {
   actions.loadRuns()
 }
 
-watch(id, () => { detail.value = null; tab.value = 'Flow'; load() })
+watch(() => [id.value, route.params.name], () => { detail.value = null; tab.value = defaultTab(); cancelPending.value = false; load() })
 onMounted(() => {
   load()
   refreshTimer = setInterval(() => {
@@ -146,6 +162,11 @@ onUnmounted(() => { off(); clearInterval(refreshTimer); loadVersion++ })
 
 <style scoped>
 .run-pane { min-width: 0; min-height: 0; }
+.run-context { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; align-items: center; padding: 12px 22px; font-size: 0.8125rem; overflow-wrap: anywhere; }
+.run-context > a:first-child { color: var(--accent); text-decoration: none; }
+.run-failure { padding: 20px; margin-bottom: 24px; border-radius: var(--radius-md); background: var(--danger-soft); font-size: 0.875rem; }
+.run-failure p { margin: 12px 0 0; white-space: pre-wrap; }
+.run-pane .pane-head__back { display: grid; }
 .run-identity { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); background: var(--surface-panel); }
 .run-identity .material-icons { font-size: 1.25rem; }
 .pane-body {

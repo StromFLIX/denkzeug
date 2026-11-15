@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException
-from nautionette import input_problems
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from temporalio.service import RPCError, RPCStatusCode
 
 from .. import access
 from ..clients import authoring, temporal
@@ -17,6 +17,7 @@ from ..schedules import ScheduleRequest, temporal_spec
 from ..security import require_user
 from ..workflow_control import workflow_lock
 from ..workflow_graph import definition_graph
+from ..workflow_inputs import input_options, validate_inputs
 
 router = APIRouter(dependencies=[Depends(require_user)])
 
@@ -67,8 +68,35 @@ async def get_workflow(name: str) -> dict[str, Any]:
     workflow["runs"] = db.list_runs(name, limit=25, owner_user_id=owner) if owner is not None else []
     workflow["settings"] = _private_settings(name)
     who = access.principal()
-    workflow["schedule"] = await _schedule(name) if who is not None and who.role == "admin" else None
+    workflow["schedule"] = None
+    workflow["schedule_status"] = "hidden"
+    if who is not None and who.role == "admin":
+        try:
+            workflow["schedule"] = await temporal.schedule(name)
+            workflow["schedule_status"] = "available"
+        except RPCError as exc:
+            workflow["schedule_status"] = (
+                "available" if exc.status == RPCStatusCode.NOT_FOUND else "unavailable"
+            )
+        except Exception:
+            workflow["schedule_status"] = "unavailable"
     return workflow
+
+
+@router.get("/api/workflows/{name}/input-options")
+async def workflow_input_options(
+    name: str,
+    field: str = Query(max_length=256),
+    q: str = Query(default="", max_length=120),
+    selected: str = Query(default="", max_length=128),
+    offset: int = Query(default=0, ge=0, le=10000),
+    limit: int = Query(default=20, ge=1, le=50),
+) -> dict[str, Any]:
+    access.require_resource("workflow", name)
+    workflow = await authoring.get_workflow(name)
+    return input_options(
+        (workflow.get("manifest") or {}).get("inputs", {}), field, q, selected, offset, limit
+    )
 
 
 @router.patch("/api/workflows/{name}/settings")
@@ -143,9 +171,7 @@ async def schedule_workflow(name: str, payload: ScheduleRequest) -> dict[str, An
     """Schedule a workflow with a human recurrence and an explicit IANA timezone."""
     workflow = await authoring.get_workflow(name)
     manifest = workflow.get("manifest") or {}
-    problems = input_problems(manifest.get("inputs"), payload.input)
-    if problems:
-        raise HTTPException(status_code=400, detail={"workflow": name, "input": problems})
+    validate_inputs(name, manifest.get("inputs"), payload.input, scheduled=True)
     async with workflow_lock(name):
         if db.workflow_settings(name)["disabled"]:
             raise HTTPException(409, f"{name} is disabled; enable it before changing its schedule")

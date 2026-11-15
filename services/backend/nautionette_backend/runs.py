@@ -16,7 +16,6 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import HTTPException
-from nautionette import input_problems
 from temporalio.client import WorkflowFailureError
 from temporalio.exceptions import ApplicationError
 from temporalio.service import RPCError, RPCStatusCode
@@ -150,9 +149,9 @@ async def _start(name: str, payload: dict[str, Any], trigger: str) -> dict[str, 
         raise HTTPException(status_code=409, detail=f"{name} is disabled")
     workflow = await authoring.get_workflow(name)
     manifest = workflow.get("manifest") or {}
-    problems = input_problems(manifest.get("inputs"), payload)
-    if problems:
-        raise HTTPException(status_code=400, detail={"workflow": name, "input": problems})
+    from .workflow_inputs import validate_inputs
+
+    validate_inputs(name, manifest.get("inputs"), payload)
     workflow_id = f"{name}-{int(time.time())}-{uuid.uuid4().hex[:6]}"
     started = await temporal.start(
         name, workflow_id, payload, timeout_minutes=manifest.get("timeout_minutes", 30)

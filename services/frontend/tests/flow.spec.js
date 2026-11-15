@@ -90,7 +90,7 @@ test('definition canvas supports inspection, search, direction, zoom, and full s
   const errors = []
   page.on('pageerror', (error) => errors.push(error.message))
   await mockApi(page)
-  await page.goto('/workflows/url_digest')
+  await page.goto('/workflows/url_digest?tab=Flow')
   await expect(page.locator('.flow-node')).toHaveCount(original.nodes.length)
   await page.getByRole('button', { name: 'Fit all steps', exact: true }).click()
   await page.locator('.flow-node').filter({ hasText: 'http_fetch' }).click()
@@ -202,7 +202,7 @@ for (const width of [1440, 320]) {
     const errors = []
     page.on('pageerror', (error) => errors.push(error.message))
     await mockApi(page, { definition: grouped })
-    await page.goto('/workflows/url_digest')
+    await page.goto('/workflows/url_digest?tab=Flow')
     await expect(page.locator('.flow-loop')).toHaveCount(2)
     await page.getByRole('button', { name: 'Fit all steps', exact: true }).click()
     for (const direction of ['TB', 'LR']) {

@@ -272,3 +272,45 @@ async def test_backend_mcp_never_dispatches_member_tools(private_db, monkeypatch
         assert "live delegated account capability" in result.content[0].text
     finally:
         context.reset(token)
+
+
+def test_workflow_reference_options_and_admission_preserve_ownership(private_db, monkeypatch):
+    from nautionette_backend import workflow_inputs
+
+    database, context, legacy = private_db
+    monkeypatch.setattr(workflow_inputs, "db", database)
+    bob = make_chat(database, context, "bob", title="Product updates")
+    database.execute(
+        "INSERT INTO agent_profiles(id,name,created_at,updated_at) VALUES('shared','Release',0,0)"
+    )
+    database.execute(
+        "INSERT INTO agent_profiles(id,name,created_at,updated_at) VALUES('private','Secret agent',0,0)"
+    )
+    database.execute("INSERT INTO access_grants VALUES('agent','shared','bob',0)")
+    schema = {
+        "type": "object",
+        "properties": {
+            "agent": {"type": "string", "x_resource": {"kind": "agent"}},
+            "chat": {"type": "string", "x_resource": {"kind": "chat"}},
+        },
+    }
+    token = context.set(identity("bob", "member"))
+    try:
+        agents = workflow_inputs.input_options(schema, "/agent", "", "private", 0, 20)
+        assert [row["value"] for row in agents["items"]] == ["shared"]
+        assert agents["selected"] is None
+        chats = workflow_inputs.input_options(schema, "/chat", "", legacy["id"], 0, 20)
+        assert [row["value"] for row in chats["items"]] == [bob["id"]]
+        assert chats["selected"] is None
+        workflow_inputs.validate_inputs("test", schema, {"agent": "shared", "chat": bob["id"]})
+        database.execute("DELETE FROM access_grants WHERE user_id='bob'")
+        with pytest.raises(HTTPException):
+            workflow_inputs.validate_inputs("test", schema, {"agent": "shared"})
+    finally:
+        context.reset(token)
+    token = context.set(identity("alice", "admin"))
+    try:
+        with pytest.raises(HTTPException):
+            workflow_inputs.validate_inputs("test", schema, {"chat": bob["id"]})
+    finally:
+        context.reset(token)

@@ -88,11 +88,61 @@ def validate_manifest(manifest: Any) -> list[str]:
     if not isinstance(manifest, dict):
         return ["manifest: must be a dict named MANIFEST at module level"]
     errors = _validate_with_jsonschema(manifest)
+    for key in ("inputs", "outputs"):
+        embedded = manifest.get(key)
+        if not isinstance(embedded, dict):
+            continue
+        try:
+            from jsonschema import Draft202012Validator, SchemaError
+
+            Draft202012Validator.check_schema(embedded)
+        except SchemaError as exc:
+            errors.append(f"{key}: invalid JSON Schema: {exc.message}")
+        errors.extend(_presentation_problems(embedded, key))
     schema = manifest.get("schema")
     if isinstance(schema, int) and schema > SCHEMA_VERSION:
         errors.append(
             f"schema: file wants manifest schema {schema}, this runtime understands {SCHEMA_VERSION}"
         )
+    return errors
+
+
+def _presentation_problems(schema: dict, path: str) -> list[str]:
+    errors = []
+    properties = schema.get("properties", {})
+    if not isinstance(properties, dict):
+        return errors
+    for key, field in properties.items():
+        if not isinstance(field, dict):
+            continue
+        where = f"{path}/properties/{key}"
+        if "x_resource" in field:
+            reference = field["x_resource"]
+            types = field.get("type")
+            if (
+                path != "inputs"
+                or not isinstance(reference, dict)
+                or set(reference) != {"kind"}
+                or reference.get("kind") not in {"agent", "chat"}
+                or types not in ("string", ["string", "null"], ["null", "string"])
+            ):
+                errors.append(f"{where}/x_resource: use a top-level string input with kind agent or chat")
+        ui = field.get("x_ui")
+        if isinstance(ui, dict) and "enum_labels" in ui:
+            labels = ui["enum_labels"]
+            if (
+                not isinstance(labels, list)
+                or len(labels) != len(field.get("enum", []))
+                or not all(isinstance(label, str) for label in labels)
+            ):
+                errors.append(f"{where}/x_ui/enum_labels: supply one string label per enum value")
+        errors.extend(_presentation_problems(field, where))
+        items = field.get("items")
+        if isinstance(items, dict):
+            # Resource lookups are deliberately limited to top-level inputs.
+            if "x_resource" in items:
+                errors.append(f"{where}/items/x_resource: nested resource fields are not supported")
+            errors.extend(_presentation_problems(items, f"{where}/items"))
     return errors
 
 

@@ -1,6 +1,6 @@
 <template>
   <h2 class="settings__title">Automation</h2>
-  <p class="settings__intro">Workflows are repeatable processes. Set schedules, inputs and delivery on each workflow; inspect past executions in Runs.</p>
+  <p class="settings__intro">Workflows are repeatable processes. Set schedules, inputs and delivery on each workflow; inspect past executions within the same workflow.</p>
   <section id="workflow-settings" class="setting">
     <div class="row">
       <h3 class="setting__group-title grow">Workflows</h3>
@@ -8,7 +8,7 @@
     </div>
     <p v-if="!store.workflows.length" class="automation-empty caption muted">No workflows yet. Start a chat to create one.</p>
     <RouterLink v-for="workflow in store.workflows" :key="workflow.name" class="automation-row"
-      :to="{ path: `/workflows/${workflow.name}`, query: { tab: 'Run' } }">
+      :to="{ path: `/workflows/${workflow.name}`, query: { tab: 'Settings' } }">
       <div class="avatar avatar--square" :style="avatarStyle(workflow.name)"><span class="material-icons" aria-hidden="true">account_tree</span></div>
       <div class="grow"><strong>{{ workflow.title || workflow.name }}</strong><p class="caption muted">{{ workflow.schedule?.description || 'On demand' }}<template v-if="workflow.schedule?.timezone"> · {{ workflow.schedule.timezone }}</template></p></div>
       <span v-if="workflow.settings?.disabled" class="chip chip--warning">Disabled</span>

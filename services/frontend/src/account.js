@@ -119,4 +119,4 @@ if (globalThis.addEventListener) globalThis.addEventListener('storage', event =>
 })
 
 export const memberSettingKeys = new Set(['account', 'api-keys', 'appearance', 'workspace', 'usage'])
-export const canOpenRoute = route => account.user?.role === 'admin' || ['chats', 'workflows', 'runs', 'apps'].includes(route.name) || (route.name === 'settings' && memberSettingKeys.has(route.params.tab))
+export const canOpenRoute = route => account.user?.role === 'admin' || ['chats', 'workflows', 'workflow-run', 'runs', 'apps'].includes(route.name) || (route.name === 'settings' && memberSettingKeys.has(route.params.tab))

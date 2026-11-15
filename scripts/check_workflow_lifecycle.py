@@ -17,7 +17,9 @@ def check(api):
         raise RuntimeError("Disposable workflow name already exists; refusing to overwrite")
     code = """from temporalio import workflow
 MANIFEST = {"schema":1,"name":"__NAME__","title":"Disposable workflow lifecycle smoke",
- "inputs":{"type":"object","properties":{"silent":{"type":"boolean"}},"additionalProperties":False},
+ "inputs":{"type":"object","properties":{"silent":{"type":"boolean"},
+ "mode":{"type":"string","enum":["preview","publish"]},"zero":{"type":"integer"},
+ "notes":{"type":["string","null"]},"label":{"type":"string"}},"additionalProperties":False},
  "outputs":{"type":"object"},"timeout_minutes":2}
 @workflow.defn(name="__NAME__")
 class LifecycleSmoke:
@@ -50,13 +52,17 @@ class LifecycleSmoke:
             raise RuntimeError("Re-enabling changed the schedule recurrence or inputs")
         api.call(path + "/schedule", "DELETE")
         # A lost start reply is never retried. The disposable workflow is pure code.
-        run_id = api.call(path + "/run", "POST", {})["workflow_id"]
+        api.call(path + "/run", "POST", {"input": {"mode": "invalid"}}, expected=400)
+        inputs = {"mode": "preview", "zero": 0, "notes": None, "label": "", "silent": False}
+        run_id = api.call(path + "/run", "POST", {"input": inputs})["workflow_id"]
         for _ in range(60):
             info = api.call("/api/runs/" + run_id)
             status = (info.get("run") or {}).get("status")
             current = api.call(path)
             chat_id = current["settings"].get("chat_id")
             if status == "completed" and chat_id:
+                if info["run"].get("input") != inputs:
+                    raise RuntimeError("Typed workflow inputs did not survive the run admission path")
                 snapshot = api.call("/api/chats/" + chat_id)
                 replies = [
                     m
@@ -79,6 +85,7 @@ class LifecycleSmoke:
                     "workflow_lifecycle_smoke": "passed",
                     "schedule_control": "verified",
                     "chat_delivery": "verified",
+                    "typed_input_admission": "verified",
                 }
             )
         )

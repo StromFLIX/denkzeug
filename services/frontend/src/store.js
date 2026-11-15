@@ -32,6 +32,7 @@ const state = reactive({
   apps: [],
   appsError: '',
   workflows: [],
+  workflowInputDraft: null,
   drafts: [],
   runs: [],
   events: [],
@@ -54,6 +55,8 @@ const listeners = new Set()
 let source = null
 let catalogRequest = 0
 let chatsRequest = 0
+let workflowsRequest = 0
+let runsRequest = 0
 
 function emit (event) {
   listeners.forEach((fn) => fn(event))
@@ -140,17 +143,20 @@ export const actions = {
   },
 
   async loadWorkflows () {
+    const scope = chatCacheScope(), request = ++workflowsRequest
     const [workflows, drafts] = await Promise.all([
       guard(() => api.workflows()),
       account.user?.role === 'admin' ? guard(() => api.drafts()) : Promise.resolve({ drafts: [] })
     ])
+    if (scope !== chatCacheScope() || request !== workflowsRequest) return
     if (workflows) state.workflows = workflows.workflows
     if (drafts) state.drafts = drafts.drafts
   },
 
   async loadRuns () {
+    const scope = chatCacheScope(), request = ++runsRequest
     const data = await guard(() => api.runs())
-    if (data) state.runs = data.runs
+    if (data && scope === chatCacheScope() && request === runsRequest) state.runs = data.runs
   },
 
   async loadMiniapps () {
@@ -206,12 +212,14 @@ export const actions = {
     actions.disconnect()
     catalogRequest++
     chatsRequest++
+    workflowsRequest++
+    runsRequest++
     state.ready = state.catalogLoaded = false
     state.catalogError = state.appsError = ''
     state.catalog = emptyCatalog()
     state.system = { components: [], agent_sets: [] }
     state.chats = []; state.chatActivity = null; state.projects = []; state.apps = []
-    state.workflows = []; state.drafts = []; state.runs = []; state.events = []
+    state.workflows = []; state.workflowInputDraft = null; state.drafts = []; state.runs = []; state.events = []
     agentNavigation.reset({ restoreCached: Boolean(account.user) })
     mcpAuth.clear()
   },

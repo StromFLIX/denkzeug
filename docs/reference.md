@@ -1119,12 +1119,58 @@ Where the files live:
 
 Git is the reason a workflow is a file at all. Nothing in the design assumes an agent wrote it — a workflow typed by hand in an editor and pushed from a laptop takes exactly the same path through validation and deploy.
 
+### Typed manual inputs
+
+The manual form uses the manifest's `inputs` JSON Schema: strings, integers, numbers,
+booleans, enum choices, labeled `oneOf`/`const` choices and nullable values. Unsupported
+or structured fields use a validated JSON editor without flattening their data.
+`title` supplies a human label; `description` stays visible while entering a value.
+`x_ui: {"enum_labels": [...]}` supplies one display label per enum value while the
+payload retains the exact original values (including numbers and booleans).
+
+A direct string field under `inputs.properties` can declare a searchable reference:
+
+```python
+"agent_id": {
+    "type": "string",
+    "title": "Agent",
+    "x_resource": {"kind": "agent"},
+}
+```
+
+Use `kind: "chat"` for a conversation. The selector searches permitted display names
+and submits stable IDs. Duplicate names include context; renamed selections resolve
+by ID. Missing/revoked selections must be replaced, never silently substituted.
+A reference does not invoke an agent, change chat configuration, or grant access.
+The consuming workflow operation must still authorize use of that resource.
+
+Resource inputs currently support **manual runs only**: schedule saves are refused,
+and adding resource fields to a workflow with an existing schedule is refused until
+the schedule is removed. Temporal schedule actions do not yet revalidate an immutable
+schedule owner's resource authority before execution. Nested resource annotations
+are not supported. Browser option lookup is session-only, bounded, and owner/grant
+filtered; direct run submissions repeat reference validation.
+
+Manual and schedule drafts are separate. **Use scheduled inputs** explicitly copies
+the saved schedule's values into a manual form. Missing, null, empty text, false and
+zero are distinct. Optional defaults remain omitted unless explicitly supplied;
+JSON Schema defaults are annotations, not server-side default application. Required
+fields with defaults are visibly prefilled and submitted. Advanced JSON retains
+unknown keys for server validation rather than silently dropping them.
+
 ### Interactive flow views
 
-Workflows open on **Flow**. The definition diagram shows activities, child workflows,
-conditions, loops, timers, parallel groups, and returns without executing the source.
-Select a node to inspect its source; pan, zoom, search, or change the layout direction.
-Run controls, code, and history remain in their own tabs.
+Workflows open on **Overview**, with the next execution and latest saved outcome.
+**Run workflow** opens a focused manual form. **Runs** contains searchable, paginated
+execution history; **All runs** monitors owned executions across workflows inside the
+same workspace. Old `/runs/:id` links remain valid. New execution links retain their
+workflow context, and saved runs remain readable after definition deletion.
+
+**Definition → Flow / Code** preserves the existing inspection tools. The diagram
+shows activities, child workflows, conditions, loops, timers, parallel groups, and
+returns without executing the source. Select a node to inspect its source; pan,
+zoom, search, or change the layout direction. Visual authoring is not provided.
+**Settings** owns the existing schedule, delivery and authenticated trigger controls.
 
 Loops have a header and a dashed enclosure around their body, including nested
 loops. `continue` and `break` appear as **Next iteration** and **Exit loop**, without

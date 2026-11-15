@@ -41,7 +41,11 @@ def test_starting_a_run_records_it_and_honours_the_manifest_timeout(client, dige
 def test_input_is_checked_against_the_manifest_before_temporal_sees_it(client, digest):
     response = client.post("/api/workflows/url_digest/run", json={"input": {}})
     assert response.status_code == 400
-    assert response.json()["detail"] == {"workflow": "url_digest", "input": ["'url' is a required property"]}
+    assert response.json()["detail"] == {
+        "workflow": "url_digest",
+        "input": ["'url' is a required property"],
+        "field_errors": [{"path": "/url", "message": "'url' is a required property"}],
+    }
     assert digest.temporal.started == []
 
 
