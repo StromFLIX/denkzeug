@@ -30,6 +30,9 @@ async function workspace (page) {
     return route.fulfill({ json: data })
   })
   await page.goto('/workflows/weekly_summary')
+  // Mobile history seeding briefly renders the list before the selected pane.
+  // Measure the workspace only after its data-backed detail view is visible.
+  await expect(page.getByRole('button', { name: 'Run workflow', exact: true })).toBeVisible()
   return state
 }
 
