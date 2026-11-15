@@ -117,6 +117,7 @@ async function load () {
   finally { if (current === generation) loading.value = false }
 }
 function navigate (resetPage = true) {
+  if (group.value === 'runs' && !filters.workflow) group.value = 'workflows'
   data.value = null
   if (resetPage) offset.value = 0
   if (period.value !== 'custom') { const range = dateRange(Number(period.value), timezone); start.value = range.start; end.value = range.end }
@@ -151,7 +152,7 @@ watch(() => route.query, query => {
   period.value = ['7', '30', '90', 'custom'].includes(query.period) ? query.period : query.start ? 'custom' : '30'
   const range = dateRange(period.value === 'custom' ? 30 : Number(period.value), timezone)
   start.value = typeof query.start === 'string' ? query.start : range.start; end.value = typeof query.end === 'string' ? query.end : range.end
-  group.value = query.group === 'runs' || tabs.value.some(([key]) => key === query.group) ? query.group : 'models'
+  group.value = query.group === 'runs' ? (query.workflow ? 'runs' : 'workflows') : tabs.value.some(([key]) => key === query.group) ? query.group : 'models'
   sort.value = ['tokens', 'newest', 'name'].includes(query.sort) ? query.sort : 'tokens'
   offset.value = /^\d+$/.test(query.offset || '') ? Number(query.offset) : 0
   for (const key of Object.keys(filters)) filters[key] = typeof query[key] === 'string' && (key !== 'user' || admin.value) ? query[key] : ''
