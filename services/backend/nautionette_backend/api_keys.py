@@ -22,6 +22,8 @@ MAX_DAYS = 365
 WEBHOOK_DAYS = 7
 DETAIL_DAYS = 90
 AGGREGATE_DAYS = 365
+# Omission retains the finite default; explicit None deliberately means never.
+DEFAULT_EXPIRY = object()
 MEMBER_SCOPES = frozenset(
     {
         "workflows:read",
@@ -50,7 +52,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
  id TEXT PRIMARY KEY, owner_user_id TEXT NOT NULL REFERENCES auth_users(id) ON DELETE CASCADE,
  name TEXT NOT NULL, prefix TEXT NOT NULL, secret_hash TEXT NOT NULL UNIQUE,
  kind TEXT NOT NULL CHECK(kind IN ('api_key','webhook')), grants TEXT NOT NULL,
- created_at REAL NOT NULL, expires_at REAL NOT NULL, revoked_at REAL, last_used_at REAL,
+ created_at REAL NOT NULL, expires_at REAL, revoked_at REAL, last_used_at REAL,
  replacement_for TEXT, total_requests INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS api_keys_owner ON api_keys(owner_user_id,created_at);
@@ -71,6 +73,31 @@ CREATE TABLE IF NOT EXISTS api_key_daily (
  PRIMARY KEY(token_id,day)
 );
 """
+
+
+def install(conn) -> None:
+    """Allow non-expiring keys without losing IDs, hashes or retained request history."""
+    conn.executescript(SCHEMA)
+    if not any(row[1] == "expires_at" and row[3] for row in conn.execute("PRAGMA table_info(api_keys)")):
+        return
+    # Do not rename the old table: SQLite would retarget the children's FKs.
+    # Copy/drop/rename under FK-off preserves their references to api_keys.
+    conn.commit()
+    foreign_keys = conn.execute("PRAGMA foreign_keys").fetchone()[0]
+    conn.execute("PRAGMA foreign_keys=OFF")
+    try:
+        with conn:
+            conn.execute("BEGIN IMMEDIATE")
+            create = SCHEMA.split("CREATE INDEX IF NOT EXISTS api_keys_owner", 1)[0].strip()
+            conn.execute(create.replace("IF NOT EXISTS api_keys", "api_keys_nullable"))
+            conn.execute("INSERT INTO api_keys_nullable SELECT * FROM api_keys")
+            conn.execute("DROP TABLE api_keys")
+            conn.execute("ALTER TABLE api_keys_nullable RENAME TO api_keys")
+            if conn.execute("PRAGMA foreign_key_check").fetchone():
+                raise RuntimeError("API-key expiry migration failed foreign-key validation")
+    finally:
+        conn.execute(f"PRAGMA foreign_keys={int(foreign_keys)}")
+    conn.executescript(SCHEMA)  # Recreate the indexes dropped with the old table.
 
 
 def workflow_identity(name: str) -> str:
@@ -172,7 +199,7 @@ def issue(
     who,
     name: str,
     grants: list,
-    expires_at: float | None = None,
+    expires_at: float | None | object = DEFAULT_EXPIRY,
     *,
     kind="api_key",
     replacement_for=None,
@@ -182,8 +209,9 @@ def issue(
     if not isinstance(name, str) or not 1 <= len(name.strip()) <= 100 or any(ord(c) < 32 for c in name):
         raise HTTPException(422, "Give this key a name of 1–100 characters")
     now = time.time()
-    expires_at = now + DEFAULT_DAYS * 86400 if expires_at is None else expires_at
-    if (
+    if expires_at is DEFAULT_EXPIRY:
+        expires_at = now + DEFAULT_DAYS * 86400
+    if expires_at is not None and (
         isinstance(expires_at, bool)
         or not isinstance(expires_at, (int, float))
         or not math.isfinite(expires_at)
@@ -260,7 +288,7 @@ def identify(raw: str, request: Request) -> dict:
     if (
         not row
         or row["revoked_at"] is not None
-        or row["expires_at"] <= time.time()
+        or (row["expires_at"] is not None and row["expires_at"] <= time.time())
         or row["status"] != "active"
         or row["must_change_password"]
     ):
@@ -269,7 +297,7 @@ def identify(raw: str, request: Request) -> dict:
 
 
 def authorize_key(request: Request, row: dict, policy: Policy) -> None:
-    if policy.authentication not in {"account", "mcp"}:
+    if policy.authentication not in {"account", "api_key", "mcp"}:
         raise HTTPException(403, "This credential is not accepted for this operation")
     kind, resource_id = None, None
     if policy.resource:
@@ -292,7 +320,7 @@ def authorize_key(request: Request, row: dict, policy: Policy) -> None:
             and resource_id in resources
         ):
             if row["kind"] == "webhook" and (
-                request.method != "POST" or request.state.api_route != "/api/triggers/{name}"
+                request.method not in {"GET", "POST"} or request.state.api_route != "/api/triggers/{name}"
             ):
                 raise HTTPException(403, "Webhook keys may only trigger their workflow")
             return

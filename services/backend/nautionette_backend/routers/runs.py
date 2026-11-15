@@ -178,18 +178,58 @@ async def terminate_run(workflow_id: str, payload: dict[str, Any] = Body(default
     return {"ok": True}
 
 
+async def _get_trigger_input(name: str, request: Request) -> dict[str, Any]:
+    if len(request.scope.get("query_string", b"")) > 16384:
+        raise HTTPException(413, "Workflow trigger query is too large")
+    parameters = request.query_params
+    if any(len(parameters.getlist(key)) != 1 for key in parameters):
+        raise HTTPException(422, "Workflow trigger parameters must not be repeated")
+    if "input" in parameters:
+        if set(parameters) - {"token", "input"}:
+            raise HTTPException(422, "Use either JSON input or individual query fields, not both")
+        try:
+            payload = json.loads(parameters["input"])
+        except ValueError as error:
+            raise HTTPException(422, "Workflow trigger input must be a JSON object") from error
+        if not isinstance(payload, dict):
+            raise HTTPException(422, "Workflow trigger input must be a JSON object")
+        return payload
+    # Compatibility with integrations that can only send individual URL fields.
+    # Preserve string values; decode JSON for explicitly non-string schema types.
+    payload = {key: value for key, value in parameters.items() if key != "token"}
+    if payload:
+        from ..clients import authoring
+
+        definition = await authoring.get_workflow(name)
+        properties = ((definition.get("manifest") or {}).get("inputs") or {}).get("properties", {})
+        for key, value in list(payload.items()):
+            expected = properties.get(key, {}).get("type")
+            types = expected if isinstance(expected, list) else [expected]
+            if "string" in types or not any(types):
+                continue
+            try:
+                payload[key] = json.loads(value)
+            except ValueError:
+                pass  # The existing manifest validator returns the field error.
+    return payload
+
+
+@router.get("/api/triggers/{name}", dependencies=[Depends(require_user)])
 @router.post("/api/triggers/{name}", dependencies=[Depends(require_user)])
 async def trigger(name: str, request: Request, token: str | None = Query(default=None)) -> dict[str, Any]:
-    """Triggers come in here and nowhere else."""
+    """Scoped integration triggers. GET requires an explicit API/workflow token, never just cookies."""
     access.require_execution()
+    if request.method == "GET":
+        payload = await _get_trigger_input(name, request)
+        result = await runs.start(name, payload, trigger="webhook")
+        request.state.api_run_id = result.get("workflow_id")
+        return result
     try:
         body = bytearray()
         async for chunk in request.stream():
             if len(body) + len(chunk) > 1048576:
                 raise HTTPException(413, "Workflow webhook payload is too large")
             body.extend(chunk)
-        import json
-
         payload = json.loads(body) if body else {}
     except (ValueError, UnicodeDecodeError) as exc:
         raise HTTPException(422, "Workflow webhook body must be valid JSON") from exc

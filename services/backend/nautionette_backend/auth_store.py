@@ -96,9 +96,6 @@ CREATE TABLE IF NOT EXISTS auth_mail_outbox (
 
 def install(conn: sqlite3.Connection) -> None:
     conn.executescript(_SCHEMA)
-    from .api_keys import SCHEMA as API_KEY_SCHEMA
-
-    conn.executescript(API_KEY_SCHEMA)
     columns = conn.execute("PRAGMA table_info(auth_users)").fetchall()
     if any(row[1] == "email" and row[3] for row in columns):
         # Preserve accounts and every referencing session/membership when upgrading
@@ -121,6 +118,9 @@ def install(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE auth_tokens ADD COLUMN label TEXT NOT NULL DEFAULT ''")
     conn.execute("UPDATE auth_users SET status='active' WHERE status='pending'")
     conn.commit()
+    from .api_keys import install as install_api_keys
+
+    install_api_keys(conn)
 
 
 def store():

@@ -32,7 +32,7 @@ class KeyCreate(BaseModel):
 
 class WebhookCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    days: int = Field(default=7, ge=1, le=30, strict=True)
+    days: int | None = Field(default=7, ge=1, le=30, strict=True)
 
 
 def who(request):
@@ -139,6 +139,7 @@ async def catalog(request: Request):
             "default_days": api_keys.DEFAULT_DAYS,
             "max_days": api_keys.MAX_DAYS,
             "webhook_days": api_keys.WEBHOOK_DAYS,
+            "allow_never_expire": True,
         },
     }
 
@@ -159,7 +160,8 @@ def list_tokens(request: Request):
 def create_token(request: Request, body: KeyCreate):
     principal = who(request)
     throttle("api-key-create:" + principal.user_id, 30, window=3600)
-    return api_keys.issue(principal, body.name, body.grants, body.expires_at)
+    expiry = body.expires_at if "expires_at" in body.model_fields_set else api_keys.DEFAULT_EXPIRY
+    return api_keys.issue(principal, body.name, body.grants, expiry)
 
 
 @router.delete("/api/tokens/{token_id}")
@@ -188,7 +190,7 @@ def rotate_token(token_id: str, request: Request):
             raise HTTPException(404, "API key not found")
         if row["revoked_at"] is not None:
             raise HTTPException(409, "This key has already been revoked")
-        if row["expires_at"] <= time.time():
+        if row["expires_at"] is not None and row["expires_at"] <= time.time():
             raise HTTPException(409, "Create a new key instead of rotating an expired key")
         result = api_keys.issue(
             principal,
@@ -263,7 +265,7 @@ async def _webhook_token(name: str, request: Request, body: WebhookCreate):
         principal,
         f"Webhook · {name}",
         [{"scope": "workflows:trigger", "resources": [identity]}],
-        time.time() + body.days * 86400,
+        None if body.days is None else time.time() + body.days * 86400,
         kind="webhook",
     )
     result["url"] = (

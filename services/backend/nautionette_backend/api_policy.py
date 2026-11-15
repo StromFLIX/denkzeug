@@ -101,6 +101,7 @@ UNSCOPED = frozenset(
 )
 AUTHENTICATION = {
     "account",
+    "api_key",
     "session",
     "delegated",
     "internal",
@@ -205,6 +206,8 @@ async def admit(request: Request, app) -> None:
         await require_internal(request, request.headers.get("x-internal-token"))
     else:
         who = await require_user(request)
+        if policy.authentication == "api_key" and (who.service or not who.token_id):
+            raise HTTPException(403, "This operation requires an explicit scoped API or workflow token")
         if policy.authentication == "session" and (
             who.service or who.token_id or not getattr(request.state, "auth_session", None)
         ):
