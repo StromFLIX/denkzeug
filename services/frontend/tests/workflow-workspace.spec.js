@@ -3,7 +3,7 @@ import { expect, test } from './account-fixture.js'
 async function workspace (page) {
   const state = { started: null, searches: [] }
   const workflow = { name: 'weekly_summary', title: 'Weekly summary', description: 'Collect product updates.', settings: {}, runs: [], schedule: null, code: 'MANIFEST = {}', graph: { nodes: [], edges: [] }, manifest: { inputs: { type: 'object', properties: {
-    mode: { title: 'Report type', type: 'string', enum: ['weekly', 'release'], x_ui: { enum_labels: ['Weekly summary', 'Release notes'] } },
+    mode: { title: 'Report type', type: ['string', 'null'], enum: ['weekly', 'release'], x_ui: { enum_labels: ['Weekly summary', 'Release notes'] } },
     agent: { title: 'Agent', type: 'string', x_resource: { kind: 'agent' } },
     zero: { title: 'Look back', type: 'integer' }, empty: { title: 'Notes', type: 'string' }, nil: { title: 'Destination', type: ['string', 'null'] }
   }, required: ['mode', 'agent'] } } }
@@ -37,6 +37,7 @@ test('human typed inputs, enums and searchable names submit stable references', 
   const state = await workspace(page)
   await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Runs', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'Run workflow', exact: true }).click()
+  await expect(page.getByLabel('Report type', { exact: true }).locator('option[value="null"]')).toHaveCount(0)
   await page.getByLabel('Report type', { exact: true }).selectOption({ label: 'Release notes' })
   const agent = page.getByLabel('Agent', { exact: true })
   await agent.fill('release')

@@ -44,12 +44,12 @@ export function inputErrors (schema, payload) {
       if ((schema.required || []).includes(key)) errors[key] = 'Supply a value for this required input.'
       continue
     }
-    if (value === null) {
-      if (!nullable(field) && !choices(field)?.some(item => item.value === null)) errors[key] = 'This input does not accept null.'
-      continue
-    }
     const allowed = choices(field)
     if (allowed && !allowed.some(item => JSON.stringify(item.value) === JSON.stringify(value))) errors[key] = 'Choose an allowed value.'
+    if (value === null) {
+      if (!nullable(field) && !allowed?.some(item => item.value === null)) errors[key] = 'This input does not accept null.'
+      continue
+    }
     const type = baseType(field)
     if (['number', 'integer'].includes(type)) {
       if (typeof value !== 'number' || !Number.isFinite(value) || (type === 'integer' && !Number.isInteger(value))) errors[key] = `Enter a valid ${type}.`

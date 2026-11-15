@@ -11,7 +11,7 @@
         @change="setChoice(key, field, $event.target.value)">
         <option v-if="!required(key)" value="omit">{{ omission(field) }}</option>
         <option v-else value="unset" disabled>Choose a value</option>
-        <option v-if="nullable(field) && !choices(field)?.some(item => item.value === null)" value="null">Set null</option>
+        <option v-if="nullable(field) && !choices(field)" value="null">Set null</option>
         <template v-if="fieldKind(field) === 'boolean'">
           <option value="true">Yes (true)</option><option value="false">No (false)</option>
         </template>

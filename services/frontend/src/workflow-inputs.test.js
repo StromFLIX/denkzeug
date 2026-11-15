@@ -8,6 +8,7 @@ test('enum labels retain exact string, number, Boolean and null values', () => {
   assert.equal(choices(field)[1].label, 'No')
   assert.deepEqual(choices({ enum: ['false', false] }).map(item => item.label), ['false (string)', 'false (boolean)'])
   assert.equal(fieldKind({ type: 'boolean', enum: [false] }), 'choice')
+  assert.equal(inputErrors({ properties: { choice: { type: ['string', 'null'], enum: ['weekly'] } } }, { choice: null }).choice, 'Choose an allowed value.')
   assert.deepEqual(choices({ oneOf: [{ const: 'weekly', title: 'Weekly summary' }] }), [{ value: 'weekly', label: 'Weekly summary' }])
 })
 test('defaults are annotations except explicitly prefilled required inputs; drafts remain independent', () => {
