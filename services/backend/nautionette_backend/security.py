@@ -184,23 +184,16 @@ class AccountBoundaryMiddleware:
         self.app = app
 
     async def websocket(self, scope, receive, send):
-        from fastapi.routing import iter_route_contexts
-        from starlette.routing import Match
+        from starlette.requests import HTTPConnection
 
         from . import api_keys
         from .account_streams import live
-        from .api_policy import POLICIES
+        from .api_policy import resolve
         from .main import app as root_app
 
-        policy, params, path = None, {}, ""
-        for route in iter_route_contexts(root_app.routes):
-            match, child = route.matches(scope)
-            if match == Match.FULL:
-                path = route.path
-                policy = POLICIES.get(f"WEBSOCKET {path}")
-                params = child.get("path_params", {})
-                break
-        if policy is None:
+        try:
+            policy = resolve(HTTPConnection(scope), root_app)
+        except HTTPException:
             return await send({"type": "websocket.close", "code": 1008})
         if policy.authentication == "ticket":
             # The reviewed speech transport validates a bounded, single-use
@@ -208,25 +201,28 @@ class AccountBoundaryMiddleware:
             return await self.app(scope, receive, send)
         if policy.authentication not in {"account", "session"}:
             return await send({"type": "websocket.close", "code": 1008})
+        from .access import execution_scope
+
         reset = current_principal.set(None)
+        execution_reset = execution_scope.set(None)
         request = Request({**scope, "type": "http", "method": "GET", "state": scope.setdefault("state", {})})
-        request.state.api_policy = policy
-        request.state.api_route = path
-        request.state.api_params = params
         audit_id = None
         started = time.monotonic()
         try:
             if request.cookies.get(SESSION_COOKIE):
                 validate_origin(request)
             who = await require_user(request)
-            if policy.authentication == "session" and who.token_id:
+            if policy.authentication == "session" and not getattr(request.state, "auth_session", None):
                 raise HTTPException(403, "A signed-in user is required")
             audit_id = api_keys.begin_request(request)
 
             async def guarded_receive():
                 if not live(who):
                     return {"type": "websocket.disconnect", "code": 1008}
-                return await receive()
+                message = await receive()
+                if not live(who):
+                    return {"type": "websocket.disconnect", "code": 1008}
+                return message
 
             async def guarded_send(message):
                 if message["type"] in {"websocket.accept", "websocket.send"} and not live(who):
@@ -241,6 +237,7 @@ class AccountBoundaryMiddleware:
             await send({"type": "websocket.close", "code": 1008})
         finally:
             current_principal.reset(reset)
+            execution_scope.reset(execution_reset)
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "websocket":

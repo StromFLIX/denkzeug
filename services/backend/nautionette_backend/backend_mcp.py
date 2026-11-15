@@ -21,6 +21,7 @@ from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
+from .api_policy import POLICIES
 from .config import settings
 from .events import bus
 from .security import token_matches
@@ -120,6 +121,11 @@ class BackendMCP:
             ):
                 continue
             for method in sorted(route.methods or []):
+                policy = POLICIES.get(f"{method} {route.path}")
+                if policy is None:
+                    raise ValueError(f"Backend MCP operation lacks a security policy: {method} {route.path}")
+                if policy.authentication == "session":
+                    continue  # Human-only credential/connection operations are never agent tools.
                 operation = document["paths"][route.path].get(method.lower())
                 if not operation:
                     continue
@@ -237,8 +243,6 @@ class BackendMCP:
         return row, raw
 
     async def list_tools(self, context, params) -> types.ListToolsResult:
-        from .api_policy import POLICIES
-
         row, _ = self.key_context(context, "mcp:read")
         if row is None:
             return types.ListToolsResult(tools=self.tools)

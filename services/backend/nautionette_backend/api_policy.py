@@ -12,6 +12,7 @@ from pathlib import Path
 
 from fastapi import HTTPException, Request
 from fastapi.routing import iter_route_contexts
+from starlette.requests import HTTPConnection
 from starlette.routing import Match, Mount, WebSocketRoute
 
 # Scope descriptions are also the public key-creation catalogue.
@@ -145,24 +146,30 @@ def annotate_openapi(app) -> None:
     app.openapi = openapi
 
 
-def resolve(request: Request, app):
+def resolve(request: HTTPConnection, app, prefix: str = ""):
     for route in iter_route_contexts(app.routes):
         match, child = route.matches(request.scope)
         if match != Match.FULL:
             continue
-        key = (
-            f"MOUNT {route.path}"
-            if isinstance(route.original_route, Mount)
-            else f"{request.method} {route.path}"
-        )
+        path = prefix + route.path
+        method = "WEBSOCKET" if request.scope["type"] == "websocket" else request.scope["method"]
+        key = f"MOUNT {path}" if isinstance(route.original_route, Mount) else f"{method} {path}"
         policy = POLICIES.get(key)
         if policy is None:
             raise HTTPException(403, "This operation has no security policy")
+        if isinstance(route.original_route, Mount):
+            mounted = route.original_route.app
+            if not hasattr(mounted, "routes"):
+                raise HTTPException(403, "Mounted API routes cannot be verified")
+            nested = HTTPConnection(
+                {**request.scope, **child, "state": request.scope.setdefault("state", {})}
+            )
+            return resolve(nested, mounted, path)
         # The frontend is intentionally public, but may never act as an API fallback.
         if route.path == "/{path:path}" and request.url.path.startswith(("/api", "/internal", "/mcp")):
             raise HTTPException(404, "not found")
         request.state.api_policy = policy
-        request.state.api_route = route.path
+        request.state.api_route = path
         request.state.api_params = child.get("path_params", {})
         return policy
     raise HTTPException(404, "not found")
@@ -178,7 +185,9 @@ async def admit(request: Request, app) -> None:
         await require_internal(request, request.headers.get("x-internal-token"))
     else:
         who = await require_user(request)
-        if policy.authentication == "session" and (who.service or who.token_id or not who.session_id):
+        if policy.authentication == "session" and (
+            who.service or who.token_id or not getattr(request.state, "auth_session", None)
+        ):
             raise HTTPException(403, "This operation requires a signed-in user")
         if policy.authentication == "delegated" and (who.token_id or who.service):
             raise HTTPException(403, "This operation requires a user or live delegated account")

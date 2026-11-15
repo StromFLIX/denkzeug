@@ -424,3 +424,59 @@ def test_openapi_documents_the_final_scope_policies(client):
     document = client.get("/api/openapi.json").json()
     policy = document["paths"]["/api/workflows/{name}/run"]["post"]["x-denkzeug-policy"]
     assert policy == {"scope": "workflows:trigger", "authentication": "account", "resource": "workflow:name"}
+
+
+def test_declared_mounted_child_has_its_own_credential_and_scope_gate(client, anonymous, monkeypatch):
+    from nautionette_backend.api_policy import Policy
+    from starlette.responses import JSONResponse
+    from starlette.routing import Route
+
+    async def child(request):
+        return JSONResponse({"protected": True})
+
+    mounted = main.backend_mcp.http_app
+    route = Route("/policy-probe", child, methods=["GET"])
+    mounted.router.routes.append(route)
+    monkeypatch.setitem(POLICIES, "GET /mcp/policy-probe", Policy("system:control", "account"))
+    monkeypatch.setitem(POLICIES, "HEAD /mcp/policy-probe", Policy("system:control", "account"))
+    try:
+        assert anonymous.get("/mcp/policy-probe").status_code == 401
+        assert external(create(client)["secret"]).get("/mcp/policy-probe").status_code == 403
+        assert client.get("/mcp/policy-probe").json() == {"protected": True}
+    finally:
+        mounted.router.routes.remove(route)
+
+
+def test_open_key_stream_closes_after_owner_role_change(client, db):
+    from nautionette_backend.account_streams import live
+
+    created = create(client)
+    principal = Principal("test-admin", "admin", token_id=created["token"]["id"])
+    assert live(principal)
+    db.execute("UPDATE auth_users SET role='member' WHERE id='test-admin'")
+    assert not live(principal)
+
+
+def test_live_delegated_session_is_not_a_human_key_management_credential(client, db):
+    from nautionette_backend.access import delegate, release_delegation
+
+    grant = delegate(Principal("test-admin", "admin", "test-session"))
+    headers = {
+        "Authorization": f"Bearer {settings.internal_token}",
+        "X-Internal-Token": settings.internal_token,
+        "X-Denkzeug-Actor": grant,
+    }
+    try:
+        response = client.post(
+            "/api/tokens",
+            headers=headers,
+            json={
+                "name": "Do not delegate keys",
+                "grants": [{"scope": "system:control"}],
+            },
+        )
+        assert response.status_code == 403, response.text
+        assert db.query("SELECT id FROM api_keys") == []
+        assert "webhook_token" not in main.backend_mcp.operations
+    finally:
+        release_delegation(grant)

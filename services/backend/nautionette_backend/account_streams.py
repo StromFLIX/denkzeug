@@ -13,12 +13,13 @@ from .db import db
 def live(who) -> bool:
     if who is None or who.service:
         return False
-    if who.token_id:
+    if getattr(who, "token_id", None):
         return bool(
             db.one(
                 "SELECT 1 FROM api_keys k JOIN auth_users u ON u.id=k.owner_user_id WHERE k.id=? "
-                "AND k.owner_user_id=? AND k.revoked_at IS NULL AND k.expires_at>? AND u.status='active'",
-                (who.token_id, who.user_id, time.time()),
+                "AND k.owner_user_id=? AND k.revoked_at IS NULL AND k.expires_at>? AND u.status='active' "
+                "AND u.role=? AND u.must_change_password=0",
+                (who.token_id, who.user_id, time.time(), who.role),
             )
         )
     if not who.session_id:
@@ -28,8 +29,8 @@ def live(who) -> bool:
         db.one(
             "SELECT 1 FROM auth_sessions s JOIN auth_users u ON u.id=s.user_id WHERE s.id=? AND s.user_id=? "
             "AND u.status='active' AND s.revoked_at IS NULL AND s.expires_at>? AND s.access_expires_at>? "
-            "AND s.last_seen_at>?",
-            (who.session_id, who.user_id, now, now, now - 86400),
+            "AND s.last_seen_at>? AND u.role=? AND u.must_change_password=0",
+            (who.session_id, who.user_id, now, now, now - 86400, who.role),
         )
     )
 
