@@ -110,6 +110,57 @@ def test_http_lists_drafts_files_and_stream_probes_are_private(private_db):
         assert client.get(f"/api/chats/{legacy['id']}", headers={"x-test-user": "carol"}).status_code == 404
 
 
+def test_http_access_resources_resolves_real_schema_names(private_db):
+    database, context, _ = private_db
+    token = context.set(identity())
+    try:
+        database.execute(
+            "INSERT INTO projects(id,repository_id,full_name,default_branch,status) "
+            "VALUES('project',1,'StromFLIX/denkzeug','main','ready')"
+        )
+        database.execute(
+            "INSERT INTO agent_profiles(id,name,created_at,updated_at) VALUES('agent','Assistant',0,0)"
+        )
+        database.execute("INSERT INTO mini_apps(id,title,updated_at) VALUES('app','Dashboard',0)")
+        for kind, key in (("workflow", "daily_job"), ("tool", "search"), ("project", "deleted")):
+            database.execute("INSERT INTO access_resources VALUES(?,?,?)", (kind, key, "alice"))
+    finally:
+        context.reset(token)
+
+    app = FastAPI()
+
+    async def authenticated(request: Request):
+        user = request.headers.get("x-test-user", "alice")
+        who = identity(user, "member" if user == "bob" else "admin", service=user == "service")
+        token = context.set(who)
+        try:
+            await access.authorize_request(request, who)
+            yield who
+        finally:
+            context.reset(token)
+
+    app.dependency_overrides[access._authenticated] = authenticated
+    app.include_router(access.router)
+    with TestClient(app) as client:
+        response = client.get("/api/access/resources")
+        assert response.status_code == 200
+        resources = response.json()["resources"]
+        assert [(row["kind"], row["resource_id"]) for row in resources] == sorted(
+            (row["kind"], row["resource_id"]) for row in resources
+        )
+        assert {(row["kind"], row["resource_id"]): row["name"] for row in resources} == {
+            ("agent", "agent"): "Assistant",
+            ("app", "app"): "Dashboard",
+            ("project", "project"): "StromFLIX/denkzeug",
+            ("project", "deleted"): "deleted",
+            ("workflow", "daily_job"): "daily_job",
+            ("tool", "search"): "search",
+        }
+        assert all(row["owner_user_id"] == "alice" for row in resources)
+        for user in ("bob", "service"):
+            assert client.get("/api/access/resources", headers={"x-test-user": user}).status_code == 403
+
+
 @pytest.mark.asyncio
 async def test_member_routes_and_grants_fail_closed(private_db):
     database, context, legacy = private_db
