@@ -458,7 +458,13 @@ def test_agent_started_before_sign_in_dispatches_once_on_fresh_federation(
     ],
 )
 def test_real_tls_generic_oauth_and_authenticated_gateway(
-    client, anonymous, stack, tls, monkeypatch, grant, method  # noqa: F811 - imported fixture
+    client,
+    anonymous,
+    stack,  # noqa: F811 - imported fixture
+    tls,
+    monkeypatch,
+    grant,
+    method,
 ):
     from nautionette_backend.config import settings
     from nautionette_backend.db import db
