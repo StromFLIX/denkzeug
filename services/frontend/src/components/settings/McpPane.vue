@@ -93,8 +93,8 @@
                 v-model="httpConfig.redirect_uri"
                 class="field mono"
                 aria-label="Callback URI"
-                :disabled="Boolean(busy)"
-                placeholder="Provider default"
+                :disabled="Boolean(busy) || httpConfig.callback_mode === 'web'"
+                :placeholder="httpConfig.callback_mode === 'web' ? (capabilities.http?.web_callback || 'Configure the public HTTPS instance URL') : 'Provider default'"
             /></label>
             <label class="integration-field"
               ><span class="caption">OAuth scopes</span
@@ -142,6 +142,19 @@
               <span class="caption">Key ID (optional)</span>
               <input v-model="httpConfig.key_id" class="field mono" aria-label="Key ID" :disabled="Boolean(busy)" />
             </label>
+            <label v-if="httpConfig.token_endpoint_auth_method.endsWith('_jwt')" class="integration-field">
+              <span class="caption">JWT signing algorithm</span>
+              <input v-model="httpConfig.token_endpoint_auth_signing_alg" class="field mono" aria-label="JWT signing algorithm" placeholder="Automatic — match provider and key" :disabled="Boolean(busy)" />
+            </label>
+            <label class="integration-field">
+              <span class="caption">Client registration</span>
+              <select v-model="httpConfig.registration_method" class="field" aria-label="Client registration" :disabled="Boolean(busy)">
+                <option value="auto">Automatic — use approved client ID first</option>
+                <option value="manual">Manual — approved client ID</option>
+                <option value="cimd">Client ID Metadata Document — public web client</option>
+                <option value="dcr">Dynamic registration — provider compatibility</option>
+              </select>
+            </label>
             <label class="integration-field">
               <span class="caption">Provider metadata</span>
               <select v-model="httpConfig.metadata_mode" class="field" aria-label="Provider metadata" :disabled="Boolean(busy)">
@@ -162,6 +175,7 @@
             <label class="integration-field">
               <span class="caption">Resource parameter</span>
               <select v-model="httpConfig.resource_parameter" class="field" aria-label="Resource parameter" :disabled="Boolean(busy)">
+                <option value="">Provider default</option>
                 <option value="resource">resource</option>
                 <option value="audience">audience</option>
                 <option value="none">None</option>
@@ -170,6 +184,10 @@
             <label v-if="httpConfig.resource_parameter !== 'none'" class="integration-field">
               <span class="caption">Resource value (optional)</span>
               <input v-model="httpConfig.resource_value" class="field mono" aria-label="Resource value" placeholder="Server URL by default" :disabled="Boolean(busy)" />
+            </label>
+            <label class="integration-field">
+              <span class="caption">Token expiry fallback (seconds, optional)</span>
+              <input v-model.number="httpConfig.token_expiry_seconds" type="number" min="1" max="31536000" class="field" aria-label="Token expiry fallback" placeholder="Only if the provider omits expires_in" :disabled="Boolean(busy)" />
             </label>
             <label class="integration-field">
               <span class="caption">Authorization parameters (JSON object)</span>
@@ -291,6 +309,10 @@
         instance.
       </p>
       <p v-if="stage && busy" class="caption" role="status">{{ stage }}</p>
+      <p v-if="browserUrl && busy" class="caption">
+        <a :href="browserUrl" target="_blank" rel="noopener noreferrer">Open sign-in page</a>
+        <span class="dim"> if your browser did not open.</span>
+      </p>
       <p v-if="error" class="caption field-hint--bad" role="alert">{{ error }}</p>
       <div class="row integration-actions">
         <button class="btn btn--sm" @click="cancel">Cancel</button
@@ -416,7 +438,7 @@ import { credentialLabel, draftIsValid, resetDraft } from './fields'
 import { actions, store } from '../../store'
 import { api, server as instance } from '../../api'
 import { account } from '../../auth-session.js'
-import { oauthConnection } from '../../mcp-oauth.js'
+import { desktopOAuth, oauthConnection } from '../../mcp-oauth.js'
 import { hostedOAuthDraft, hostedOAuthPayload, parseAuthorizationParams } from '../../mcp-oauth-config.js'
 const $q = useQuasar()
 const state = reactive({ servers: [], fields: [], stdio_fields: [], oauth_connections: {}, writable: false })
@@ -430,6 +452,7 @@ const adding = ref(false),
   busy = ref('')
 const error = ref(''),
   stage = ref(''),
+  browserUrl = ref(''),
   toolQuery = ref(''),
   transport = ref('http'),
   authentication = ref('auto')
@@ -547,13 +570,14 @@ function openForm(server) {
   transport.value = server?.transport || 'http'
   authentication.value = server?.oauth ? 'oauth' : server?.credential?.mode === 'stored' ? 'token' : 'auto'
   advanced.value = Boolean(server)
-  error.value = stage.value = ''
+  error.value = stage.value = browserUrl.value = ''
   resetDraft(draft, [...state.fields, ...state.stdio_fields], server || {})
   storedOAuth.value = {
     client_secret_configured: Boolean(server?.oauth?.client_secret_configured),
     private_key_configured: Boolean(server?.oauth?.private_key_configured),
   }
   Object.assign(httpConfig, hostedOAuthDraft(server?.oauth))
+  if (!server?.oauth && !desktopOAuth() && capabilities.http?.web_callback) httpConfig.callback_mode = 'web'
   authorizationParamsText.value = JSON.stringify(server?.oauth?.authorization_params || {}, null, 2)
   argsText.value = JSON.stringify(server?.args || [], null, 2)
   environment.value = Object.keys(server?.env || {}).map((key) => ({
@@ -586,7 +610,7 @@ function cancel() {
   controller = null
   adding.value = false
   busy.value = ''
-  error.value = stage.value = ''
+  error.value = stage.value = browserUrl.value = ''
   if (name) actions.finishMcpLogin(name)
 }
 async function connect() {
@@ -594,7 +618,7 @@ async function connect() {
     id = ++attempt,
     initial = context()
   busy.value = name
-  error.value = ''
+  error.value = browserUrl.value = ''
   actions.beginMcpLogin(name)
   try {
     let config
@@ -631,7 +655,9 @@ async function connect() {
     }
     if (id !== attempt || initial !== context()) return
     if (config) {
-      controller = oauthConnection({ backend: api, context })
+      controller = oauthConnection({ backend: api, context, onBrowser: url => {
+        if (id === attempt && initial === context()) browserUrl.value = url
+      } })
       await controller.connect(name, config, (value) => {
         if (id === attempt) stage.value = value
       })

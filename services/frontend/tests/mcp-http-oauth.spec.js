@@ -21,7 +21,7 @@ async function mock (context) {
       state.dismissed.push(...route.request().postDataJSON().requests)
       return route.fulfill({ json: { status: 'failed' } })
     }
-    if (path === '/api/mcp-oauth/capabilities') return route.fulfill({ json: { available: false, http: { available: true } } })
+    if (path === '/api/mcp-oauth/capabilities') return route.fulfill({ json: { available: false, http: { available: true, web_callback: state.webCallback } } })
     if (path.startsWith('/api/mcp-oauth/connect/')) {
       const payload = route.request().postDataJSON()
       state.connects.push(payload)
@@ -341,6 +341,10 @@ for (const [grant, callback] of [['authorization_code', 'web'], ['device_code', 
       await expect(dialog.getByRole('status')).toContainText('ABCD-EFGH')
       await expect(dialog.getByRole('status')).toContainText('https://login.example.test/device')
     } else if (grant === 'authorization_code') await expect(dialog.getByRole('status')).toContainText('web callback')
+    if (grant !== 'client_credentials') {
+      await expect(dialog.getByRole('link', { name: 'Open sign-in page' })).toHaveAttribute('rel', 'noopener noreferrer')
+      await expect(dialog.getByRole('link', { name: 'Open sign-in page' })).toHaveAttribute('href', grant === 'device_code' ? 'https://login.example.test/device?code=ABCD' : 'https://login.example.test/authorize')
+    }
     await expect(dialog).toHaveCount(0)
     expect(state.starts).toHaveLength(1)
     expect(state.starts[0].desktop_bridge_version).toBeUndefined()
@@ -405,4 +409,19 @@ test('editing stored private-key settings leaves secrets blank and preserves con
   expect(state.connects[0].registration_access_token).toBeUndefined()
   expect(state.connects[0].private_key_configured).toBeUndefined()
   expect(state.connects[0].key_id).toBe('stored-key')
+})
+
+test('new web connections use the canonical callback and preserve provider resource defaults', async ({ page, context }) => {
+  const state = await mock(context); await browserOnly(context)
+  state.webCallback = 'https://app.example.test/api/mcp-oauth/web-callback'
+  state.config = { ...config, callback_mode: 'web' }; state.autoComplete = true
+  await add(page)
+  await page.getByText('Advanced settings', { exact: true }).click()
+  await expect(page.getByLabel('Callback destination')).toHaveValue('web')
+  await expect(page.getByLabel('Resource parameter')).toHaveValue('')
+  await page.locator('.integration-add').getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(page.getByText('workiq connected', { exact: true })).toBeVisible()
+  expect(state.connects[0].callback_mode).toBe('web')
+  expect(state.connects[0].resource_parameter).toBeUndefined()
+  expect(state.connects[0].token_expiry_seconds).toBeUndefined()
 })

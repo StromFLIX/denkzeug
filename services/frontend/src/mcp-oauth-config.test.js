@@ -8,7 +8,10 @@ test('hosted drafts default to desktop authorization code with discovery and pub
   assert.equal(draft.callback_mode, 'desktop')
   assert.equal(draft.token_endpoint_auth_method, 'none')
   assert.equal(draft.metadata_mode, 'discovery')
-  assert.equal(draft.resource_parameter, 'resource')
+  assert.equal(draft.resource_parameter, '')
+  assert.equal('resource_parameter' in hostedOAuthPayload(draft, {}), false)
+  assert.equal('token_expiry_seconds' in hostedOAuthPayload(draft, {}), false)
+  assert.equal(draft.registration_method, 'auto')
 })
 
 test('stored profile settings round-trip without importing credentials or sanitized flags', () => {

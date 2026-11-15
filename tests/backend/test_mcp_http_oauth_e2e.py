@@ -147,15 +147,42 @@ def tls(tmp_path, monkeypatch):
                     "response_types_supported": ["code"],
                     "response_modes_supported": ["query", "form_post"],
                     "code_challenge_methods_supported": ["S256"],
-                    "token_endpoint_auth_methods_supported": ["none"],
+                    "token_endpoint_auth_methods_supported": [
+                        "none",
+                        "client_secret_basic",
+                        "client_secret_post",
+                    ],
+                    "device_authorization_endpoint": origin + "/device",
                     "scopes_supported": ["read", "offline_access"],
                 },
             )
 
         def do_POST(self):
             data = self.rfile.read(int(self.headers.get("Content-Length", "0")))
+            if self.path == "/device":
+                return self.reply(
+                    200,
+                    {
+                        "device_code": "synthetic-device-code",
+                        "user_code": "TEST-CODE",
+                        "verification_uri": origin + "/verify",
+                        "expires_in": 300,
+                        "interval": 1,
+                    },
+                )
             if self.path == "/token":
                 fields = {key: value[0] for key, value in parse_qs(data.decode()).items()}
+                if tokens.get("client_auth") == "client_secret_basic":
+                    expected = (
+                        "Basic " + base64.b64encode(b"confidential-client:synthetic-client-secret").decode()
+                    )
+                    if self.headers.get("Authorization") != expected or "client_secret" in fields:
+                        return self.reply(400, {"error": "invalid_client"})
+                if tokens.get("client_auth") == "client_secret_post" and (
+                    fields.get("client_secret") != "synthetic-client-secret"
+                    or fields.get("client_id") != "confidential-client"
+                ):
+                    return self.reply(400, {"error": "invalid_client"})
                 requests.append(fields)
                 if fields["grant_type"] == "authorization_code":
                     challenge = (
@@ -165,7 +192,14 @@ def tls(tmp_path, monkeypatch):
                     )
                     if fields["code"] != challenge:
                         return self.reply(400, {"error": "invalid_grant"})
-                elif fields["refresh_token"] != tokens["refresh_token"]:
+                elif (
+                    fields["grant_type"] == "refresh_token"
+                    and fields["refresh_token"] != tokens["refresh_token"]
+                ):
+                    return self.reply(400, {"error": "invalid_grant"})
+                elif fields["grant_type"] == "urn:ietf:params:oauth:grant-type:device_code" and (
+                    fields.get("device_code") != "synthetic-device-code"
+                ):
                     return self.reply(400, {"error": "invalid_grant"})
                 tokens["counter"] += 1
                 tokens.update(
@@ -176,7 +210,9 @@ def tls(tmp_path, monkeypatch):
                     200,
                     {
                         "access_token": tokens["access_token"],
-                        "refresh_token": tokens["refresh_token"],
+                        **(
+                            {"refresh_token": tokens["refresh_token"]} if not tokens.get("no_refresh") else {}
+                        ),
                         "token_type": "Bearer",
                         "expires_in": 3600,
                     },
@@ -410,3 +446,82 @@ def test_agent_started_before_sign_in_dispatches_once_on_fresh_federation(
         if agent.poll() is None:
             agent.kill()
         agent.communicate(timeout=5)
+
+
+@pytest.mark.parametrize(
+    "grant,method",
+    [
+        ("authorization_code", "client_secret_basic"),
+        ("authorization_code", "client_secret_post"),
+        ("client_credentials", "client_secret_basic"),
+        ("device_code", "none"),
+    ],
+)
+def test_real_tls_generic_oauth_and_authenticated_gateway(
+    client, anonymous, stack, tls, monkeypatch, grant, method  # noqa: F811 - imported fixture
+):
+    from nautionette_backend.config import settings
+    from nautionette_backend.db import db
+
+    native, _, _ = stack
+    origin, tokens, requests = tls
+    monkeypatch.setattr(settings, "public_url", "https://app.example.test")
+    tokens["client_auth"] = method
+    tokens["no_refresh"] = grant == "client_credentials"
+    prepared = client.post(
+        "/api/mcp-oauth/prepare/generic",
+        json={
+            "url": origin + "/mcp",
+            "grant_type": grant,
+            "callback_mode": "web",
+            "client_id": "confidential-client",
+            "token_endpoint_auth_method": method,
+            "client_secret": "synthetic-client-secret" if method != "none" else "",
+        },
+    )
+    assert prepared.status_code == 200, prepared.text
+    started = client.post("/api/mcp-oauth/start/generic", json=prepared.json())
+    assert started.status_code == 200, started.text
+    identifier = started.json()["id"]
+    if grant == "authorization_code":
+        authorization = client.get("/api/mcp-oauth/login/" + identifier).json()["authorization"]
+        params = parse_qs(urlsplit(authorization["authorization_url"]).query)
+        response = anonymous.get(
+            "/api/mcp-oauth/web-callback",
+            params={
+                "state": authorization["state"],
+                "code": params["code_challenge"][0],
+                "iss": origin,
+            },
+        )
+        assert response.status_code == 200
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        response = client.get("/api/mcp-oauth/login/" + identifier)
+        assert response.status_code == 200, response.text
+        if response.json()["status"] == "complete":
+            break
+        time.sleep(0.1)
+    else:
+        pytest.fail("Generic OAuth did not become ready")
+    assert len(requests) == 1
+    names = [tool["name"] for tool in asyncio.run(native.mcp_tools())]
+    assert names == ["hosted_read"]
+    if grant == "client_credentials":
+        row = db.one("SELECT * FROM mcp_http_oauth WHERE name='generic'")
+        value = unseal(row["secret"], namespace=oauth.NAMESPACE)
+        value["tokens"]["renew_at"] = time.time() - 1
+        db.execute(
+            "UPDATE mcp_http_oauth SET retry_at=0,secret=? WHERE name='generic'",
+            (seal(value, namespace=oauth.NAMESPACE),),
+        )
+        asyncio.run(oauth.refresh_once())
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            if db.one("SELECT status FROM mcp_http_oauth WHERE name='generic'")["status"] == "connected":
+                break
+            asyncio.run(oauth.refresh_once())
+            time.sleep(0.1)
+        assert len(requests) == 2
+        assert requests[-1]["grant_type"] == "client_credentials"
+        assert db.one("SELECT status FROM mcp_http_oauth WHERE name='generic'")["status"] == "connected"

@@ -122,6 +122,10 @@ async def capabilities() -> dict:
         "http": {
             "available": settings.auth_enabled,
             "desktop_bridge_version": 1,
+            "grant_types": sorted(mcp_http_oauth.provider.GRANTS),
+            "token_endpoint_auth_methods": sorted(mcp_http_oauth.provider.AUTH_METHODS),
+            "web_callback": mcp_http_oauth.provider.callback_url_if_configured(),
+            "registration_methods": ["manual", "dcr", "cimd"],
             "workiq": {
                 "url": mcp_http_oauth.WORKIQ_URL,
                 "client_id": mcp_http_oauth.WORKIQ_CLIENT,
@@ -201,7 +205,12 @@ def auth_status() -> dict:
 async def start(name: str, payload: dict) -> dict:
     if not settings.auth_enabled:
         raise HTTPException(403, "Configure APP_TOKEN before using CLI OAuth")
-    if payload.get("desktop_bridge_version") != 1:
+    hosted = payload.get("transport", "http") == "http"
+    needs_desktop = not hosted or (
+        payload.get("grant_type", "authorization_code") == "authorization_code"
+        and payload.get("callback_mode", "desktop") == "desktop"
+    )
+    if needs_desktop and payload.get("desktop_bridge_version") != 1:
         raise HTTPException(
             400,
             f"Use an updated {NAME} desktop app; web, mobile and older desktop clients "
@@ -220,6 +229,13 @@ async def start(name: str, payload: dict) -> dict:
                 raise HTTPException(409, "An OAuth login is already pending for this server")
             if len(_sessions) + len(mcp_http_oauth._sessions) >= 32:
                 raise HTTPException(429, "Too many pending OAuth logins; cancel one or wait")
+            prepared = await mcp_oauth_setup.ready(name, payload)
+            if (
+                prepared.get("grant_type", "authorization_code") == "authorization_code"
+                and prepared.get("callback_mode", "desktop") == "desktop"
+                and payload.get("desktop_bridge_version") != 1
+            ):
+                raise HTTPException(400, "This saved OAuth setup requires the desktop callback bridge")
             return await mcp_http_oauth.start(name, payload)
     if payload.get("transport") != "stdio":
         raise HTTPException(400, "Unsupported OAuth transport")

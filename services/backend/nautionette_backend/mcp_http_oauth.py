@@ -1,8 +1,9 @@
 """Direct HTTPS MCP OAuth: backend PKCE, sealed credentials, gateway bearer auth.
 
 All mutations run under mcp_oauth's shared lock. Single-use authorization codes
-and potentially rotating refresh tokens are fenced before network I/O. No token,
-verifier, provider body or callback URL is returned to the desktop/agent tools.
+and potentially rotating refresh tokens are fenced before network I/O. Tokens,
+verifiers and provider response bodies never reach clients or agent tools.
+Interactive authorization URLs are available only through private human APIs.
 """
 
 from __future__ import annotations
@@ -25,9 +26,12 @@ from mcp.client.auth.oauth2 import PKCEParameters
 from mcp.client.auth.utils import (
     build_oauth_authorization_server_metadata_discovery_urls,
     build_protected_resource_metadata_discovery_urls,
+    extract_resource_metadata_from_www_auth,
+    extract_scope_from_www_auth,
 )
 from mcp.shared.auth_utils import check_resource_allowed
 
+from . import mcp_oauth_provider as provider
 from . import mcp_servers
 from .clients import gateway
 from .db import db
@@ -73,6 +77,9 @@ def https_url(value) -> str:
 
 
 def redirect_uri(value, *, ephemeral=False) -> str:
+    callback = provider.callback_url_if_configured()
+    if callback is not None and value == callback:
+        return value
     try:
         parsed = urlsplit(value)
         if (
@@ -130,7 +137,7 @@ def network_client():
 
 
 async def fetch(
-    url: str, data: dict | None = None, *, json_body: dict | None = None
+    url: str, data: dict | None = None, *, json_body: dict | None = None, headers: dict | None = None
 ) -> tuple[int, dict, dict]:
     """Bounded, pinned public HTTPS with original TLS/SNI and no ambient auth/proxy."""
     parsed = urlsplit(https_url(url))
@@ -141,7 +148,11 @@ async def fetch(
             for index, address in enumerate(addresses[:1] if mutation else addresses):
                 for attempt in range(1 if mutation else 2):
                     try:
-                        result = await request_at(parsed, address, data, json_body)
+                        result = (
+                            await request_at(parsed, address, data, json_body, headers)
+                            if headers
+                            else (await request_at(parsed, address, data, json_body))
+                        )
                     except (httpx.ConnectError, httpx.ConnectTimeout):
                         if mutation or index == len(addresses) - 1 and attempt == 1:
                             raise
@@ -159,7 +170,7 @@ async def fetch(
         ) from exc
 
 
-async def request_at(parsed, address, data, json_body):
+async def request_at(parsed, address, data, json_body, headers=None):
     address = f"[{address}]" if ":" in address else address
     authority = address + (f":{parsed.port}" if parsed.port not in (None, 443) else "")
     path = (parsed.path or "/") + ("?" + parsed.query if parsed.query else "")
@@ -169,7 +180,7 @@ async def request_at(parsed, address, data, json_body):
             f"https://{authority}{path}",
             data=data,
             json=json_body,
-            headers={"Host": parsed.netloc, "Accept": "application/json"},
+            headers={"Host": parsed.netloc, "Accept": "application/json", **(headers or {})},
             extensions={"sni_hostname": parsed.hostname},
         ) as response:
             body = bytearray()
@@ -188,8 +199,26 @@ async def discover(payload: dict) -> dict:
     url = https_url(payload.get("url"))
     if urlsplit(url).query:
         raise HTTPException(400, "Use the MCP resource URL without credentials or query parameters")
+    options = provider.validate(payload)
+    manual = options["metadata_mode"] == "manual"
     metadata = None
-    urls = build_protected_resource_metadata_discovery_urls(None, url)
+    if manual:
+        issuer = https_url(payload.get("issuer"))
+        metadata = {"resource": url, "authorization_servers": [issuer], "scopes_supported": []}
+    challenge_url, challenge_scope = None, None
+    if not manual:
+        try:
+            status, headers, _ = await fetch(url)
+            response = httpx.Response(status, headers=headers)
+            challenge_url = extract_resource_metadata_from_www_auth(response)
+            if status in {401, 403}:
+                challenge_scope = extract_scope_from_www_auth(response)
+            if challenge_url:
+                https_url(challenge_url)
+        except HTTPException as error:
+            if error.status_code != 502:
+                raise
+    urls = [] if manual else build_protected_resource_metadata_discovery_urls(challenge_url, url)
     for endpoint in urls:
         status, _, value = await fetch(endpoint)
         if (
@@ -200,18 +229,6 @@ async def discover(payload: dict) -> dict:
             metadata = value
             break
     if metadata is None:
-        # Some servers advertise a nonstandard metadata location in their challenge.
-        _, headers, _ = await fetch(url)
-        match = re.search(r'resource_metadata="([^"]+)"', headers.get("www-authenticate", ""))
-        if match:
-            status, _, value = await fetch(https_url(match[1]))
-            if (
-                status == 200
-                and isinstance(value.get("resource"), str)
-                and check_resource_allowed(requested_resource=url, configured_resource=value["resource"])
-            ):
-                metadata = value
-    if metadata is None:
         raise HTTPException(400, "MCP server did not advertise matching OAuth protected-resource metadata")
     servers = string_list(metadata.get("authorization_servers", []), "authorization servers")
     if not servers:
@@ -221,22 +238,40 @@ async def discover(payload: dict) -> dict:
         raise HTTPException(400, "Selected issuer is not advertised by the MCP server")
     https_url(issuer)
     auth = None
-    for endpoint in build_oauth_authorization_server_metadata_discovery_urls(issuer, url):
-        status, _, value = await fetch(endpoint)
-        if status == 200 and value.get("authorization_endpoint") and value.get("token_endpoint"):
-            auth = value
-            break
+    if manual:
+        auth = {
+            "issuer": issuer,
+            "token_endpoint": payload.get("token_endpoint"),
+            "authorization_endpoint": payload.get("authorization_endpoint"),
+            "device_authorization_endpoint": payload.get("device_authorization_endpoint"),
+            "response_types_supported": ["code"],
+            "response_modes_supported": ["query", "form_post"],
+            "token_endpoint_auth_methods_supported": [options["token_endpoint_auth_method"]],
+        }
+    else:
+        for endpoint in build_oauth_authorization_server_metadata_discovery_urls(issuer, url):
+            status, _, value = await fetch(endpoint)
+            if status == 200 and value.get("token_endpoint"):
+                auth = value
+                break
     if auth is None:
         raise HTTPException(400, "Authorization server did not expose supported OAuth metadata")
     microsoft = microsoft_issuer(issuer)
+    if "resource_parameter" not in payload:
+        options["resource_parameter"] = "none" if microsoft else "resource"
     if auth.get("issuer") != issuer and not (
         microsoft and auth.get("issuer") == "https://login.microsoftonline.com/{tenantid}/v2.0"
     ):
         raise HTTPException(400, "OAuth metadata issuer does not match the advertised server")
-    if "code" not in string_list(auth.get("response_types_supported", []), "response types"):
+    grant = options["grant_type"]
+    if grant == "authorization_code" and "code" not in string_list(
+        auth.get("response_types_supported", []), "response types"
+    ):
         raise HTTPException(400, "Provider does not support authorization code login")
-    if "code_challenge_methods_supported" in auth and "S256" not in string_list(
-        auth["code_challenge_methods_supported"], "PKCE methods"
+    if (
+        grant == "authorization_code"
+        and "code_challenge_methods_supported" in auth
+        and "S256" not in string_list(auth["code_challenge_methods_supported"], "PKCE methods")
     ):
         raise HTTPException(400, "Provider does not support PKCE S256")
     # Entra supports public clients although OIDC metadata lists only confidential
@@ -244,15 +279,26 @@ async def discover(payload: dict) -> dict:
     methods = string_list(
         auth.get("token_endpoint_auth_methods_supported", ["client_secret_basic"]), "client auth methods"
     )
-    if not microsoft and "none" not in methods:
+    method = options["token_endpoint_auth_method"]
+    if method not in methods and not (microsoft and method == "none"):
         raise HTTPException(
-            400, "This bridge needs a registered public OAuth client; confidential clients are not supported"
+            400, "Provider does not support the selected token endpoint authentication method"
         )
-    for key in ["authorization_endpoint", "token_endpoint"]:
+    advertised_grant = "urn:ietf:params:oauth:grant-type:device_code" if grant == "device_code" else grant
+    if "grant_types_supported" in auth and advertised_grant not in string_list(
+        auth["grant_types_supported"], "grant types"
+    ):
+        raise HTTPException(400, "Provider does not support the selected OAuth grant")
+    endpoint_keys = ["token_endpoint"]
+    if grant == "authorization_code":
+        endpoint_keys.append("authorization_endpoint")
+    if grant == "device_code":
+        endpoint_keys.append("device_authorization_endpoint")
+    for key in endpoint_keys:
         await public_url(auth[key])
         if microsoft and urlsplit(auth[key]).hostname != "login.microsoftonline.com":
             raise HTTPException(400, "Unexpected Microsoft authorization endpoint")
-    if set(parse_qs(urlsplit(auth["authorization_endpoint"]).query)) & {
+    if set(parse_qs(urlsplit(auth.get("authorization_endpoint") or "").query)) & {
         "client_id",
         "state",
         "redirect_uri",
@@ -268,7 +314,11 @@ async def discover(payload: dict) -> dict:
     client_id = payload.get("client_id") or (WORKIQ_CLIENT if url == WORKIQ_URL else "")
     if not isinstance(client_id, str) or len(client_id) > 512 or any(ord(c) < 33 for c in client_id):
         raise HTTPException(400, "Invalid public client ID")
-    scope = payload.get("scope") or " ".join(string_list(metadata.get("scopes_supported", []), "scopes"))
+    scope = (
+        payload.get("scope")
+        or challenge_scope
+        or " ".join(string_list(metadata.get("scopes_supported", []), "scopes"))
+    )
     if not isinstance(scope, str) or len(scope) > 4096 or any(ord(c) < 32 or ord(c) > 126 for c in scope):
         raise HTTPException(400, "Invalid OAuth scope")
     supported_scopes = string_list(auth.get("scopes_supported", []), "authorization scopes")
@@ -279,6 +329,8 @@ async def discover(payload: dict) -> dict:
     redirect = payload.get("redirect_uri") or (
         WORKIQ_REDIRECT if url == WORKIQ_URL else "http://127.0.0.1:0/callback"
     )
+    if options["callback_mode"] == "web":
+        redirect = provider.callback_url()
     redirect_uri(redirect, ephemeral=True)
     mode = payload.get("response_mode", "query")
     if mode not in {"query", "form_post"} or mode not in string_list(
@@ -291,8 +343,15 @@ async def discover(payload: dict) -> dict:
                 "url": url,
                 "resource": metadata["resource"],
                 "issuer": issuer,
-                "authorization_endpoint": auth["authorization_endpoint"],
+                "authorization_endpoint": auth.get("authorization_endpoint"),
                 "token_endpoint": auth["token_endpoint"],
+                **{key: options.get(key) for key in provider.OPTIONS},
+                "device_authorization_endpoint": auth.get("device_authorization_endpoint"),
+                "registration_endpoint": registration,
+                "auth_methods": sorted(methods),
+                "response_modes": auth.get("response_modes_supported", ["query"]),
+                "pkce_methods": auth.get("code_challenge_methods_supported"),
+                "iss_parameter": auth.get("authorization_response_iss_parameter_supported") is True,
             },
             sort_keys=True,
         ).encode()
@@ -301,8 +360,22 @@ async def discover(payload: dict) -> dict:
         "url": url,
         "resource": metadata["resource"],
         "issuer": issuer,
-        "authorization_endpoint": auth["authorization_endpoint"],
+        "authorization_endpoint": auth.get("authorization_endpoint"),
         "token_endpoint": auth["token_endpoint"],
+        "device_authorization_endpoint": auth.get("device_authorization_endpoint"),
+        **{
+            key: options[key]
+            for key in provider.OPTIONS
+            if key in options and key != "device_authorization_endpoint"
+        },
+        "authorization_response_iss_parameter_supported": auth.get(
+            "authorization_response_iss_parameter_supported"
+        )
+        is True,
+        "client_id_metadata_document_supported": auth.get("client_id_metadata_document_supported") is True,
+        "token_endpoint_auth_signing_alg_values_supported": auth.get(
+            "token_endpoint_auth_signing_alg_values_supported", []
+        ),
         "client_id": client_id,
         "scope": scope,
         "redirect_uri": redirect,
@@ -320,7 +393,10 @@ async def discover(payload: dict) -> dict:
 def ready_key():
     try:
         # Never mint a replacement key over credentials whose backup key is lost.
-        existing = db.one("SELECT name FROM mcp_http_oauth WHERE secret!='' LIMIT 1")
+        existing = db.one(
+            "SELECT name FROM mcp_http_oauth WHERE secret!='' UNION ALL "
+            "SELECT name FROM mcp_oauth_setups WHERE profile LIKE '%\"sealed_client_credentials\"%' LIMIT 1"
+        )
         _cipher(create=existing is None, namespace=NAMESPACE)
     except (OSError, ValueError) as exc:
         raise HTTPException(
@@ -342,6 +418,10 @@ class Login:
     revision: str = field(default_factory=lambda: secrets.token_hex(16))
     complete: bool = False
     failed: bool = False
+    device: dict | None = None
+    device_code: str = ""
+    next_poll: float = 0
+    owner_user_id: str | None = None
 
 
 async def start(name: str, payload: dict) -> dict:
@@ -354,7 +434,9 @@ async def start(name: str, payload: dict) -> dict:
     profile = await mcp_oauth_setup.ready(name, payload)
     if payload.get("share_account") is not True:
         raise HTTPException(400, "Confirm connecting this account to the shared instance")
-    profile["redirect_uri"] = redirect_uri(payload.get("redirect_uri"))
+    profile["redirect_uri"] = redirect_uri(payload.get("redirect_uri") or profile["redirect_uri"])
+    if profile.get("callback_mode") == "web" and profile["redirect_uri"] != provider.callback_url():
+        raise HTTPException(400, "Use this instance's exact HTTPS callback")
     template = redirect_uri(payload.get("redirect_uri_template", profile["redirect_uri"]), ephemeral=True)
     actual, wanted = urlsplit(profile["redirect_uri"]), urlsplit(template)
     if (
@@ -376,6 +458,35 @@ async def start(name: str, payload: dict) -> dict:
     ready_key()
     if not profile["client_id"]:
         profile = await mcp_oauth_setup.register(name, profile)
+    provider.require_credentials(profile)
+    from .security import current_principal
+
+    owner = current_principal.get()
+    grant = profile.get("grant_type", "authorization_code")
+    if grant != "authorization_code":
+        identifier = "http-" + secrets.token_hex(32)
+        login = Login(name, profile, previous, "", {}, owner_user_id=owner.user_id if owner else None)
+        # Register before the first consuming request. Failure never retries it.
+        _sessions[identifier] = login
+        try:
+            if grant == "device_code":
+                await start_device(login)
+            else:
+                login.used = True
+                login.tokens = await exchange(
+                    profile,
+                    {
+                        "grant_type": "client_credentials",
+                        "scope": profile["scope"],
+                        **provider.resource_fields(profile),
+                    },
+                )
+        except HTTPException:
+            login.failed = True
+            login.device_code = ""
+            _sessions.pop(identifier, None)  # No ID reached the client; do not strand a pending login.
+            raise
+        return {"id": identifier, "status": "authorizing", "expires_in": TTL}
     pkce = PKCEParameters.generate()
     state, identifier = secrets.token_urlsafe(32), "http-" + secrets.token_hex(32)
     params = {
@@ -388,8 +499,8 @@ async def start(name: str, payload: dict) -> dict:
         "code_challenge": pkce.code_challenge,
         "code_challenge_method": "S256",
     }
-    if profile["use_resource"]:
-        params["resource"] = profile["resource"]
+    params.update(provider.resource_fields(profile))
+    params.update(profile.get("authorization_params", {}))
     separator = "&" if urlsplit(profile["authorization_endpoint"]).query else "?"
     authorization = {
         "id": secrets.token_hex(16),
@@ -399,7 +510,16 @@ async def start(name: str, payload: dict) -> dict:
         "port": actual.port,
         "response_mode": profile["response_mode"],
     }
-    _sessions[identifier] = Login(name, profile, previous, pkce.code_verifier, authorization)
+    if profile.get("callback_mode") == "web":
+        authorization["callback_mode"] = "web"
+    _sessions[identifier] = Login(
+        name,
+        profile,
+        previous,
+        pkce.code_verifier,
+        authorization,
+        owner_user_id=owner.user_id if owner else None,
+    )
     return {"id": identifier, "status": "authorizing", "expires_in": TTL}
 
 
@@ -407,11 +527,25 @@ def session(identifier: str) -> Login:
     login = _sessions.get(identifier)
     if not login or login.expires <= time.monotonic():
         raise HTTPException(410, "Hosted OAuth login expired or backend restarted; sign in again")
+    authorize_login_owner(login)
     return login
 
 
+def authorize_login_owner(login):
+    from .security import current_principal
+
+    who = current_principal.get()
+    if who and login.owner_user_id and who.user_id != login.owner_user_id:
+        raise HTTPException(403, "This pending OAuth login belongs to another account")
+
+
 async def exchange(profile: dict, data: dict, previous: dict | None = None) -> dict:
-    status, _, value = await fetch(profile["token_endpoint"], data)
+    form, headers = provider.authenticate(profile, data)
+    status, _, value = (
+        await fetch(profile["token_endpoint"], form, headers=headers)
+        if headers
+        else (await fetch(profile["token_endpoint"], form))
+    )
     if status != 200 or value.get("error"):
         error = value.get("error")
         allowed = {
@@ -426,11 +560,98 @@ async def exchange(profile: dict, data: dict, previous: dict | None = None) -> d
         raise HTTPException(
             400, f"OAuth token request failed ({label}); check provider/client permissions and sign in again"
         )
+    return parse_tokens(value, previous, profile.get("token_expiry_seconds"))
+
+
+async def start_device(login: Login):
+    form, headers = provider.authenticate(
+        login.profile,
+        {
+            "scope": login.profile["scope"],
+            **provider.resource_fields(login.profile),
+        },
+    )
+    status, _, value = await fetch(
+        login.profile["device_authorization_endpoint"], form, **({"headers": headers} if headers else {})
+    )
+    if status != 200 or value.get("error"):
+        raise HTTPException(400, "Provider refused device authorization")
+    for key in ("device_code", "user_code"):
+        if (
+            not isinstance(value.get(key), str)
+            or not 1 <= len(value[key]) <= 4096
+            or any(ord(c) < 32 for c in value[key])
+        ):
+            raise HTTPException(502, "Provider returned invalid device authorization")
+    expiry, interval = value.get("expires_in"), value.get("interval", 5)
+    if (
+        any(
+            isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v)
+            for v in (expiry, interval)
+        )
+        or not 1 <= expiry <= 3600
+        or not 1 <= interval <= 60
+    ):
+        raise HTTPException(502, "Provider returned invalid device authorization timing")
+    uri = https_url(value.get("verification_uri"))
+    await public_url(uri)
+    complete = value.get("verification_uri_complete")
+    if complete:
+        https_url(complete)
+        if urlsplit(complete).netloc != urlsplit(uri).netloc:
+            raise HTTPException(502, "Device verification URLs must use the same provider origin")
+    login.device_code = value["device_code"]
+    login.device = {
+        "verification_uri": uri,
+        "user_code": value["user_code"],
+        "expires_in": expiry,
+        "interval": interval,
+    }
+    if complete:
+        login.device["verification_uri_complete"] = complete
+    login.expires = time.monotonic() + min(TTL, expiry)
+    login.next_poll = time.monotonic() + interval
+
+
+async def poll_device(login: Login):
+    if time.monotonic() < login.next_poll:
+        return
+    # Serialize under the lifecycle lock and enforce the provider's interval on
+    # the server, regardless of how often a browser polls us.
+    login.next_poll = time.monotonic() + login.device["interval"]
+    form, headers = provider.authenticate(
+        login.profile,
+        {
+            "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+            "device_code": login.device_code,
+            **provider.resource_fields(login.profile),
+        },
+    )
+    try:
+        status, _, value = await fetch(
+            login.profile["token_endpoint"], form, **({"headers": headers} if headers else {})
+        )
+        if status == 400 and value.get("error") in {"authorization_pending", "slow_down"}:
+            if value["error"] == "slow_down":
+                login.device["interval"] += 5
+                login.next_poll = time.monotonic() + login.device["interval"]
+            return  # Only these explicit protocol responses authorize another poll.
+        if status != 200 or value.get("error"):
+            raise HTTPException(400, "Device authorization was refused or expired; start again")
+        login.tokens = parse_tokens(value, fallback_expiry=login.profile.get("token_expiry_seconds"))
+        login.device_code = ""
+        login.device = None
+    except HTTPException:
+        login.failed, login.device_code, login.device = True, "", None
+        raise
+
+
+def parse_tokens(value: dict, previous: dict | None = None, fallback_expiry: int | None = None) -> dict:
     token, refresh = (
         value.get("access_token"),
         value.get("refresh_token", (previous or {}).get("refresh_token", "")),
     )
-    expiry, kind = value.get("expires_in"), value.get("token_type")
+    expiry, kind = value.get("expires_in", fallback_expiry), value.get("token_type")
     if (
         not isinstance(token, str)
         or not 1 <= len(token) <= 32768
@@ -455,8 +676,40 @@ async def exchange(profile: dict, data: dict, previous: dict | None = None) -> d
     }
 
 
+async def web_callback(fields: dict, method: str) -> None:
+    state = fields.get("state", "")
+    if not isinstance(state, str) or not state.isascii() or not 1 <= len(state) <= 512:
+        raise HTTPException(400, "Invalid OAuth return")
+    match = next(
+        (
+            identifier
+            for identifier, login in _sessions.items()
+            if login.profile.get("callback_mode") == "web"
+            and login.authorization.get("state")
+            and secrets.compare_digest(state, login.authorization["state"])
+        ),
+        None,
+    )
+    if match is None:
+        raise HTTPException(400, "OAuth return expired or does not match a pending login")
+    login = session(match)
+    # Public callback is a one-shot state capability, not a human session. Check
+    # that the administrator who started it has not been disabled/demoted.
+    if login.owner_user_id:
+        from .auth_store import store as auth_store
+
+        owner = auth_store().one("SELECT status,role FROM auth_users WHERE id=?", (login.owner_user_id,))
+        if not owner or owner["status"] != "active" or owner["role"] != "admin":
+            raise HTTPException(403, "The account that started this login can no longer configure MCP")
+    if login.used:
+        raise HTTPException(410, "OAuth return was already consumed")
+    await callback(match, {"capture_id": login.authorization["id"], "method": method, "fields": fields})
+
+
 async def callback(identifier: str, payload: dict) -> dict:
     login = session(identifier)
+    if login.profile.get("grant_type", "authorization_code") != "authorization_code":
+        raise HTTPException(400, "This login does not accept authorization-code callbacks")
     fields = payload.get("fields")
     if (
         set(payload) - {"capture_id", "method", "fields"}
@@ -478,10 +731,19 @@ async def callback(identifier: str, payload: dict) -> dict:
     ):
         raise HTTPException(400, "OAuth callback capture, state or response mode did not match")
     issuer = fields.get("iss")
+    if not issuer and login.profile.get("authorization_response_iss_parameter_supported"):
+        raise HTTPException(400, "Provider did not include its advertised authorization response issuer")
     if (
         issuer
         and issuer != login.profile["issuer"]
-        and not (microsoft_issuer(login.profile["issuer"]) and microsoft_issuer(issuer))
+        and not (
+            login.profile["issuer"]
+            in {
+                "https://login.microsoftonline.com/common/v2.0",
+                "https://login.microsoftonline.com/organizations/v2.0",
+            }
+            and re.fullmatch(r"https://login\.microsoftonline\.com/[0-9a-fA-F-]{36}/v2\.0", issuer)
+        )
     ):
         raise HTTPException(400, "Authorization response issuer did not match")
     digest = hashlib.sha256(json.dumps(fields, sort_keys=True).encode()).hexdigest()
@@ -502,8 +764,7 @@ async def callback(identifier: str, payload: dict) -> dict:
         "code": fields["code"],
         "code_verifier": login.verifier,
     }
-    if login.profile["use_resource"]:
-        data["resource"] = login.profile["resource"]
+    data.update(provider.resource_fields(login.profile))
     try:
         login.tokens = await exchange(login.profile, data)
     except HTTPException:
@@ -518,6 +779,8 @@ def public_profile(profile: dict) -> dict:
     return {
         "mode": "https",
         **{key: profile[key] for key in ["url", "issuer", "client_id", "scope", "response_mode"]},
+        **{key: profile[key] for key in provider.OPTIONS if key in profile},
+        **{f"{key}_configured": bool(provider.credentials(profile).get(key)) for key in provider.SECRETS},
         "redirect_uri": profile["redirect_uri_template"],
     }
 
@@ -545,7 +808,13 @@ def store(login: Login, tool_names: list[str], status="gateway_pending"):
         "retry_at=excluded.retry_at,revision=excluded.revision",
         (
             login.name,
-            json.dumps({**public_profile(login.profile), "refreshable": bool(login.tokens["refresh_token"])}),
+            json.dumps(
+                {
+                    **public_profile(login.profile),
+                    "refreshable": bool(login.tokens["refresh_token"])
+                    or login.profile.get("grant_type") == "client_credentials",
+                }
+            ),
             seal(value, namespace=NAMESPACE),
             status,
             login.tokens["expires_at"],
@@ -661,6 +930,14 @@ async def poll(identifier: str) -> dict:
         return {"status": "complete", "message": "HTTPS OAuth connected and MCP handshake passed."}
     if login.failed:
         return {"status": "failed", "message": "Hosted OAuth failed; start a fresh sign-in."}
+    if login.device_code and not login.tokens:
+        await poll_device(login)
+        if not login.tokens:
+            return {
+                "status": "authorizing",
+                "message": "Enter the device code in your browser.",
+                "device": login.device,
+            }
     if not login.tokens:
         return {
             "status": "authorizing",
@@ -716,6 +993,9 @@ async def poll(identifier: str) -> dict:
 
 
 async def cancel(identifier: str):
+    existing = _sessions.get(identifier)
+    if existing:
+        authorize_login_owner(existing)
     login = _sessions.pop(identifier, None)
     if not login or login.complete:
         return
@@ -852,7 +1132,8 @@ async def refresh_once():
             if current != expected:
                 discard(row)
                 continue
-            if not tokens["refresh_token"]:
+            service_account = value["profile"].get("grant_type") == "client_credentials"
+            if not tokens["refresh_token"] and not service_account:
                 if tokens["expires_at"] <= now:
                     await disable(row, value)
                 else:
@@ -869,13 +1150,19 @@ async def refresh_once():
             ).rowcount
             if not claimed:
                 continue
-            data = {
-                "grant_type": "refresh_token",
-                "client_id": value["profile"]["client_id"],
-                "refresh_token": tokens["refresh_token"],
-            }
-            if value["profile"]["use_resource"]:
-                data["resource"] = value["profile"]["resource"]
+            data = (
+                {
+                    "grant_type": "refresh_token",
+                    "client_id": value["profile"]["client_id"],
+                    "refresh_token": tokens["refresh_token"],
+                }
+                if tokens["refresh_token"]
+                else {
+                    "grant_type": "client_credentials",
+                    "scope": value["profile"]["scope"],
+                }
+            )
+            data.update(provider.resource_fields(value["profile"]))
             value["tokens"] = await exchange(value["profile"], data, tokens)
             value["previous"], value["operation"] = current, "refresh"
             # New rotated credentials are durable before touching the gateway.

@@ -170,26 +170,86 @@ selected behind the scenes; there are no provider/discovery buttons or repeated
 shared-account checkbox. The Connect action authorizes connecting the account
 to this shared instance; provider consent still happens in the browser.
 
-Transport, manual access tokens and optional public-client overrides are under
-**Advanced settings**. Providers advertising public-client dynamic registration
-can register the desktop client automatically. If a provider forbids automatic
-registration, enter its approved public client ID once in Advanced settings.
+Transport, manual access tokens and provider configuration are under
+**Advanced settings**. Existing approved client IDs are used first. For public
+web clients, Client ID Metadata Documents are preferred when the provider advertises
+support; dynamic registration remains a compatibility fallback. Native registrations
+send `application_type=native`, web registrations send `application_type=web`.
+If a provider forbids automatic registration, enter its approved client ID once.
 No WorkIQ CLI is installed or run on the HTTPS path. The desktop return-to-app
 behavior described below applies to both HTTPS and CLI callbacks.
 
-The desktop binds its callback port before login begins. The backend generates
-PKCE/state, exchanges the returned code, verifies authenticated MCP through an
-isolated agentgateway route and only then publishes the HTTP target. Callback
-GET/query and form_post are supported. The server, not the desktop, refreshes
-the token, so keeping the desktop app open is not required after login.
+For desktop login, the desktop binds its callback port before login begins.
+For **Web callback**, the browser returns to the configured instance HTTPS URL;
+web/mobile clients do not need a desktop bridge. Configure `DENKZEUG_PUBLIC_URL`
+(or `APP_URL`) to the canonical public HTTPS origin and register the exact callback
+`https://<instance>/api/mcp-oauth/web-callback` with the provider. Request Host and
+forwarded headers never select the callback destination. Both GET/query and
+`form_post` work; the callback accepts only an expiring, one-shot state capability
+created by a signed-in MCP administrator. It does not authenticate other API routes
+or publish an MCP target. Poll/cancel belong to the account that started the login.
 
-Generic public-client providers need a registered client ID and loopback URI in
+The backend generates PKCE/state, exchanges the returned code, verifies authenticated
+MCP through an isolated agentgateway route and only then publishes the HTTP target.
+The server, not the desktop/browser, renews the token, so leaving a client open is
+not required after login.
+
+Generic public-client desktop providers need a registered client ID and loopback URI in
 **OAuth client settings**. Discovery cannot prove a client's registered redirect
 permissions; the provider checks these during sign-in. Port 0 selects an ephemeral
 port only for registrations that permit it. WorkIQ's preset uses its documented
 `http://localhost:12798` callback, but all MCP traffic stays on the HTTPS endpoint.
 Entra public-client and templated-issuer metadata compatibility is handled
 explicitly; resource indicators are used for other providers.
+
+### Generic provider options
+
+| Setting | Supported options |
+| --- | --- |
+| Grant | Authorization code + PKCE S256; device authorization; client credentials |
+| Token endpoint client authentication | `none`, `client_secret_basic`, `client_secret_post`, `private_key_jwt`, `client_secret_jwt` |
+| Authorization-code callback | Desktop loopback or canonical instance HTTPS; query or form POST |
+| Client registration | Approved/manual client ID, DCR (public or secret-authenticated clients, optional initial access token), public web Client ID Metadata Document |
+| Metadata | Standards discovery, or explicit validated issuer/endpoints for non-discoverable providers |
+| Resource targeting | RFC resource indicator, provider-specific `audience`, or neither; optional explicit value |
+| Authorization parameters | Allowlisted `prompt`, `login_hint`, `domain_hint`, `access_type`, `audience`, `organization` |
+
+**Device authorization** opens the provider's verification page and displays the
+user code. The backend retains the device code and enforces the provider polling
+interval, including `slow_down`; a lost token result is never automatically replayed.
+The provider must advertise the device endpoint (or it must be entered in manual
+metadata mode). This does not make device-code-only CLIs compatible with the
+separate CLI callback bridge.
+
+**Client credentials** requires a pre-registered confidential client and MCP
+application permissions. It does not involve a browser or require refresh tokens:
+maintenance obtains a new access token and checks authenticated gateway readiness.
+Providers may reject application permissions even when user-delegated login works.
+
+Client secrets, private signing keys and optional DCR initial access tokens are
+write-only. Blank fields preserve a saved credential; changing issuer, client ID
+or token endpoint drops the old credential instead of sending it to the new target.
+Advanced API callers can use `clear_client_credentials: true` during preparation.
+Signing clients must pre-register their public key with the provider. Supported
+private keys are RSA (2048+ bits), P-256/P-384/P-521 and EdDSA; JWT algorithms must
+match both key and advertised provider capabilities. Assertions use a fresh `jti`
+and 60-second expiry. HMAC assertions require a sufficiently long client secret.
+
+Manual metadata does not disable SSRF protection: issuer and network endpoints
+must remain public HTTPS, requests are DNS-pinned, TLS-verified, bounded and never
+follow redirects. The browser callback may only be the canonical instance callback
+or a validated desktop loopback URI. Token responses must contain valid bearer
+credentials and a bounded expiry. Providers omitting `expires_in` can use the
+explicit `token_expiry_seconds` preparation field (1–31536000) based on their
+documented lifetime; no expiry is guessed automatically.
+
+Connections are still **shared instance accounts**, not per-user credentials.
+DPoP/mTLS sender-constrained tokens, native-broker/device-bound login and token
+exchange are not implemented. Implicit and password grants are intentionally
+unsupported. Scope changes can be configured and consented through Advanced
+settings; automatic tool-challenge scope escalation is not yet supported. These
+options broaden standards-based provider compatibility, not a guarantee that any
+provider or tenant policy will accept a connection.
 
 OAuth credentials are encrypted in the backend DB with an auto-created mode-0600
 `mcp-oauth.key` in the backend data volume. Back up that whole volume, not only

@@ -16,23 +16,36 @@ export function oauthSupported (config, bridge = desktopOAuth()) {
   return !requiresDesktopOAuth(config) || Boolean(bridge)
 }
 
-function openOAuthBrowser (value) {
+function providerBrowserURL (value) {
   const url = new URL(value)
   if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Provider sign-in URL must use HTTPS without credentials')
-  globalThis.open(url.href, '_blank', 'noopener,noreferrer')
+  return url.href
+}
+
+function openOAuthBrowser (value) {
+  globalThis.open(providerBrowserURL(value), '_blank', 'noopener,noreferrer')
 }
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 // No credentials/callbacks in reactive state, localStorage, chat or URL params.
 // Each new CLI authorization URL gets its own exact port and one-shot receiver.
-export function oauthConnection ({ bridge = desktopOAuth(), backend, interval = 1000, context, openBrowser = openOAuthBrowser } = {}) {
+export function oauthConnection ({ bridge = desktopOAuth(), backend, interval = 1000, context, openBrowser = openOAuthBrowser, onBrowser } = {}) {
   if (!backend || typeof context !== 'function') throw new Error('OAuth needs a backend adapter and instance context')
   const initialContext = context()
   let cancelled = false, loginId = '', usesDesktop = false
   function check () {
     if (cancelled) throw new Error('OAuth cancelled')
     if (context() !== initialContext) throw new Error('Instance or credentials changed; start a new login')
+  }
+  async function openProvider (value) {
+    const url = providerBrowserURL(value)
+    check()
+    // The explicit link lets a user open sign-in if an asynchronous popup is
+    // blocked by the browser; never require disabling popup protection.
+    onBrowser?.(url)
+    await openBrowser(url)
+    check()
   }
   async function cancel () {
     cancelled = true
@@ -94,7 +107,7 @@ export function oauthConnection ({ bridge = desktopOAuth(), backend, interval = 
           if (!deviceOpened) {
             deviceOpened = true
             check()
-            await openBrowser(device.verification_uri_complete || device.verification_uri)
+            await openProvider(device.verification_uri_complete || device.verification_uri)
             check()
           }
         } else onStage(browserStage || result.message || (hosted ? 'Waiting for authentication…' : 'Waiting for CLI…'))
@@ -107,7 +120,7 @@ export function oauthConnection ({ bridge = desktopOAuth(), backend, interval = 
             browserStage = 'Complete sign-in in your browser. Waiting for the web callback…'
             onStage(browserStage)
             check()
-            await openBrowser(authorization.authorization_url)
+            await openProvider(authorization.authorization_url)
             check()
             await delay(pollInterval)
             continue

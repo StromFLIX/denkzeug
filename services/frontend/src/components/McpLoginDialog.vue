@@ -21,6 +21,10 @@
         <span class="material-icons" aria-hidden="true">hourglass_top</span>
         <span>{{ progressMessage }}</span>
       </p>
+      <p v-if="browserUrl && busy" class="caption">
+        <a :href="browserUrl" target="_blank" rel="noopener noreferrer">Open sign-in page</a>
+        <span class="dim"> if your browser did not open.</span>
+      </p>
       <p v-if="error" class="mcp-login-error caption" role="alert">{{ error }}</p>
       <section v-if="!busy" class="mcp-login-reminder" aria-label="Login reminder options">
         <div class="mcp-login-reminder-control">
@@ -74,6 +78,7 @@ const visible = computed(() => Boolean(selected.value) && account.user?.role ===
 const supported = () => oauthSupported({ ...selected.value, ...selected.value?.oauth })
 const busy = ref(false),
   stage = ref(''),
+  browserUrl = ref(''),
   error = ref(''),
   snoozeFor = ref(supported() ? 3600000 : 86400000)
 const progressMessage = computed(() => {
@@ -99,13 +104,15 @@ async function login() {
     initial = context()
   busy.value = true
   activeName = name
-  error.value = ''
+  error.value = browserUrl.value = ''
   actions.beginMcpLogin(name)
   try {
     stage.value = 'Preparing your saved connection…'
     const config = await api.prepareMcpOAuth(name)
     if (id !== attempt || initial !== context()) return
-    controller = oauthConnection({ backend: api, context })
+    controller = oauthConnection({ backend: api, context, onBrowser: url => {
+      if (id === attempt && initial === context()) browserUrl.value = url
+    } })
     await controller.connect(name, config, (value) => {
       if (id === attempt) stage.value = value
     })
@@ -132,7 +139,7 @@ function close() {
   controller?.cancel()
   controller = null
   busy.value = false
-  stage.value = error.value = ''
+  stage.value = error.value = browserUrl.value = ''
   actions.dismissMcpLogin()
   if (name) actions.finishMcpLogin(name)
 }

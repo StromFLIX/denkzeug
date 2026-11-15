@@ -294,6 +294,18 @@
     "authentication": "delegated",
     "resource": null
   },
+  "GET /api/mcp-oauth/client-metadata": {
+    "authentication": "public",
+    "scope": "mcp:read"
+  },
+  "GET /api/mcp-oauth/web-callback": {
+    "authentication": "public",
+    "scope": "mcp:manage"
+  },
+  "POST /api/mcp-oauth/web-callback": {
+    "authentication": "public",
+    "scope": "mcp:manage"
+  },
   "GET /api/mcp-oauth/capabilities": {
     "scope": "mcp:read",
     "authentication": "account",
