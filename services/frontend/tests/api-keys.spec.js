@@ -2,7 +2,7 @@ import { expect, test, fixtureAccount } from './account-fixture.js'
 import { mockDesign } from './design-fixture.js'
 
 async function setup (page, context, { member = false, empty = false, clipboardFails = false } = {}) {
-  await mockDesign(context)
+  const design = await mockDesign(context)
   if (member) await page.route('**/api/auth/me', route => route.fulfill({ json: { ...fixtureAccount, user: { ...fixtureAccount.user, role: 'member' } } }))
   await context.addInitScript(fails => {
     window.copiedTokens = []
@@ -12,11 +12,11 @@ async function setup (page, context, { member = false, empty = false, clipboardF
   const now = Math.floor(Date.now() / 1000)
   const catalog = {
     scopes: [{ scope: 'workflows:run', description: 'Run a workflow', resource_kind: 'workflow' }, { scope: 'profile:read', description: 'Read your profile', resource_kind: null }],
-    policy: { default_days: 90, max_days: 365, webhook_days: 7 },
+    policy: { default_days: 90, max_days: 365, webhook_days: 7, allow_never_expire: true },
     resources: [{ kind: 'workflow', id: 'immutable-digest-id', name: 'Morning digest' }]
   }
   const token = { id: 'existing', name: 'Daily report', prefix: 'dz_report', kind: 'api_key', grants: [{ scope: 'workflows:run', resources: ['immutable-digest-id'] }], created_at: now - 86400, expires_at: now + 86400 * 90, revoked_at: null, last_used_at: now, requests_7d: 123, failures_7d: 2 }
-  const state = { tokens: empty ? [] : [token], creates: [], rotations: [], revokes: [], offsets: [], webhooks: [], requestFailure: false, createFailure: false, webhookFailure: false }
+  const state = { workflow: design.workflow, tokens: empty ? [] : [token], creates: [], rotations: [], revokes: [], offsets: [], webhooks: [], requestFailure: false, createFailure: false, webhookFailure: false }
   await page.route('**/api/tokens**', async route => {
     const request = route.request(), url = new URL(request.url()), path = url.pathname, method = request.method()
     if (path === '/api/tokens/catalog') return route.fulfill({ json: catalog })
@@ -44,9 +44,10 @@ async function setup (page, context, { member = false, empty = false, clipboardF
     return route.fulfill({ json: {} })
   })
   await page.route('**/api/workflows/digest/webhook-token', async route => {
-    state.webhooks.push(route.request().postDataJSON())
+    const body = route.request().postDataJSON()
+    state.webhooks.push(body)
     if (state.webhookFailure) return route.fulfill({ status: 403, json: { detail: 'Workflow access removed' } })
-    const webhook = { ...token, id: 'webhook', name: 'Morning digest webhook', kind: 'webhook', expires_at: now + 7 * 86400 }
+    const webhook = { ...token, id: 'webhook', name: 'Morning digest webhook', kind: 'webhook', expires_at: body.days === null ? null : now + body.days * 86400 }
     state.tokens.push(webhook)
     return route.fulfill({ json: { token: webhook, secret: 'webhook-once', url: 'https://example.test/api/triggers/digest?token=webhook-once', expires_at: webhook.expires_at } })
   })
@@ -105,8 +106,9 @@ test('create a key with an exact expiry date', async ({ page, context }) => {
   expect(Math.abs(state.creates[0].expires_at - date.getTime() / 1000)).toBeLessThan(60)
 })
 
-test('detail deep link, daily usage, pagination, rotation and revocation', async ({ page, context }, testInfo) => {
+test('detail deep link, daily usage, pagination, never-expiring rotation and revocation', async ({ page, context }, testInfo) => {
   const state = await setup(page, context)
+  state.tokens[0].expires_at = null
   await page.goto('/settings/api-keys?token=existing#api-key-activity')
   await expect(page.getByRole('img', { name: /12 requests, 2 failures/ })).toBeVisible()
   await expect(page.getByText('trace-0', { exact: true })).toBeVisible()
@@ -119,6 +121,7 @@ test('detail deep link, daily usage, pagination, rotation and revocation', async
   await page.getByRole('button', { name: 'Rotate', exact: true }).click()
   await page.getByRole('button', { name: 'Rotate key', exact: true }).click()
   await expect(page.getByLabel('Secret key')).toHaveValue('rotated-once-secret')
+  await expect(page.locator('.token-secret')).toContainText('Never expires')
   await page.getByRole('button', { name: 'Done, hide secret' }).click()
   await expect(page.getByRole('button', { name: 'View Daily report replacement', exact: true })).toBeVisible()
   const row = page.locator('.api-keys__list > li').filter({ has: page.getByRole('button', { name: 'View Daily report replacement', exact: true }) })
@@ -177,6 +180,118 @@ test('history failure is recoverable and does not hide successful aggregates', a
   state.requestFailure = false
   await page.getByRole('button', { name: 'Retry activity', exact: true }).click()
   await expect(page.getByText('trace-0', { exact: true })).toBeVisible()
+})
+
+for (const width of [1440, 390, 320]) {
+  test(`members create never-expiring keys with unchanged permissions at ${width}px`, async ({ page, context }) => {
+    const state = await setup(page, context, { member: true })
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/settings/api-keys')
+    await page.getByRole('button', { name: 'Create API key', exact: true }).click()
+    const dialog = page.locator('.api-keys__dialog')
+    await dialog.getByLabel('Name', { exact: true }).fill('Permanent integration')
+    await dialog.getByRole('checkbox', { name: /profile:read/ }).check()
+    await dialog.getByLabel('Expiry', { exact: true }).selectOption('never')
+    await expect(dialog.getByText(/Revoke it manually/)).toBeVisible()
+    await expect(dialog.getByLabel('Expiry date and time')).toHaveCount(0)
+    await expect(dialog.getByLabel('Expires in (days)')).toHaveCount(0)
+    await dialog.getByRole('button', { name: 'Create API key', exact: true }).click()
+    await expect(page.getByLabel('Secret key')).toBeVisible()
+    expect(state.creates[0]).toEqual({ name: 'Permanent integration', expires_at: null, grants: [{ scope: 'profile:read', resources: null }] })
+    await expect(page.locator('.token-secret')).toContainText('Never expires')
+    await expect(page.locator('.token-secret')).toContainText('Revoke it manually')
+    await page.getByRole('button', { name: 'Done, hide secret' }).click()
+    const row = page.locator('.api-keys__list > li').filter({ has: page.getByRole('button', { name: 'View Permanent integration', exact: true }) })
+    await expect(row).toContainText('Never expires')
+    await expect(row).toContainText('Never used')
+    await expect(row.getByText('Active', { exact: true })).toBeVisible()
+    await expect(row.getByRole('button', { name: 'Rotate', exact: true })).toBeVisible()
+    await expect(row.getByRole('button', { name: 'Revoke', exact: true })).toBeVisible()
+    expect(await page.locator('.settings__body').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+  })
+
+  test(`all four integration formats mint never-expiring exact-workflow tokens at ${width}px`, async ({ page, context }, testInfo) => {
+    const state = await setup(page, context, { member: true })
+    const inputs = { message: "O'Reilly & 東京", enabled: true, optional: null, nested: { list: [1, false] } }
+    state.workflow.manifest.inputs = { type: 'object', properties: Object.fromEntries(Object.keys(inputs).map(key => [key, { default: inputs[key] }])) }
+    state.workflow.schedule = { input: inputs }
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/workflows/digest?tab=Integrate')
+    const trigger = page.locator('.trigger')
+    await expect(trigger.getByRole('button', { name: 'curl', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    expect(state.webhooks).toHaveLength(0)
+    await trigger.getByLabel('Link expires in').selectOption({ label: 'Never expires' })
+    await expect(trigger.getByText(/Revoke it manually/)).toBeVisible()
+    for (const format of ['curl', 'python', 'node', 'GET']) {
+      await trigger.getByRole('button', { name: format, exact: true }).click()
+      const preview = trigger.getByLabel('Integration preview')
+      await expect(preview).toContainText('YOUR_WORKFLOW_TOKEN')
+      await expect(preview).not.toContainText('webhook-once')
+      if (format === 'curl') await expect(preview).toContainText('curl -X POST')
+      if (format === 'python') await expect(preview).toContainText('httpx.post(')
+      if (format === 'node') await expect(preview).toContainText('method: "POST"')
+      if (format === 'GET') expect(JSON.parse(new URL(await preview.innerText()).searchParams.get('input'))).toEqual(inputs)
+      await trigger.getByRole('button', { name: 'Copy', exact: true }).click()
+      await expect(page.getByLabel('Integration snippet', { exact: true })).toBeVisible()
+      const text = await page.getByLabel('Integration snippet', { exact: true }).inputValue()
+      expect(text).toContain('webhook-once')
+      expect(text).not.toContain('YOUR_WORKFLOW_TOKEN')
+      expect(text).not.toMatch(/Authorization|Bearer/)
+      if (format === 'GET') expect(JSON.parse(new URL(text).searchParams.get('input'))).toEqual(inputs)
+      expect(state.webhooks.at(-1)).toEqual({ days: null })
+      await expect(page.locator('.token-secret')).toContainText('Never expires')
+      await expect.poll(() => page.evaluate(() => window.copiedTokens.at(-1))).toEqual(text)
+      expect(await page.locator('.token-secret').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+      await page.screenshot({ path: testInfo.outputPath(`integration-${format}-${width}.png`), animations: 'disabled' })
+      await page.getByRole('button', { name: 'Done, hide secret' }).click()
+      await expect(page.getByLabel('Integration snippet', { exact: true })).toHaveCount(0)
+      await expect(preview).toContainText('YOUR_WORKFLOW_TOKEN')
+    }
+    await page.screenshot({ path: testInfo.outputPath(`integration-preview-${width}.png`), animations: 'disabled' })
+    expect(state.webhooks).toHaveLength(4)
+    expect(await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }))).not.toContain('webhook-once')
+    expect(await trigger.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+    await trigger.getByRole('button', { name: 'Copy', exact: true }).click()
+    await expect(page.getByLabel('Integration snippet', { exact: true })).toBeVisible()
+    await page.locator('.token-secret').getByRole('link', { name: 'Manage or revoke this token' }).click()
+    await expect(page.getByLabel('Integration snippet', { exact: true })).toHaveCount(0)
+  })
+}
+
+test('integration clipboard failure can be retried without issuing another credential', async ({ page, context }) => {
+  const state = await setup(page, context, { clipboardFails: true })
+  await page.goto('/workflows/digest?tab=Integrate')
+  await page.locator('.trigger').getByRole('button', { name: 'Copy', exact: true }).click()
+  await expect(page.getByLabel('Integration snippet', { exact: true })).toBeVisible()
+  await page.locator('.token-secret').getByRole('button', { name: 'Copy integration snippet', exact: true }).click()
+  await expect(page.locator('.token-secret').getByRole('alert')).toContainText('copy it manually')
+  expect(state.webhooks).toEqual([{ days: 7 }])
+  await page.getByRole('button', { name: 'Done, hide secret' }).click()
+  await expect(page.getByLabel('Integration snippet', { exact: true })).toHaveCount(0)
+  await expect(page.getByLabel('Integration preview')).toContainText('YOUR_WORKFLOW_TOKEN')
+})
+
+test('leaving Integrate during token creation never reveals or copies the stale secret', async ({ page, context }) => {
+  await setup(page, context)
+  let release
+  const paused = new Promise(resolve => { release = resolve })
+  let requested = false
+  await page.route('**/api/workflows/digest/webhook-token', async route => {
+    requested = true
+    await paused
+    await route.fulfill({ json: { token: { id: 'stale', expires_at: null }, secret: 'stale-secret', url: 'https://example.test/api/triggers/digest?token=stale-secret', expires_at: null } })
+  })
+  await page.goto('/workflows/digest?tab=Integrate')
+  await page.locator('.trigger').getByRole('button', { name: 'Copy', exact: true }).click()
+  await expect.poll(() => requested).toBe(true)
+  await page.getByRole('button', { name: 'Overview', exact: true }).click()
+  await expect(page.locator('.trigger')).toHaveCount(0)
+  release()
+  // Let the response reach the now-unmounted component, then return to a new preview.
+  await page.getByRole('button', { name: 'Integrate', exact: true }).click()
+  await expect(page.getByLabel('Integration preview')).toContainText('YOUR_WORKFLOW_TOKEN')
+  await expect(page.getByLabel('Integration snippet', { exact: true })).toHaveCount(0)
+  expect(await page.evaluate(() => window.copiedTokens)).toEqual([])
 })
 
 for (const clipboardFails of [false, true]) {

@@ -23,7 +23,7 @@
             <button class="api-keys__name" :aria-label="`View ${token.name}`" @click="openDetail(token)">{{ token.name }}</button>
             <span class="chip" :class="tokenState(token) === 'Active' ? 'chip--success' : ''">{{ tokenState(token) }}</span>
             <p class="caption muted"><code>{{ token.prefix }}…</code> · {{ token.kind === 'webhook' ? 'Workflow webhook' : 'API key' }}</p>
-            <p class="caption muted">{{ token.grants.length }} permission{{ token.grants.length === 1 ? '' : 's' }} · Expires {{ tokenDate(token.expires_at) }}</p>
+            <p class="caption muted">{{ token.grants.length }} permission{{ token.grants.length === 1 ? '' : 's' }} · {{ tokenExpiry(token.expires_at) }}</p>
             <p class="caption muted">Last used {{ tokenDate(token.last_used_at) }}</p>
           </div>
           <div class="api-keys__counts"><strong>{{ token.requests_7d.toLocaleString() }}</strong><span class="caption muted">requests / 7 days</span><span class="caption" :class="{ 'api-keys__error': token.failures_7d > 0 }">{{ token.failures_7d }} failures</span></div>
@@ -38,7 +38,7 @@
 
     <section id="api-key-activity" class="api-keys__detail" aria-label="Key activity" :aria-busy="detailLoading">
       <template v-if="detail">
-        <div class="api-keys__head"><div class="grow"><h3>{{ detail.name }}</h3><p class="caption muted">Created {{ tokenDate(detail.created_at) }}<template v-if="detail.revoked_at != null"> · Revoked {{ tokenDate(detail.revoked_at) }}</template></p></div><button class="btn btn--icon" aria-label="Close key activity" @click="closeDetail"><span class="material-icons" aria-hidden="true">close</span></button></div>
+        <div class="api-keys__head"><div class="grow"><h3>{{ detail.name }}</h3><p class="caption muted">Created {{ tokenDate(detail.created_at) }} · {{ tokenExpiry(detail.expires_at) }}<template v-if="detail.revoked_at != null"> · Revoked {{ tokenDate(detail.revoked_at) }}</template></p></div><button class="btn btn--icon" aria-label="Close key activity" @click="closeDetail"><span class="material-icons" aria-hidden="true">close</span></button></div>
         <details class="api-keys__grants"><summary>Granted permissions ({{ detail.grants.length }})</summary><ul><li v-for="grant in detail.grants" :key="grant.scope"><code>{{ grant.scope }}</code><p class="caption muted">{{ grant.resources === null ? scopeKind(grant.scope) ? 'All accessible resources, including future resources' : 'Account-level permission' : grant.resources.map(resourceName).join(', ') }}</p></li></ul></details>
         <p v-if="detailError" class="api-keys__error" role="alert">{{ detailError }} <button class="btn btn--sm" :disabled="detailLoading" @click="loadDetail">Retry activity</button></p>
         <p v-if="detailLoading" role="status" class="muted">Loading activity…</p>
@@ -73,10 +73,11 @@
         <form class="api-keys__form" @submit.prevent="create">
           <fieldset :disabled="busy">
             <label>Name<input v-model="name" class="field" required maxlength="100" placeholder="e.g. Daily report script" autocomplete="off" autofocus /></label>
-            <label>Expiry<select v-model="expiryMode" class="field" aria-label="Expiry"><option value="days">After a number of days</option><option value="date">On a specific date</option></select></label>
+            <label>Expiry<select v-model="expiryMode" class="field" aria-label="Expiry"><option value="days">After a number of days</option><option value="date">On a specific date</option><option v-if="catalog.policy.allow_never_expire" value="never">Never expires</option></select></label>
             <label v-if="expiryMode === 'days'">Expires in (days)<input v-model.number="days" class="field" type="number" min="1" :max="catalog.policy.max_days" required /></label>
-            <label v-else>Expiry date and time<input v-model="expiryDate" class="field" type="datetime-local" required /><span class="caption muted">In your local timezone. Access ends at this exact time.</span></label>
-            <p class="caption muted">Up to {{ catalog.policy.max_days }} days. Expiring keys reduce the risk of forgotten credentials.</p>
+            <label v-else-if="expiryMode === 'date'">Expiry date and time<input v-model="expiryDate" class="field" type="datetime-local" required /><span class="caption muted">In your local timezone. Access ends at this exact time.</span></label>
+            <p v-if="expiryMode === 'never'" class="caption api-keys__warning">This key never expires. Revoke it manually when it is no longer needed or if it is exposed. Your account’s permissions still apply.</p>
+            <p v-else class="caption muted">Up to {{ catalog.policy.max_days }} days. Expiring keys reduce the risk of forgotten credentials.</p>
             <h3>Permissions</h3>
             <input v-model="scopeQuery" class="field" type="search" aria-label="Find a permission" placeholder="Find a permission" />
             <p v-if="!visibleScopes.length" class="caption muted">No matching permissions.</p>
@@ -113,7 +114,7 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '../../api.js'
-import { dailyTokenUsage, tokenDate, tokenExpiryDate, tokenPayload, tokenState } from '../../api-keys.js'
+import { dailyTokenUsage, tokenDate, tokenExpiry, tokenExpiryDate, tokenPayload, tokenState } from '../../api-keys.js'
 import TokenSecretDialog from '../TokenSecretDialog.vue'
 const route = useRoute(), router = useRouter(), $q = useQuasar()
 const catalog = ref(null), tokens = ref([]), loading = ref(true), busy = ref(false), error = ref(''), notice = ref('')
@@ -164,7 +165,7 @@ async function create () {
   createError.value = ''
   let payload
   try {
-    payload = tokenPayload(name.value, expiryMode.value === 'days' ? days.value : catalog.value.policy.default_days, selected, catalog.value)
+    payload = tokenPayload(name.value, expiryMode.value === 'never' ? null : expiryMode.value === 'days' ? days.value : catalog.value.policy.default_days, selected, catalog.value)
     if (expiryMode.value === 'date') payload.expires_at = tokenExpiryDate(expiryDate.value, catalog.value.policy.max_days)
   } catch (failure) { createError.value = failure.message; return }
   busy.value = true

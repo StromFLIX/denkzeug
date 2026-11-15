@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { dailyTokenUsage, tokenExpiryDate, tokenPayload, tokenState } from './api-keys.js'
+import { dailyTokenUsage, tokenDate, tokenExpiry, tokenExpiryDate, tokenPayload, tokenState } from './api-keys.js'
 import { memberSettingKeys } from './account.js'
 import { searchSettings } from './settings-registry.js'
 
@@ -30,6 +30,20 @@ test('revocation takes precedence over expiry, including a zero timestamp', () =
   assert.equal(tokenState({ expires_at: 200, revoked_at: null }, 100), 'Active')
   assert.equal(tokenState({ expires_at: 100, revoked_at: null }, 100), 'Expired')
   assert.equal(tokenState({ expires_at: 200, revoked_at: 0 }, 100), 'Revoked')
+})
+test('never-expiring keys retain permissions, activity and revocation semantics', () => {
+  const policy = { ...catalog, policy: { ...catalog.policy, allow_never_expire: true } }
+  const selected = { 'workflows:run': { resources: ['immutable-uuid'] } }
+  assert.deepEqual(tokenPayload('Long-lived', null, selected, policy, 100), {
+    name: 'Long-lived', expires_at: null, grants: [{ scope: 'workflows:run', resources: ['immutable-uuid'] }]
+  })
+  assert.throws(() => tokenPayload('Key', null, selected, catalog), /does not allow/)
+  assert.throws(() => tokenPayload('Key', null, {}, policy), /permission/)
+  assert.equal(tokenState({ expires_at: null, revoked_at: null }, 100), 'Active')
+  assert.equal(tokenState({ expires_at: null, revoked_at: 0 }, 100), 'Revoked')
+  assert.equal(tokenExpiry(null), 'Never expires')
+  assert.equal(tokenDate(null), 'Never used')
+  assert.equal(tokenExpiry(100), `Expires ${tokenDate(100)}`)
 })
 test('daily usage fills quiet UTC days and excludes old or future buckets', () => {
   const days = dailyTokenUsage([{ day: 86400, requests: 2, failures: 1 }, { day: 5 * 86400, requests: 9, failures: 0 }], 3 * 86400 + 100, 3)
