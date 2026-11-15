@@ -115,6 +115,8 @@ export const api = {
   workflowWebhookToken: (name, days = 7) => request(`/api/workflows/${encodeURIComponent(name)}/webhook-token`, { method: 'POST', ...json({ days }) }),
   settings: () => request('/api/settings'),
   saveSettings: (payload) => request('/api/settings', { method: 'PUT', ...json(payload) }),
+  usage: (params = {}, signal) => request(`/api/settings/usage?${new URLSearchParams(params)}`, { signal }),
+  exportUsage: (params = {}, signal) => request(`/api/settings/usage/export?${new URLSearchParams(params)}`, { responseType: 'blob', signal }),
   worktreeRetention: () => request('/api/settings/worktrees'),
   previewWorktreeCleanup: () => request('/api/settings/worktrees/cleanup', { method: 'POST', ...json({ dry_run: true }) }),
   outputStorage: (signal) => request('/api/settings/storage', { signal }),

@@ -7,7 +7,7 @@ const groups = [
   ['Account & workspace', ['account', 'api-keys', 'users', 'invitations', 'access']],
   ['Your experience', ['general', 'appearance', 'workspace']],
   ['Build & connect', ['agents', 'packages', 'creative-apps', 'mcp', 'projects', 'git']],
-  ['Run & manage', ['automation', 'app-runtimes', 'storage', 'system', 'activity']]
+  ['Run & manage', ['automation', 'usage', 'app-runtimes', 'storage', 'system', 'activity']]
 ]
 
 test('settings registry preserves category routes in the agreed information architecture', () => {

@@ -30,6 +30,7 @@ from . import (
     subagents,
     system,
     tokens,
+    usage,
     workflows,
 )
 
@@ -39,6 +40,7 @@ ROUTERS = (
     tokens.router,
     system.router,
     settings.router,
+    usage.router,
     storage.router,
     agents.router,
     subagents.router,
