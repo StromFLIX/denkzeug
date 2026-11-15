@@ -7,7 +7,9 @@ const root = fileURLToPath(new URL('../../../', import.meta.url))
 const source = readFileSync(`${root}/workflows/url_digest.py`, 'utf8')
 const proposedSource = source.replace('"save_artifact"', '"notify_warehouse"').replace('timedelta(minutes=10)', 'timedelta(minutes=12)')
 function python (script, input) {
-  return JSON.parse(execFileSync('uv', ['run', 'python', '-c', script], { cwd: root, input: JSON.stringify(input), encoding: 'utf8' }))
+  // These graph projections use only stdlib and never execute workflow code.
+  return JSON.parse(execFileSync('python3', ['-c', script], { cwd: root,
+    env: { ...process.env, PYTHONPATH: `${root}/services/backend` }, input: JSON.stringify(input), encoding: 'utf8' }))
 }
 function definition (code) {
   return python('import sys,json; from nautionette_backend.workflow_graph import definition_graph; print(json.dumps(definition_graph(json.load(sys.stdin), "url_digest")))', code)

@@ -147,6 +147,12 @@ jobs:
           cache: npm
           cache-dependency-path: services/frontend/package-lock.json
 
+      # The flow browser fixtures import stdlib-only backend projections, not
+      # the backend runtime or uv workspace. Make their interpreter explicit.
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
       # ci, not install: it fails when package.json and the lockfile disagree.
       - name: Install
         run: npm ci
