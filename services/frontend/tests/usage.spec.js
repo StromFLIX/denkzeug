@@ -21,7 +21,7 @@ async function mock (page, handler) {
 }
 const path = '/settings/usage?period=custom&start=2026-11-01&end=2026-11-30'
 
-test('overview renders approved chart and composition without coverage panels', async ({ page }) => {
+test('overview renders approved chart and composition without coverage panels', async ({ page }, testInfo) => {
   await mock(page)
   await page.goto(path)
   await expect(page.getByRole('heading', { name: 'Usage', exact: true })).toBeVisible()
@@ -33,7 +33,7 @@ test('overview renders approved chart and composition without coverage panels', 
   await expect(page.getByText('View data coverage')).toHaveCount(0)
   await expect(page.getByText('Reported usage is a lower bound')).toHaveCount(0)
   await page.locator('.settings__body').evaluate(el => { el.scrollTop = 0 })
-  await page.screenshot({ path: '/workspace/usage-desktop.png', fullPage: true })
+  await page.screenshot({ path: testInfo.outputPath('usage-desktop.png'), fullPage: true })
 })
 
 test('breakdowns, workflow drilldown, query filters and CSV export work', async ({ page }) => {
@@ -55,20 +55,20 @@ test('breakdowns, workflow drilldown, query filters and CSV export work', async 
   expect((await download).suggestedFilename()).toBe('denkzeug-usage.csv')
 })
 
-test('keyboard tabs, mobile filters and both themes remain usable', async ({ page }) => {
+test('keyboard tabs, mobile filters and both themes remain usable', async ({ page }, testInfo) => {
   await mock(page)
   await page.goto(path)
   await page.getByRole('tab', { name: 'Models', exact: true }).focus()
   await page.keyboard.press('ArrowRight')
   await expect(page.getByRole('tab', { name: 'Agents', exact: true })).toHaveAttribute('aria-selected', 'true')
-  await page.setViewportSize({ width: 390, height: 844 })
+  await page.setViewportSize({ width: 320, height: 844 })
   await page.getByRole('button', { name: /^Filters/ }).click()
   await expect(page.getByRole('combobox', { name: 'Model', exact: true })).toBeVisible()
   await page.getByRole('combobox', { name: 'Usage breakdown', exact: true }).selectOption('models')
   await expect(page.locator('.usage__total')).toHaveText('24.80M')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.getByRole('button', { name: /^Filters/ }).click()
-  await page.screenshot({ path: '/workspace/usage-mobile.png', fullPage: true })
+  await page.screenshot({ path: testInfo.outputPath('usage-mobile.png'), fullPage: true })
   await page.evaluate(() => localStorage.setItem('nautionette.preferences.v1', JSON.stringify({ theme: 'orbit' })))
   await page.reload()
   await expect(page.locator('.usage__total')).toHaveText('24.80M')
