@@ -622,7 +622,7 @@ def list_resources() -> dict:
         elif kind == "app":
             named = db.one("SELECT title AS name FROM mini_apps WHERE id=?", (key,))
         elif kind == "project":
-            named = db.one("SELECT name FROM projects WHERE id=?", (key,))
+            named = db.one("SELECT full_name AS name FROM projects WHERE id=?", (key,))
         else:
             named = None
         row["name"] = named["name"] if named else key
