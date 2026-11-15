@@ -15,7 +15,7 @@ rejects unclassified routes even if they were installed after startup.
 - **API keys**: opaque `dz_key_…` bearer credentials, owned by an account. They
   never become sessions or administrator bypasses.
 - **Workflow links**: opaque `dz_wht_…` credentials accepted only for
-  `POST /api/triggers/{name}` and bound to one workflow generation.
+  `GET` or `POST /api/triggers/{name}` and bound to one workflow generation.
 - **Internal services**: the existing `INTERNAL_TOKEN` transport is separate
   from user/API-key authentication. Explicit internal/capability policies
   preserve its existing internal operations; it never confers human authority.
@@ -103,8 +103,8 @@ can return a warning during an authoring outage without blocking key revocation.
 ## Creating and using a key
 
 Use **Settings → API keys**. Give every integration a descriptive name, choose
-only its required permissions/resources, and choose an expiry interval or an
-exact date/time. The secret is displayed once in a copy dialog. It is not
+only its required permissions/resources, and choose an expiry interval, an
+exact date/time, or **Never expires**. The secret is displayed once in a copy dialog. It is not
 persisted in browser storage and cannot be retrieved later.
 
 For regular APIs use:
@@ -117,21 +117,33 @@ An invalid explicitly supplied bearer credential never falls back to a valid
 cookie. Normal APIs do not accept keys in URL parameters. Browser cookie writes
 still need CSRF; API keys are not cookie credentials.
 
-Default expiry is 90 days; maximum lifetime is one year. All user-created keys
-expire. Rotation atomically revokes the old key and returns a replacement with
-the same permissions and original expiry. Expired keys must be replaced with a
-new key, and permissions are revalidated during rotation.
+Default expiry is 90 days; dated keys have a maximum lifetime of one year.
+**Never expires** creates a key with no expiration deadline. For the API,
+omitting `expires_at` retains the default, while explicitly sending
+`"expires_at": null` selects never-expire. Permanent keys remain scoped and
+revocable and stop working when their owner loses access or is suspended.
+Rotation atomically revokes the old key and returns a replacement with the same
+permissions and original expiry (including never-expire). Expired keys must be
+replaced with a new key, and permissions are revalidated during rotation.
 
 ### Workflow webhook links
 
 **Copy webhook URL** first creates a new key, then copies the returned URL.
 It does not create keys when rendering, previewing or loading a workflow.
-Default lifetime is seven days; the API supports 1–30 days. The link is reusable
-until expiry/revocation and can only trigger that exact workflow. It cannot read
+The Integrate tab provides **curl (POST), Python, Node and GET** copy options.
+Default lifetime is seven days; the API supports 1–30 days or **Never expires**
+(`"days": null`). The credential is reusable until its deadline or manual
+revocation and can only trigger that exact workflow. It cannot read
 code, inspect runs, deploy, schedule or use the ordinary manual-run endpoint.
 
-The webhook accepts an empty body or valid JSON, with a 1 MiB payload ceiling
-and a 60-request/minute per-key admission budget. Duplicate deliveries are
+POST accepts an empty body or valid JSON, with a 1 MiB payload ceiling. GET
+accepts an `input` URL parameter containing a URL-encoded JSON object, preserving
+numbers, booleans, arrays and null values. Individual query fields are also
+supported for legacy integrations and decoded using the workflow's declared
+types. GET queries are limited to 16 KiB, duplicate/mixed parameters are rejected,
+and GET requires an explicit workflow token or scoped API bearer credential:
+a browser session alone cannot trigger a workflow. HEAD never triggers a run.
+Both methods have a 60-request/minute per-workflow-key admission budget. Duplicate deliveries are
 ordinary triggers; callers needing exactly-once business effects should include
 an event ID and implement deduplication in their workflow.
 
@@ -139,7 +151,10 @@ The copy dialog shows the expiry and links to the key's usage/revocation page.
 Rotation of a webhook key also returns a replacement URL when its workflow and
 public instance URL remain available.
 
-Webhook URLs necessarily contain a bearer secret. Backend Uvicorn access logs
+Never-expire credentials need deliberate revocation when an integration is
+retired or a link leaks; they do not become broader or anonymous permissions.
+Webhook URLs necessarily contain a bearer secret. GET URLs can also contain
+sensitive input data, so prefer POST when an integration supports it. Backend Uvicorn access logs
 strip query strings, responses use `no-store`/`no-referrer`, and the existing
 OpenTelemetry export allowlist excludes URLs, headers and payloads. **Operators
 must also suppress/redact query strings in any independently configured reverse

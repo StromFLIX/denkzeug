@@ -1,13 +1,16 @@
 export const tokenDate = value => value == null ? 'Never used' : new Date(value * 1000).toLocaleString()
+export const tokenExpiry = value => value == null ? 'Never expires' : `Expires ${tokenDate(value)}`
 export function tokenState (token, now = Date.now() / 1000) {
   if (token.revoked_at != null) return 'Revoked'
-  return token.expires_at <= now ? 'Expired' : 'Active'
+  return token.expires_at != null && token.expires_at <= now ? 'Expired' : 'Active'
 }
 
 /** Never infer permissions from labels or send display names as resource IDs. */
 export function tokenPayload (name, days, selected, catalog, now = Date.now() / 1000) {
   if (!name.trim()) throw new Error('Give this key a name so you can recognize it later.')
-  if (!Number.isInteger(Number(days)) || Number(days) < 1 || Number(days) > catalog.policy.max_days) throw new Error(`Choose an expiry between 1 and ${catalog.policy.max_days} days.`)
+  if (days === null) {
+    if (!catalog.policy.allow_never_expire) throw new Error('This instance does not allow never-expiring keys.')
+  } else if (!Number.isInteger(Number(days)) || Number(days) < 1 || Number(days) > catalog.policy.max_days) throw new Error(`Choose an expiry between 1 and ${catalog.policy.max_days} days.`)
   const grants = Object.entries(selected).map(([scope, choice]) => {
     const definition = catalog.scopes.find(item => item.scope === scope)
     if (!definition) throw new Error('Permissions changed. Refresh and choose them again.')
@@ -18,7 +21,7 @@ export function tokenPayload (name, days, selected, catalog, now = Date.now() / 
     return { scope, resources }
   })
   if (!grants.length) throw new Error('Choose at least one permission.')
-  return { name: name.trim(), expires_at: Math.floor(now) + Number(days) * 86400, grants }
+  return { name: name.trim(), expires_at: days === null ? null : Math.floor(now) + Number(days) * 86400, grants }
 }
 
 /** datetime-local values use the user's local timezone, then travel as UTC seconds. */

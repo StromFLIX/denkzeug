@@ -17,7 +17,8 @@ def live(who) -> bool:
         return bool(
             db.one(
                 "SELECT 1 FROM api_keys k JOIN auth_users u ON u.id=k.owner_user_id WHERE k.id=? "
-                "AND k.owner_user_id=? AND k.revoked_at IS NULL AND k.expires_at>? AND u.status='active' "
+                "AND k.owner_user_id=? AND k.revoked_at IS NULL "
+                "AND (k.expires_at IS NULL OR k.expires_at>?) AND u.status='active' "
                 "AND u.role=? AND u.must_change_password=0",
                 (who.token_id, who.user_id, time.time(), who.role),
             )

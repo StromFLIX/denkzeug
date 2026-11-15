@@ -501,6 +501,11 @@
     "authentication": "account",
     "resource": null
   },
+  "GET /api/triggers/{name}": {
+    "scope": "workflows:trigger",
+    "authentication": "api_key",
+    "resource": "workflow:name"
+  },
   "GET /api/workflows": {
     "scope": "workflows:read",
     "authentication": "account",

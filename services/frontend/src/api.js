@@ -112,6 +112,7 @@ export const api = {
   revokeToken: id => request(`/api/tokens/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   tokenRequests: (id, offset = 0, limit = 50) => request(`/api/tokens/${encodeURIComponent(id)}/requests?${new URLSearchParams({ offset, limit })}`),
   tokenUsage: id => request(`/api/tokens/${encodeURIComponent(id)}/usage`),
+  // Omitted days keep the short-lived default; explicit null means never expires.
   workflowWebhookToken: (name, days = 7) => request(`/api/workflows/${encodeURIComponent(name)}/webhook-token`, { method: 'POST', ...json({ days }) }),
   settings: () => request('/api/settings'),
   saveSettings: (payload) => request('/api/settings', { method: 'PUT', ...json(payload) }),

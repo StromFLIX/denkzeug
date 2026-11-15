@@ -73,6 +73,8 @@ for (const width of [320, 390, 1440]) {
   test(`overview, manual form and all runs fit at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
     await workspace(page)
+    await expect(page.getByRole('navigation', { name: 'Workflow views' })).toBeVisible()
+    await page.evaluate(() => document.fonts.ready)
     expect(await page.locator('.shell__main').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
     await page.getByRole('button', { name: 'Run workflow', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Run Weekly summary', exact: true })).toBeVisible()

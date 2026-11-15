@@ -48,6 +48,16 @@ test('API key helpers use authenticated routes, encoded IDs and exact mutation b
   assert.ok(calls.every(call => call.credentials === 'same-origin'))
 })
 
+test('never-expiring API keys and workflow tokens send explicit null, not zero or defaults', async t => {
+  const calls = []
+  t.mock.method(globalThis, 'fetch', async (path, options) => { calls.push({ path, ...options }); return Response.json({ ok: true }) })
+  await api.workflowWebhookToken('workflow/name', null)
+  await api.createToken({ name: 'Permanent', expires_at: null, grants: [{ scope: 'profile:read', resources: null }] })
+  assert.deepEqual(JSON.parse(calls[0].body), { days: null })
+  assert.equal(JSON.parse(calls[1].body).expires_at, null)
+  assert.ok(calls.every(call => call.method === 'POST'))
+})
+
 test('web streams stay same-origin without URL secrets and ignore malformed frames', async t => {
   const storage = new Map(), sources = [], probes = [], snapshots = [], events = [], errors = []
   const previous = { localStorage: globalThis.localStorage, EventSource: globalThis.EventSource }
