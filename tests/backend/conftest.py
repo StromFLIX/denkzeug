@@ -27,6 +27,10 @@ from .output_fakes import MemoryS3
 _TEST_PASSWORD_HASH = PASSWORDS.hash("a correct horse battery staple for tests")
 
 _TABLES = (
+    "api_key_requests",
+    "api_key_daily",
+    "api_keys",
+    "api_resource_ids",
     "access_revocations",
     "access_legacy_artifacts",
     "access_grants",

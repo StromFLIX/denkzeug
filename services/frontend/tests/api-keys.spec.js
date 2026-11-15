@@ -48,7 +48,7 @@ async function setup (page, context, { member = false, empty = false, clipboardF
     if (state.webhookFailure) return route.fulfill({ status: 403, json: { detail: 'Workflow access removed' } })
     const webhook = { ...token, id: 'webhook', name: 'Morning digest webhook', kind: 'webhook', expires_at: now + 7 * 86400 }
     state.tokens.push(webhook)
-    return route.fulfill({ json: { token: webhook, secret: 'webhook-once', url: 'https://example.test/api/workflows/digest/run?token=webhook-once', expires_at: webhook.expires_at } })
+    return route.fulfill({ json: { token: webhook, secret: 'webhook-once', url: 'https://example.test/api/triggers/digest?token=webhook-once', expires_at: webhook.expires_at } })
   })
   return state
 }
@@ -88,6 +88,22 @@ for (const width of [1440, 390]) {
     await page.screenshot({ path: testInfo.outputPath(`api-key-inventory-${width}.png`) })
   })
 }
+
+test('create a key with an exact expiry date', async ({ page, context }) => {
+  const state = await setup(page, context)
+  await page.goto('/settings/api-keys')
+  await page.getByRole('button', { name: 'Create API key', exact: true }).click()
+  const dialog = page.locator('.api-keys__dialog')
+  await dialog.getByLabel('Name', { exact: true }).fill('Short-lived maintenance')
+  await dialog.getByRole('checkbox', { name: /profile:read/ }).check()
+  await dialog.getByLabel('Expiry', { exact: true }).selectOption('date')
+  const date = new Date(Date.now() + 2 * 86400000)
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+  await dialog.getByLabel('Expiry date and time').fill(local)
+  await dialog.getByRole('button', { name: 'Create API key', exact: true }).click()
+  await expect(page.getByLabel('Secret key')).toBeVisible()
+  expect(Math.abs(state.creates[0].expires_at - date.getTime() / 1000)).toBeLessThan(60)
+})
 
 test('detail deep link, daily usage, pagination, rotation and revocation', async ({ page, context }, testInfo) => {
   const state = await setup(page, context)
@@ -169,13 +185,13 @@ for (const clipboardFails of [false, true]) {
     await page.goto('/workflows/digest?tab=Run')
     await expect(page.getByLabel('Link expires in')).toHaveValue('7')
     await page.getByRole('button', { name: 'Copy webhook URL', exact: true }).click()
-    await expect(page.getByLabel('Webhook URL', { exact: true })).toHaveValue('https://example.test/api/workflows/digest/run?token=webhook-once')
+    await expect(page.getByLabel('Webhook URL', { exact: true })).toHaveValue('https://example.test/api/triggers/digest?token=webhook-once')
     expect(state.webhooks).toEqual([{ days: 7 }])
     if (clipboardFails) {
       await page.locator('.token-secret').getByRole('button', { name: 'Copy webhook URL', exact: true }).click()
       await expect(page.locator('.token-secret').getByRole('alert')).toContainText('copy it manually')
       expect(state.webhooks).toHaveLength(1)
-    } else await expect.poll(() => page.evaluate(() => window.copiedTokens)).toEqual(['https://example.test/api/workflows/digest/run?token=webhook-once'])
+    } else await expect.poll(() => page.evaluate(() => window.copiedTokens)).toEqual(['https://example.test/api/triggers/digest?token=webhook-once'])
     expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).not.toContain('webhook-once')
     await page.locator('.token-secret').getByRole('link', { name: 'Manage or revoke this token' }).click()
     await expect(page).toHaveURL(/\/settings\/api-keys\?token=webhook/)

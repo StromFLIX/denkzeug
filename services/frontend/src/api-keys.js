@@ -21,6 +21,13 @@ export function tokenPayload (name, days, selected, catalog, now = Date.now() / 
   return { name: name.trim(), expires_at: Math.floor(now) + Number(days) * 86400, grants }
 }
 
+/** datetime-local values use the user's local timezone, then travel as UTC seconds. */
+export function tokenExpiryDate (value, maxDays, now = Date.now() / 1000) {
+  const expiry = new Date(value).getTime() / 1000
+  if (!value || !Number.isFinite(expiry) || expiry <= now || expiry > now + maxDays * 86400) throw new Error(`Choose a future expiry within ${maxDays} days.`)
+  return expiry
+}
+
 /** Include quiet days so the chart does not imply continuous activity. UTC day buckets. */
 export function dailyTokenUsage (days, now = Date.now() / 1000, count = 30) {
   const end = Math.floor(now / 86400) * 86400

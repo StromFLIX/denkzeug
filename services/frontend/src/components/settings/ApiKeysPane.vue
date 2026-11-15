@@ -72,7 +72,9 @@
         <form class="api-keys__form" @submit.prevent="create">
           <fieldset :disabled="busy">
             <label>Name<input v-model="name" class="field" required maxlength="100" placeholder="e.g. Daily report script" autocomplete="off" autofocus /></label>
-            <label>Expires in (days)<input v-model.number="days" class="field" type="number" min="1" :max="catalog.policy.max_days" required /></label>
+            <label>Expiry<select v-model="expiryMode" class="field" aria-label="Expiry"><option value="days">After a number of days</option><option value="date">On a specific date</option></select></label>
+            <label v-if="expiryMode === 'days'">Expires in (days)<input v-model.number="days" class="field" type="number" min="1" :max="catalog.policy.max_days" required /></label>
+            <label v-else>Expiry date and time<input v-model="expiryDate" class="field" type="datetime-local" required /><span class="caption muted">In your local timezone. Access ends at this exact time.</span></label>
             <p class="caption muted">Up to {{ catalog.policy.max_days }} days. Expiring keys reduce the risk of forgotten credentials.</p>
             <h3>Permissions</h3>
             <input v-model="scopeQuery" class="field" type="search" aria-label="Find a permission" placeholder="Find a permission" />
@@ -110,11 +112,12 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '../../api.js'
-import { dailyTokenUsage, tokenDate, tokenPayload, tokenState } from '../../api-keys.js'
+import { dailyTokenUsage, tokenDate, tokenExpiryDate, tokenPayload, tokenState } from '../../api-keys.js'
 import TokenSecretDialog from '../TokenSecretDialog.vue'
 const route = useRoute(), router = useRouter(), $q = useQuasar()
 const catalog = ref(null), tokens = ref([]), loading = ref(true), busy = ref(false), error = ref(''), notice = ref('')
 const query = ref(''), filter = ref('all'), creating = ref(false), name = ref(''), days = ref(90), selected = reactive({}), scopeQuery = ref(''), createError = ref(''), secret = ref(null)
+const expiryMode = ref('days'), expiryDate = ref('')
 const detail = ref(null), requests = ref([]), usage = ref(null), offset = ref(0), total = ref(0), detailLoading = ref(false), detailError = ref('')
 const pageSize = 50
 let disposed = false, detailVersion = 0
@@ -133,7 +136,7 @@ const matchingResources = scope => {
 }
 function toggleScope (scope, checked) { if (checked) selected[scope.scope] = { all: false, resources: [], query: '' }; else delete selected[scope.scope] }
 function openCreate () {
-  name.value = ''; days.value = catalog.value.policy.default_days; scopeQuery.value = ''; createError.value = ''
+  name.value = ''; days.value = catalog.value.policy.default_days; expiryMode.value = 'days'; expiryDate.value = ''; scopeQuery.value = ''; createError.value = ''
   for (const scope of Object.keys(selected)) delete selected[scope]
   creating.value = true
 }
@@ -159,7 +162,10 @@ async function create () {
   if (busy.value) return
   createError.value = ''
   let payload
-  try { payload = tokenPayload(name.value, days.value, selected, catalog.value) } catch (failure) { createError.value = failure.message; return }
+  try {
+    payload = tokenPayload(name.value, expiryMode.value === 'days' ? days.value : catalog.value.policy.default_days, selected, catalog.value)
+    if (expiryMode.value === 'date') payload.expires_at = tokenExpiryDate(expiryDate.value, catalog.value.policy.max_days)
+  } catch (failure) { createError.value = failure.message; return }
   busy.value = true
   try {
     const result = await api.createToken(payload)
@@ -210,7 +216,7 @@ async function loadDetail () {
   await nextTick()
 }
 function changePage (direction) { offset.value += direction * pageSize; loadDetail() }
-watch([name, days, selected], () => { createError.value = '' }, { deep: true })
+watch([name, days, expiryMode, expiryDate, selected], () => { createError.value = '' }, { deep: true })
 watch(() => route.query.token, selectFromRoute)
 onMounted(load)
 onUnmounted(() => { disposed = true; ++detailVersion; secret.value = null })

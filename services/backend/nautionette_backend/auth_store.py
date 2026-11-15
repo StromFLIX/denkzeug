@@ -96,6 +96,9 @@ CREATE TABLE IF NOT EXISTS auth_mail_outbox (
 
 def install(conn: sqlite3.Connection) -> None:
     conn.executescript(_SCHEMA)
+    from .api_keys import SCHEMA as API_KEY_SCHEMA
+
+    conn.executescript(API_KEY_SCHEMA)
     columns = conn.execute("PRAGMA table_info(auth_users)").fetchall()
     if any(row[1] == "email" and row[3] for row in columns):
         # Preserve accounts and every referencing session/membership when upgrading

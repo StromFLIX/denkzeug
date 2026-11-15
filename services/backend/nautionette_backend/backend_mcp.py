@@ -9,7 +9,7 @@ from urllib.parse import quote
 
 import httpx
 import jsonschema
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.routing import APIRoute
 from mcp import types
 from mcp.server.lowlevel import Server
@@ -194,7 +194,20 @@ class BackendMCP:
         supplied = authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
         # The gateway transport is a service, never an APP_TOKEN-backed human.
         expected = settings.internal_token
-        if not expected or not token_matches(supplied, expected):
+        from . import api_keys
+
+        if supplied.startswith("dz_key_"):
+            request = Request(scope)
+            try:
+                row = api_keys.identify(supplied, request)
+                if not any(
+                    grant["scope"] in {"mcp:read", "mcp:execute"} for grant in json.loads(row["grants"])
+                ):
+                    raise HTTPException(403, "API key requires MCP permission")
+            except HTTPException as exc:
+                await JSONResponse({"detail": exc.detail}, status_code=exc.status_code)(scope, receive, send)
+                return
+        elif not expected or not token_matches(supplied, expected):
             await JSONResponse({"detail": "unauthorized"}, status_code=401)(scope, receive, send)
             return
         if self.manager is None:
@@ -202,11 +215,77 @@ class BackendMCP:
             return
         await self.manager.handle_request(scope, receive, send)
 
+    def key_context(self, context, scope: str, tool: str | None = None):
+        """Transport request context is explicit: MCP may dispatch in another task."""
+        from . import api_keys
+        from .api_policy import Policy
+
+        request = getattr(context, "request", None)
+        if request is None:
+            return None, None
+        authorization = request.headers.get("authorization", "")
+        raw = authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
+        if not raw.startswith("dz_key_"):
+            return None, None
+        row = api_keys.identify(raw, request)
+        request.state.api_route = "/mcp"
+        request.state.api_tool = tool
+        request.state.api_params = {"tool": tool} if tool else {}
+        policy = Policy(scope, "mcp", "tool:tool" if tool else None)
+        request.state.api_policy = policy
+        api_keys.authorize_key(request, row, policy)
+        return row, raw
+
     async def list_tools(self, context, params) -> types.ListToolsResult:
-        return types.ListToolsResult(tools=self.tools)
+        from .api_policy import POLICIES
+
+        row, _ = self.key_context(context, "mcp:read")
+        if row is None:
+            return types.ListToolsResult(tools=self.tools)
+        grants = {grant["scope"] for grant in json.loads(row["grants"])}
+        tools = [
+            tool
+            for tool in self.tools
+            if (
+                (
+                    policy := POLICIES.get(
+                        f"{self.operations[tool.name]['method']} {self.operations[tool.name]['path']}"
+                    )
+                )
+                and policy.authentication == "account"
+                and policy.scope in grants
+            )
+        ]
+        return types.ListToolsResult(tools=tools)
 
     async def call_tool(self, context, params: types.CallToolRequestParams) -> types.CallToolResult:
-        return await self.call(params.name, params.arguments or {})
+        from . import api_keys
+        from .security import Principal, current_principal
+
+        try:
+            row, raw = self.key_context(context, "mcp:execute", params.name)
+        except HTTPException as exc:
+            if getattr(context, "request", None) is not None:
+                context.request.state.api_rpc_outcome = "denied"
+            return self.result({"error": exc.detail}, error=True)
+        if row is None:
+            return await self.call(params.name, params.arguments or {})
+        reset = current_principal.set(Principal(row["owner_user_id"], row["role"], token_id=row["id"]))
+        secret_reset = api_keys.transport_secret.set(raw)
+        tool_reset = api_keys.transport_tool.set(params.name)
+        try:
+            # External callers can never supply an internal delegated-account envelope.
+            if "__denkzeug_actor" in (params.arguments or {}):
+                context.request.state.api_rpc_outcome = "denied"
+                return self.result({"error": "Delegated actor credentials are internal-only"}, error=True)
+            result = await self.call(params.name, params.arguments or {})
+            if result.is_error:
+                context.request.state.api_rpc_outcome = "failed"
+            return result
+        finally:
+            api_keys.transport_tool.reset(tool_reset)
+            api_keys.transport_secret.reset(secret_reset)
+            current_principal.reset(reset)
 
     async def call(
         self, name: str, arguments: dict[str, Any], *, selection_tool: str | None = None
@@ -225,7 +304,7 @@ class BackendMCP:
                 "Invalid private output request; check the tool schema and limits. "
                 "Manage storage at /settings/storage"
                 if operation["path"].startswith(("/api/chat-outputs/", "/api/subagents/", "/api/mcp-oauth/"))
-                else exc.message
+                else f"Invalid tool arguments ({exc.validator}); check the declared tool schema."
             )
             return self.result({"error": message}, error=True)
         path = operation["path"]
@@ -246,16 +325,38 @@ class BackendMCP:
         from .access import principal
 
         who = principal()
-        if who is not None and not who.service and who.role != "admin" and not actor_grant:
+        if (
+            who is not None
+            and not who.service
+            and not getattr(who, "token_id", None)
+            and who.role != "admin"
+            and not actor_grant
+        ):
             return self.result({"error": "A live delegated account capability is required"}, error=True)
-        if not settings.internal_token:
-            return self.result({"error": "Service authentication is not configured"}, error=True)
-        headers = {
-            "Authorization": f"Bearer {settings.internal_token}",
-            "X-Internal-Token": settings.internal_token,
-        }
+        from . import api_keys
+
+        if who is not None and getattr(who, "token_id", None):
+            raw = api_keys.transport_secret.get()
+            if not raw or actor_grant:
+                return self.result({"error": "Missing external API-key transport"}, error=True)
+            # Forward the SAME credential: HTTP policy/ownership checks remain authoritative.
+            headers = {"Authorization": f"Bearer {raw}"}
+        else:
+            if not settings.internal_token:
+                return self.result({"error": "Service authentication is not configured"}, error=True)
+            headers = {
+                "Authorization": f"Bearer {settings.internal_token}",
+                "X-Internal-Token": settings.internal_token,
+            }
         local_delegation = None
-        if not actor_grant and who is not None and not who.service and who.role == "admin" and who.session_id:
+        if (
+            not actor_grant
+            and who is not None
+            and not who.service
+            and not getattr(who, "token_id", None)
+            and who.role == "admin"
+            and who.session_id
+        ):
             from .access import delegate
 
             local_delegation = actor_grant = delegate(who)

@@ -1251,6 +1251,10 @@ class Database:
         return self.workflow_settings(name)
 
     def forget_workflow(self, name: str) -> None:
+        # Delete/recreate never transfers webhook or restricted API-key authority.
+        from .api_keys import invalidate_workflow
+
+        invalidate_workflow(name)
         self.execute("DELETE FROM workflow_settings WHERE name = ?", (name,))
 
     def list_runs(

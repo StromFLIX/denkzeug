@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { dailyTokenUsage, tokenPayload, tokenState } from './api-keys.js'
+import { dailyTokenUsage, tokenExpiryDate, tokenPayload, tokenState } from './api-keys.js'
 import { memberSettingKeys } from './account.js'
 import { searchSettings } from './settings-registry.js'
 
@@ -21,6 +21,10 @@ test('requires explicit permissions, resources and a bounded expiry', () => {
   assert.throws(() => tokenPayload('Key', 7, {}, catalog), /permission/)
   assert.throws(() => tokenPayload('Key', 7, { 'missing:scope': {} }, catalog), /Permissions changed/)
   for (const resources of [[], ['digest'], ['other']]) assert.throws(() => tokenPayload('Key', 7, { 'workflows:run': { resources } }, catalog), /resource/)
+})
+test('specific expiry dates are converted to Unix seconds and bounded', () => {
+  assert.equal(tokenExpiryDate('2026-06-02T12:30:00Z', 365, Date.parse('2026-06-01T12:30:00Z') / 1000), Date.parse('2026-06-02T12:30:00Z') / 1000)
+  for (const value of ['', 'not a date', '2020-01-01T00:00:00Z', '2035-01-01T00:00:00Z']) assert.throws(() => tokenExpiryDate(value, 365, Date.parse('2026-06-01T00:00:00Z') / 1000), /future expiry/)
 })
 test('revocation takes precedence over expiry, including a zero timestamp', () => {
   assert.equal(tokenState({ expires_at: 200, revoked_at: null }, 100), 'Active')

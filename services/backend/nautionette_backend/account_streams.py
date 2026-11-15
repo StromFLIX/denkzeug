@@ -13,6 +13,14 @@ from .db import db
 def live(who) -> bool:
     if who is None or who.service:
         return False
+    if who.token_id:
+        return bool(
+            db.one(
+                "SELECT 1 FROM api_keys k JOIN auth_users u ON u.id=k.owner_user_id WHERE k.id=? "
+                "AND k.owner_user_id=? AND k.revoked_at IS NULL AND k.expires_at>? AND u.status='active'",
+                (who.token_id, who.user_id, time.time()),
+            )
+        )
     if not who.session_id:
         return bool(db.one("SELECT 1 FROM auth_users WHERE id=? AND status='active'", (who.user_id,)))
     now = time.time()

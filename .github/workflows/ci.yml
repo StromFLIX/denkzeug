@@ -62,6 +62,7 @@ jobs:
         run: >-
           uv run pytest tests/backend/test_accounts.py tests/backend/test_email_optional_accounts.py tests/backend/test_account_identities.py
           tests/backend/test_account_privacy_integration.py tests/backend/test_scoped_authoring.py tests/backend/test_private_access.py
+          tests/backend/test_api_keys.py
           tests/backend/test_operational.py tests/backend/test_account_session.py tests/backend/test_smoke_auth.py
           tests/worker/test_activity_authority.py
 

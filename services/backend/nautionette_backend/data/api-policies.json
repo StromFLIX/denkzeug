@@ -1,0 +1,1117 @@
+{
+  "DELETE /api/access/grants": {
+    "scope": "access:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "DELETE /api/agents/{agent_id}": {
+    "scope": "agents:write",
+    "authentication": "account",
+    "resource": "agent:agent_id"
+  },
+  "DELETE /api/auth/sessions/{session_id}": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "DELETE /api/chats/{chat_id}": {
+    "scope": "chats:delete",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "DELETE /api/chats/{chat_id}/attachments/{image_id}": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "DELETE /api/chats/{chat_id}/images/{image_id}": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "DELETE /api/chats/{chat_id}/queue/{message_id}": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "DELETE /api/drafts/{name}": {
+    "scope": "workflows:delete",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "DELETE /api/mcp-oauth/login/{identifier}": {
+    "scope": "mcp:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "DELETE /api/mcp-servers/{name}": {
+    "scope": "mcp:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "DELETE /api/miniapps/{app_id}": {
+    "scope": "miniapps:write",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "DELETE /api/model-integrations/copilot/login/{identifier}": {
+    "scope": "integrations:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "DELETE /api/model-integrations/{instance}": {
+    "scope": "integrations:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "DELETE /api/projects/{project_id}": {
+    "scope": "projects:write",
+    "authentication": "account",
+    "resource": "project:project_id"
+  },
+  "DELETE /api/tokens/{token_id}": {
+    "scope": "tokens:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "DELETE /api/workflows/{name}": {
+    "scope": "workflows:delete",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "DELETE /api/workflows/{name}/schedule": {
+    "scope": "workflows:schedule",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "DELETE /internal/agent/tasks/{key}": {
+    "scope": "agents:write",
+    "authentication": "internal",
+    "resource": null
+  },
+  "DELETE /mcp/": {
+    "scope": "mcp:execute",
+    "authentication": "mcp",
+    "resource": null
+  },
+  "GET /api/access/grants": {
+    "scope": "access:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/access/resources": {
+    "scope": "access:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/agents": {
+    "scope": "agents:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/agents/{agent_id}": {
+    "scope": "agents:read",
+    "authentication": "account",
+    "resource": "agent:agent_id"
+  },
+  "GET /api/artcraft/apps": {
+    "scope": "artcraft:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/artcraft/apps/{app}/releases": {
+    "scope": "artcraft:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/artifacts/{name}": {
+    "scope": "outputs:read",
+    "authentication": "account",
+    "resource": "output:name"
+  },
+  "GET /api/auth/audit": {
+    "scope": "audit:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/auth/invitations": {
+    "scope": "accounts:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/auth/mail-status": {
+    "scope": "accounts:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/auth/me": {
+    "scope": "accounts:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/auth/meta": {
+    "scope": "accounts:read",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "GET /api/auth/policy": {
+    "scope": "accounts:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/auth/security-events": {
+    "scope": "audit:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/auth/sessions": {
+    "scope": "accounts:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/auth/users": {
+    "scope": "accounts:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/catalog": {
+    "scope": "mcp:read",
+    "authentication": "delegated",
+    "resource": null
+  },
+  "GET /api/chat-inspection/chats": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/chat-inspection/chats/{chat_id}": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "GET /api/chat-inspection/chats/{chat_id}/messages": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "GET /api/chat-inspection/sessions": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/chat-inspection/sessions/{session_id}/events": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/chat-inspection/tools": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/chats": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/chats/{chat_id}": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "GET /api/chats/{chat_id}/attachments/{image_id}": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "GET /api/chats/{chat_id}/draft": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "GET /api/chats/{chat_id}/images/{image_id}": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "GET /api/chats/{chat_id}/outputs": {
+    "scope": "outputs:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/chats/{chat_id}/outputs/{output_id}/revisions": {
+    "scope": "outputs:read",
+    "authentication": "account",
+    "resource": "output:output_id"
+  },
+  "GET /api/chats/{chat_id}/outputs/{output_id}/revisions/{revision}/files/{file_id}": {
+    "scope": "outputs:read",
+    "authentication": "account",
+    "resource": "output:output_id"
+  },
+  "GET /api/chats/{chat_id}/project-changes": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "GET /api/chats/{chat_id}/session/entries": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "GET /api/chats/{chat_id}/stream": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "GET /api/docs": {
+    "scope": null,
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/docs/oauth2-redirect": {
+    "scope": null,
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/drafts": {
+    "scope": "workflows:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/drafts/{name}": {
+    "scope": "workflows:read",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "GET /api/events": {
+    "scope": "chats:read",
+    "authentication": "delegated",
+    "resource": null
+  },
+  "GET /api/events/recent": {
+    "scope": "chats:read",
+    "authentication": "delegated",
+    "resource": null
+  },
+  "GET /api/mcp-oauth/capabilities": {
+    "scope": "mcp:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/mcp-oauth/login/{identifier}": {
+    "scope": "mcp:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/mcp-oauth/status": {
+    "scope": "mcp:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/mcp-servers": {
+    "scope": "mcp:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/miniapps": {
+    "scope": "miniapps:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/miniapps/contract": {
+    "scope": "miniapps:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/miniapps/overview": {
+    "scope": "miniapps:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/miniapps/{app_id}": {
+    "scope": "miniapps:read",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "GET /api/miniapps/{app_id}/diagnostics": {
+    "scope": "miniapps:read",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "GET /api/miniapps/{app_id}/releases/{revision}": {
+    "scope": "miniapps:read",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "GET /api/miniapps/{app_id}/status": {
+    "scope": "miniapps:read",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "GET /api/model-integrations": {
+    "scope": "integrations:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/openapi.json": {
+    "scope": null,
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/pi-packages/installations": {
+    "scope": "packages:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/pi-packages/revisions/{revision_id}": {
+    "scope": "packages:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/pi-packages/search": {
+    "scope": "packages:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/projects": {
+    "scope": "projects:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/projects/github-app": {
+    "scope": "integrations:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/projects/github-app/callback": {
+    "scope": "integrations:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "GET /api/projects/github-app/installed": {
+    "scope": "integrations:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "GET /api/projects/github-app/start": {
+    "scope": "integrations:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "GET /api/projects/repositories": {
+    "scope": "projects:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/runs": {
+    "scope": "runs:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/runs/{workflow_id}": {
+    "scope": "runs:read",
+    "authentication": "account",
+    "resource": "run:workflow_id"
+  },
+  "GET /api/runs/{workflow_id}/graph": {
+    "scope": "runs:read",
+    "authentication": "account",
+    "resource": "run:workflow_id"
+  },
+  "GET /api/runs/{workflow_id}/history": {
+    "scope": "runs:read",
+    "authentication": "account",
+    "resource": "run:workflow_id"
+  },
+  "GET /api/search/chats": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/settings": {
+    "scope": "settings:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/settings/storage": {
+    "scope": "settings:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/settings/storage/outputs": {
+    "scope": "outputs:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/settings/worktrees": {
+    "scope": "settings:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/speech": {
+    "scope": "speech:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/system": {
+    "scope": "system:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/tokens": {
+    "scope": "tokens:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/tokens/catalog": {
+    "scope": "tokens:read",
+    "authentication": "session",
+    "resource": null
+  },
+  "GET /api/tokens/{token_id}/requests": {
+    "scope": "tokens:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/tokens/{token_id}/usage": {
+    "scope": "tokens:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/workflows": {
+    "scope": "workflows:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/workflows/{name}": {
+    "scope": "workflows:read",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "GET /healthz": {
+    "scope": "system:read",
+    "authentication": "public",
+    "resource": null
+  },
+  "GET /internal/agent/tasks/{key}": {
+    "scope": "agents:read",
+    "authentication": "internal",
+    "resource": null
+  },
+  "GET /internal/runs": {
+    "scope": "runs:read",
+    "authentication": "internal",
+    "resource": null
+  },
+  "GET /internal/runs/{workflow_id}": {
+    "scope": "runs:read",
+    "authentication": "internal",
+    "resource": "run:workflow_id"
+  },
+  "GET /internal/settings/storage": {
+    "scope": "system:control",
+    "authentication": "internal",
+    "resource": null
+  },
+  "GET /internal/system": {
+    "scope": "system:control",
+    "authentication": "internal",
+    "resource": null
+  },
+  "GET /mcp/": {
+    "scope": "mcp:execute",
+    "authentication": "mcp",
+    "resource": null
+  },
+  "GET /{path:path}": {
+    "scope": null,
+    "authentication": "public",
+    "resource": null
+  },
+  "HEAD /api/chats/{chat_id}/stream": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "HEAD /api/docs": {
+    "scope": null,
+    "authentication": "session",
+    "resource": null
+  },
+  "HEAD /api/docs/oauth2-redirect": {
+    "scope": null,
+    "authentication": "session",
+    "resource": null
+  },
+  "HEAD /api/events": {
+    "scope": "chats:read",
+    "authentication": "delegated",
+    "resource": null
+  },
+  "HEAD /api/openapi.json": {
+    "scope": null,
+    "authentication": "session",
+    "resource": null
+  },
+  "HEAD /mcp/": {
+    "scope": "mcp:execute",
+    "authentication": "mcp",
+    "resource": null
+  },
+  "HEAD /{path:path}": {
+    "scope": null,
+    "authentication": "public",
+    "resource": null
+  },
+  "MOUNT /mcp": {
+    "scope": "mcp:execute",
+    "authentication": "mcp",
+    "resource": null
+  },
+  "PATCH /api/agents/{agent_id}": {
+    "scope": "agents:write",
+    "authentication": "account",
+    "resource": "agent:agent_id"
+  },
+  "PATCH /api/auth/policy": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "PATCH /api/auth/profile": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "PATCH /api/auth/users/{user_id}": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "PATCH /api/chats/{chat_id}": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "PATCH /api/chats/{chat_id}/read-state": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "PATCH /api/miniapps/{app_id}": {
+    "scope": "miniapps:write",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "PATCH /api/pi-packages/installations/{installation_id}/configuration": {
+    "scope": "packages:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "PATCH /api/workflows/{name}/settings": {
+    "scope": "workflows:write",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "POST /api/agents": {
+    "scope": "agents:write",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/artcraft/updates/apply": {
+    "scope": "artcraft:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/artcraft/updates/check": {
+    "scope": "artcraft:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/auth/bootstrap": {
+    "scope": "accounts:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "POST /api/auth/change-password": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/auth/forgot-password": {
+    "scope": "accounts:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "POST /api/auth/invitation": {
+    "scope": "accounts:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "POST /api/auth/invitations": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/auth/invitations/{invitation_id}/revoke": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/auth/login": {
+    "scope": "accounts:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "POST /api/auth/logout": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/auth/reauth": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/auth/refresh": {
+    "scope": "accounts:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "POST /api/auth/register": {
+    "scope": "accounts:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "POST /api/auth/reset-password": {
+    "scope": "accounts:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "POST /api/auth/test-email": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/auth/users/{user_id}/recovery": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/auth/verify-email": {
+    "scope": "accounts:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "POST /api/auth/verify-email/request": {
+    "scope": "accounts:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/chat-outputs/prepare": {
+    "scope": "outputs:write",
+    "authentication": "capability",
+    "resource": null
+  },
+  "POST /api/chat-outputs/publish": {
+    "scope": "outputs:write",
+    "authentication": "capability",
+    "resource": null
+  },
+  "POST /api/chat-outputs/read": {
+    "scope": "outputs:read",
+    "authentication": "capability",
+    "resource": null
+  },
+  "POST /api/chats": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/chats/{chat_id}/attachments": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "POST /api/chats/{chat_id}/branch": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "POST /api/chats/{chat_id}/images": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "POST /api/chats/{chat_id}/messages": {
+    "scope": "chats:write",
+    "authentication": "delegated",
+    "resource": "chat:chat_id"
+  },
+  "POST /api/chats/{chat_id}/promote": {
+    "scope": "chats:write",
+    "authentication": "delegated",
+    "resource": "chat:chat_id"
+  },
+  "POST /api/chats/{chat_id}/queue/resume": {
+    "scope": "chats:write",
+    "authentication": "delegated",
+    "resource": "chat:chat_id"
+  },
+  "POST /api/chats/{chat_id}/stop": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "POST /api/chats/{chat_id}/title/regenerate": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "POST /api/drafts/{name}/approve": {
+    "scope": "workflows:write",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "POST /api/mcp-oauth/callback/{identifier}": {
+    "scope": "mcp:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/mcp-oauth/connect/{name}": {
+    "scope": "mcp:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/mcp-oauth/discover": {
+    "scope": "mcp:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/mcp-oauth/dismiss": {
+    "scope": "mcp:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/mcp-oauth/gate": {
+    "scope": "mcp:execute",
+    "authentication": "capability",
+    "resource": null
+  },
+  "POST /api/mcp-oauth/prepare/{name}": {
+    "scope": "mcp:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/mcp-oauth/start/{name}": {
+    "scope": "mcp:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/mcp-oauth/tools": {
+    "scope": "mcp:execute",
+    "authentication": "capability",
+    "resource": null
+  },
+  "POST /api/mcp-servers/{name}/test": {
+    "scope": "mcp:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/miniapps/validate": {
+    "scope": "miniapps:write",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/miniapps/{app_id}/control": {
+    "scope": "miniapps:write",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "POST /api/miniapps/{app_id}/invoke": {
+    "scope": "miniapps:invoke",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "POST /api/miniapps/{app_id}/request": {
+    "scope": "miniapps:invoke",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "POST /api/miniapps/{app_id}/restore": {
+    "scope": "miniapps:write",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "POST /api/model-integrations/copilot/login": {
+    "scope": "integrations:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/model-integrations/copilot/login/{identifier}": {
+    "scope": "integrations:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/model-integrations/{instance}/test": {
+    "scope": "integrations:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/pi-packages/installations": {
+    "scope": "packages:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/pi-packages/revisions": {
+    "scope": "packages:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/projects": {
+    "scope": "projects:write",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/projects/github-app/connect": {
+    "scope": "integrations:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/projects/github-app/webhook": {
+    "scope": "integrations:manage",
+    "authentication": "protocol",
+    "resource": null
+  },
+  "POST /api/runs/{workflow_id}/cancel": {
+    "scope": "runs:cancel",
+    "authentication": "account",
+    "resource": "run:workflow_id"
+  },
+  "POST /api/runs/{workflow_id}/terminate": {
+    "scope": "runs:terminate",
+    "authentication": "account",
+    "resource": "run:workflow_id"
+  },
+  "POST /api/settings/storage/cleanup": {
+    "scope": "outputs:write",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/settings/storage/cleanup/preview": {
+    "scope": "outputs:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/settings/storage/compact": {
+    "scope": "system:control",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/settings/storage/maintenance": {
+    "scope": "system:control",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/settings/worktrees/cleanup": {
+    "scope": "system:control",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/speech/stream-ticket": {
+    "scope": "speech:execute",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/subagents/call": {
+    "scope": "chats:write",
+    "authentication": "capability",
+    "resource": null
+  },
+  "POST /api/subagents/list": {
+    "scope": "chats:write",
+    "authentication": "capability",
+    "resource": null
+  },
+  "POST /api/subagents/wait": {
+    "scope": "chats:write",
+    "authentication": "capability",
+    "resource": null
+  },
+  "POST /api/system/worker/restart": {
+    "scope": "system:control",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/tokens": {
+    "scope": "tokens:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/tokens/{token_id}/rotate": {
+    "scope": "tokens:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "POST /api/triggers/{name}": {
+    "scope": "workflows:trigger",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "POST /api/workflows/validate": {
+    "scope": "workflows:write",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/workflows/{name}/deploy": {
+    "scope": "workflows:write",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "POST /api/workflows/{name}/run": {
+    "scope": "workflows:trigger",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "POST /api/workflows/{name}/schedule": {
+    "scope": "workflows:schedule",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
+  "POST /api/workflows/{name}/webhook-token": {
+    "scope": "workflows:trigger",
+    "authentication": "session",
+    "resource": "workflow:name"
+  },
+  "POST /internal/agent/call": {
+    "scope": "agents:write",
+    "authentication": "internal",
+    "resource": null
+  },
+  "POST /internal/agent/tasks/{key}": {
+    "scope": "agents:write",
+    "authentication": "internal",
+    "resource": null
+  },
+  "POST /internal/auth/activity-grant": {
+    "scope": "mcp:execute",
+    "authentication": "internal",
+    "resource": null
+  },
+  "POST /internal/auth/revoke-activity-grant": {
+    "scope": "mcp:execute",
+    "authentication": "internal",
+    "resource": null
+  },
+  "POST /internal/events": {
+    "scope": "system:control",
+    "authentication": "internal",
+    "resource": null
+  },
+  "POST /internal/mcp/workflow-call": {
+    "scope": "mcp:execute",
+    "authentication": "internal",
+    "resource": null
+  },
+  "POST /internal/miniapps/{app_id}/capability": {
+    "scope": "miniapps:invoke",
+    "authentication": "internal",
+    "resource": "app:app_id"
+  },
+  "POST /internal/runs/{workflow_id}/mcp-calls": {
+    "scope": "mcp:execute",
+    "authentication": "internal",
+    "resource": "run:workflow_id"
+  },
+  "POST /internal/worker/restart": {
+    "scope": "system:control",
+    "authentication": "internal",
+    "resource": null
+  },
+  "POST /internal/workflows/{name}/delete": {
+    "scope": "workflows:delete",
+    "authentication": "internal",
+    "resource": "workflow:name"
+  },
+  "POST /internal/workflows/{name}/deploy": {
+    "scope": "workflows:write",
+    "authentication": "internal",
+    "resource": "workflow:name"
+  },
+  "POST /internal/workflows/{name}/run": {
+    "scope": "workflows:trigger",
+    "authentication": "internal",
+    "resource": "workflow:name"
+  },
+  "POST /mcp/": {
+    "scope": "mcp:execute",
+    "authentication": "mcp",
+    "resource": null
+  },
+  "PUT /api/access/grants": {
+    "scope": "access:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "PUT /api/artcraft/apps/{app}": {
+    "scope": "artcraft:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "PUT /api/artcraft/updates": {
+    "scope": "artcraft:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "PUT /api/chats/{chat_id}/draft": {
+    "scope": "chats:write",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
+  "PUT /api/mcp-servers/{name}": {
+    "scope": "mcp:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "PUT /api/miniapps/{app_id}": {
+    "scope": "miniapps:write",
+    "authentication": "account",
+    "resource": "app:app_id"
+  },
+  "PUT /api/model-integrations/{target}": {
+    "scope": "integrations:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "PUT /api/projects/github-app": {
+    "scope": "integrations:manage",
+    "authentication": "account",
+    "resource": null
+  },
+  "PUT /api/projects/github-app/{connection_id}/mentions": {
+    "scope": "integrations:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "PUT /api/projects/github-app/{connection_id}/public-url": {
+    "scope": "integrations:manage",
+    "authentication": "session",
+    "resource": null
+  },
+  "PUT /api/settings": {
+    "scope": "settings:write",
+    "authentication": "account",
+    "resource": null
+  },
+  "PUT /api/settings/storage": {
+    "scope": "settings:write",
+    "authentication": "account",
+    "resource": null
+  },
+  "WEBSOCKET /api/speech/stream": {
+    "scope": "speech:execute",
+    "authentication": "ticket",
+    "resource": null
+  }
+}

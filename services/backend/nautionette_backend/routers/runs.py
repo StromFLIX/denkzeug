@@ -18,8 +18,12 @@ router = APIRouter()
 
 
 @router.post("/api/workflows/{name}/run", dependencies=[Depends(require_user)])
-async def run_workflow(name: str, payload: dict[str, Any] = Body(default={})) -> dict[str, Any]:
-    return await runs.start(name, payload.get("input") or {}, trigger="manual")
+async def run_workflow(
+    name: str, request: Request, payload: dict[str, Any] = Body(default={})
+) -> dict[str, Any]:
+    result = await runs.start(name, payload.get("input") or {}, trigger="manual")
+    request.state.api_run_id = result.get("workflow_id")
+    return result
 
 
 @router.get("/api/runs", dependencies=[Depends(require_user)])
@@ -119,9 +123,18 @@ async def trigger(name: str, request: Request, token: str | None = Query(default
     """Triggers come in here and nowhere else."""
     access.require_execution()
     try:
-        payload = await request.json()
-    except Exception:  # noqa: BLE001 - a webhook may send nothing at all
-        payload = {}
+        body = bytearray()
+        async for chunk in request.stream():
+            if len(body) + len(chunk) > 1048576:
+                raise HTTPException(413, "Workflow webhook payload is too large")
+            body.extend(chunk)
+        import json
+
+        payload = json.loads(body) if body else {}
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise HTTPException(422, "Workflow webhook body must be valid JSON") from exc
     if not isinstance(payload, dict):
         payload = {"payload": payload}
-    return await runs.start(name, payload, trigger="webhook")
+    result = await runs.start(name, payload, trigger="webhook")
+    request.state.api_run_id = result.get("workflow_id")
+    return result

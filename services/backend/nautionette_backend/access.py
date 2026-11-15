@@ -497,6 +497,14 @@ async def authorize_request(request: Request, who) -> None:
             if parts[4] in {"messages", "queue", "title", "branch"} and method not in {"GET", "HEAD"}:
                 require_owner_execution("chats", parts[3])
         return
+    if path.startswith("/api/tokens"):
+        return  # Key metadata/history handlers enforce ownership, even for admins.
+    if path.startswith("/api/triggers/") or (
+        path.startswith("/api/workflows/") and path.endswith("/webhook-token")
+    ):
+        require_resource("workflow", parts[3], who)
+        execution_scope.set(("workflow", parts[3]))
+        return
     if path == "/api/catalog" and method == "GET":
         return
     if path.startswith("/api/speech") and method in {"GET", "POST"}:

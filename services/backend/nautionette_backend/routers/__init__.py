@@ -29,12 +29,14 @@ from . import (
     storage,
     subagents,
     system,
+    tokens,
     workflows,
 )
 
 ROUTERS = (
     access.router,
     auth.router,
+    tokens.router,
     system.router,
     settings.router,
     storage.router,

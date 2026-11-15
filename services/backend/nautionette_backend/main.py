@@ -21,6 +21,7 @@ from nautionette.telemetry import instrument_app
 
 from . import (
     access,
+    api_keys,
     artcraft,
     auth,
     auth_mail,
@@ -33,6 +34,8 @@ from . import (
     runs,
     worktree_maintenance,
 )
+from .access_logging import install as install_access_logging
+from .api_policy import annotate_openapi, validate_routes
 from .backend_mcp import BackendMCP
 from .background import drain, spawn
 from .chat_search import search
@@ -43,6 +46,8 @@ from .events import bus
 from .integrations import bootstrap
 from .routers import ROUTERS
 from .security import AccountBoundaryMiddleware
+
+install_access_logging()
 
 
 def seed_workflows() -> None:
@@ -69,7 +74,9 @@ def seed_workflows() -> None:
 async def lifespan(_: FastAPI):
     if not settings.internal_token:
         raise ValueError("INTERNAL_TOKEN is required for authenticated internal services")
+    validate_routes(app)
     auth.initialize()
+    spawn(api_keys.maintenance(), name="api-key-audit-retention")
     spawn(auth_mail.maintenance(), name="account-mail-maintenance")
     spawn(access.account_maintenance(), name="account-access-maintenance")
     Path(settings.artifacts_dir).mkdir(parents=True, exist_ok=True)
@@ -106,6 +113,8 @@ app = FastAPI(
     version=settings.version,
     lifespan=lifespan,
     docs_url="/api/docs",
+    redoc_url=None,
+    swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect",
     openapi_url="/api/openapi.json",
 )
 
@@ -144,4 +153,6 @@ for router in ROUTERS[:-1]:
 backend_mcp = BackendMCP(app, ROUTERS[:-1])
 app.mount("/mcp", backend_mcp.http_app)
 app.include_router(ROUTERS[-1])
+validate_routes(app)
+annotate_openapi(app)
 instrument_app(app, "nautionette-backend")
