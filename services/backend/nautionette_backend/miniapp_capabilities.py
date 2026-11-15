@@ -39,8 +39,10 @@ def subset(required: Any, supplied: Any) -> bool:
 def authorize(manifest: dict, request: dict) -> None:
     permissions = (manifest.get("backend") or {}).get("permissions", {})
     if request.get("kind") == "mcp":
-        if set(request) - {"kind", "tool", "arguments", "request_id"} or not isinstance(
-            request.get("arguments"), dict
+        if (
+            set(request) - {"kind", "tool", "arguments", "request_id"}
+            or not isinstance(request.get("arguments"), dict)
+            or "__denkzeug_actor" in request["arguments"]
         ):
             raise HTTPException(422, "Invalid MCP capability request")
         grants = permissions.get("mcp", [])
@@ -212,10 +214,38 @@ async def describe(app_id: str, request: dict) -> dict:
 
 
 async def mcp(app_id: str, request: dict) -> dict:
+    from . import access
+    from .db import db
+    from .miniapp_models import WORKFLOW_TOOLS
+    from .security import Principal
+
     session = sessions[app_id]
     async with session.lock:
         session.used = time.monotonic()
-        return await session.rpc("tools/call", {"name": request["tool"], "arguments": request["arguments"]})
+        arguments = dict(request["arguments"])
+        grant = None
+        if workflow_key := WORKFLOW_TOOLS.get(request["tool"]):
+            # The broker callback has service transport authority, not the
+            # browser's account session. Delegate only the saved app owner's
+            # explicit workflow capability; never ambient service/admin access.
+            owner = db.one(
+                "SELECT u.id,u.role FROM mini_apps a JOIN auth_users u ON u.id=a.owner_user_id "
+                "WHERE a.id=? AND a.archived=0 AND u.status='active'",
+                (app_id,),
+            )
+            if not owner:
+                raise HTTPException(403, "This app's owner is not active")
+            who = Principal(owner["id"], owner["role"])
+            access.require_resource("workflow", arguments[workflow_key], who)
+            if who.role != "admin" and not access.allowed("tool", request["tool"], who):
+                raise HTTPException(403, "This workflow tool is not shared with the app owner")
+            grant = access.delegate(who, tools=[request["tool"]])
+            arguments["__denkzeug_actor"] = grant
+        try:
+            return await session.rpc("tools/call", {"name": request["tool"], "arguments": arguments})
+        finally:
+            if grant:
+                access.release_delegation(grant)
 
 
 async def close(app_id: str):

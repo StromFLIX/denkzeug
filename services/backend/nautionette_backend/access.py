@@ -54,9 +54,9 @@ def activity_grant(user_id: str | None, run_id: str, tools: list[str] | None, tt
             release_activity_grant(token)
 
 
-def delegate(who) -> str:
+def delegate(who, *, tools: list[str] | None = None) -> str:
     token = secrets.token_urlsafe(32)
-    _delegations[token] = who
+    _delegations[token] = {"principal": who, "tools": tools}
     return token
 
 
@@ -66,7 +66,10 @@ def release_delegation(token: str) -> None:
 
 def authorize_actor_tool(token: str, tool: str) -> None:
     if token in _delegations:
-        return  # In-process authenticated human operations, not an agent loadout.
+        selected = _delegations[token]["tools"]
+        if selected is not None and tool not in selected:
+            raise HTTPException(403, "This tool is not enabled for this delegated operation")
+        return
     if token in _activity_delegations:
         selected = _activity_delegations[token]["tools"]
         if selected is not None and tool not in selected:
@@ -111,10 +114,11 @@ def actor_for_grant(token: str):
             _activity_delegations.pop(token, None)
             raise HTTPException(403, "The workflow activity capability expired")
         return Principal(user["id"], user["role"])
-    delegated = _delegations.get(token)
-    if delegated is not None:
+    delegation = _delegations.get(token)
+    if delegation is not None:
         from .account_streams import live
 
+        delegated = delegation["principal"]
         if not live(delegated):
             raise HTTPException(403, "The delegated session expired")
         user = db.one("SELECT role FROM auth_users WHERE id=?", (delegated.user_id,))
