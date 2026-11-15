@@ -186,7 +186,8 @@ web/mobile clients do not need a desktop bridge. Configure `DENKZEUG_PUBLIC_URL`
 `https://<instance>/api/mcp-oauth/web-callback` with the provider. Request Host and
 forwarded headers never select the callback destination. Both GET/query and
 `form_post` work; the callback accepts only an expiring, one-shot state capability
-created by a signed-in MCP administrator. It does not authenticate other API routes
+created by a signed-in MCP administrator. Anonymous form-body reads have a
+10-second deadline and a 64 KiB limit. It does not authenticate other API routes
 or publish an MCP target. Poll/cancel belong to the account that started the login.
 
 The backend generates PKCE/state, exchanges the returned code, verifies authenticated
@@ -229,6 +230,9 @@ Providers may reject application permissions even when user-delegated login work
 Client secrets, private signing keys and optional DCR initial access tokens are
 write-only. Blank fields preserve a saved credential; changing issuer, client ID
 or token endpoint drops the old credential instead of sending it to the new target.
+Client credentials used for device authorization are also bound to that device
+endpoint, and initial registration tokens are bound to their registration endpoint.
+Bindings are encrypted with the credentials and checked again immediately before use.
 Advanced API callers can use `clear_client_credentials: true` during preparation.
 Signing clients must pre-register their public key with the provider. Supported
 private keys are RSA (2048+ bits), P-256/P-384/P-521 and EdDSA; JWT algorithms must
@@ -309,8 +313,9 @@ Deploy the updated **backend and default agent image** for the readiness gate;
 existing running agents retain their old transport until their turn ends. The
 OAuth UI also needs the updated **frontend and desktop build**; use the existing
 compatible agentgateway. Unlike CLI OAuth, HTTPS OAuth does not depend on the
-private CLI helper. The staging check verifies both runtime modes and live
-WorkIQ metadata discovery without signing into an account. Your actual tenant's
+private CLI helper. The staging check verifies both runtime modes, generic grant
+and client-auth capabilities, canonical public client metadata and live WorkIQ
+metadata discovery without signing into an account. Your actual tenant's
 consent, licensing, token protection and account policies still apply.
 
 ## CLI-owned OAuth (alternative desktop callback bridge)

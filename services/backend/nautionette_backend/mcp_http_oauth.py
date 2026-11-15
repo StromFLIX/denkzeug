@@ -298,7 +298,7 @@ async def discover(payload: dict) -> dict:
         await public_url(auth[key])
         if microsoft and urlsplit(auth[key]).hostname != "login.microsoftonline.com":
             raise HTTPException(400, "Unexpected Microsoft authorization endpoint")
-    if set(parse_qs(urlsplit(auth.get("authorization_endpoint") or "").query)) & {
+    if set(parse_qs(urlsplit(auth.get("authorization_endpoint") or "").query, keep_blank_values=True)) & {
         "client_id",
         "state",
         "redirect_uri",
@@ -306,6 +306,8 @@ async def discover(payload: dict) -> dict:
         "resource",
         "response_type",
         "code_challenge",
+        "code_challenge_method",
+        "response_mode",
     }:
         raise HTTPException(400, "OAuth endpoint contains conflicting authorization parameters")
     registration = auth.get("registration_endpoint")
@@ -322,10 +324,11 @@ async def discover(payload: dict) -> dict:
     if not isinstance(scope, str) or len(scope) > 4096 or any(ord(c) < 32 or ord(c) > 126 for c in scope):
         raise HTTPException(400, "Invalid OAuth scope")
     supported_scopes = string_list(auth.get("scopes_supported", []), "authorization scopes")
-    if microsoft or "offline_access" in supported_scopes:
-        scope = " ".join(dict.fromkeys([*scope.split(), "offline_access"]))
-    if microsoft:
-        scope = " ".join(dict.fromkeys([*scope.split(), "openid"]))
+    if grant != "client_credentials":
+        if microsoft or "offline_access" in supported_scopes:
+            scope = " ".join(dict.fromkeys([*scope.split(), "offline_access"]))
+        if microsoft:
+            scope = " ".join(dict.fromkeys([*scope.split(), "openid"]))
     redirect = payload.get("redirect_uri") or (
         WORKIQ_REDIRECT if url == WORKIQ_URL else "http://127.0.0.1:0/callback"
     )
@@ -434,18 +437,25 @@ async def start(name: str, payload: dict) -> dict:
     profile = await mcp_oauth_setup.ready(name, payload)
     if payload.get("share_account") is not True:
         raise HTTPException(400, "Confirm connecting this account to the shared instance")
-    profile["redirect_uri"] = redirect_uri(payload.get("redirect_uri") or profile["redirect_uri"])
-    if profile.get("callback_mode") == "web" and profile["redirect_uri"] != provider.callback_url():
-        raise HTTPException(400, "Use this instance's exact HTTPS callback")
-    template = redirect_uri(payload.get("redirect_uri_template", profile["redirect_uri"]), ephemeral=True)
-    actual, wanted = urlsplit(profile["redirect_uri"]), urlsplit(template)
-    if (
-        actual.hostname != wanted.hostname
-        or actual.path != wanted.path
-        or wanted.port not in (0, actual.port)
-    ):
-        raise HTTPException(400, "Prepared callback does not match the redirect template")
-    profile["redirect_uri_template"] = template
+    grant = profile.get("grant_type", "authorization_code")
+    if grant == "authorization_code":
+        profile["redirect_uri"] = redirect_uri(payload.get("redirect_uri") or profile["redirect_uri"])
+        if profile.get("callback_mode") == "web" and profile["redirect_uri"] != provider.callback_url():
+            raise HTTPException(400, "Use this instance's exact HTTPS callback")
+        template = redirect_uri(payload.get("redirect_uri_template", profile["redirect_uri"]), ephemeral=True)
+        actual, wanted = urlsplit(profile["redirect_uri"]), urlsplit(template)
+        if (
+            actual.hostname != wanted.hostname
+            or actual.path != wanted.path
+            or wanted.port not in (0, actual.port)
+        ):
+            raise HTTPException(400, "Prepared callback does not match the redirect template")
+        profile["redirect_uri_template"] = template
+    else:
+        # Neither device authorization nor service accounts receive a callback.
+        # Keep the saved template for a future interactive grant, not as a port
+        # that the current client is required to bind.
+        profile["redirect_uri_template"] = profile["redirect_uri"]
     mcp_servers.normalise_config(name, {"url": profile["url"]})
     mcp_servers.reachable_endpoint(profile["url"])
     mode, targets = await mcp_servers.fetch_resources()
@@ -462,7 +472,6 @@ async def start(name: str, payload: dict) -> dict:
     from .security import current_principal
 
     owner = current_principal.get()
-    grant = profile.get("grant_type", "authorization_code")
     if grant != "authorization_code":
         identifier = "http-" + secrets.token_hex(32)
         login = Login(name, profile, previous, "", {}, owner_user_id=owner.user_id if owner else None)
@@ -570,6 +579,7 @@ async def start_device(login: Login):
             "scope": login.profile["scope"],
             **provider.resource_fields(login.profile),
         },
+        endpoint=login.profile["device_authorization_endpoint"],
     )
     status, _, value = await fetch(
         login.profile["device_authorization_endpoint"], form, **({"headers": headers} if headers else {})

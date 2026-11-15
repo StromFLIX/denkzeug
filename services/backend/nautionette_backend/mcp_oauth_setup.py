@@ -250,8 +250,11 @@ async def register(name: str, profile: dict) -> dict:
         "response_types": ["code"],
         "token_endpoint_auth_method": profile.get("token_endpoint_auth_method", "none"),
     }
+    if profile.get("grant_type") == "device_code":
+        metadata.pop("redirect_uris")
+        metadata.pop("response_types")
     try:
-        access_token = provider.credentials(profile).get("registration_access_token")
+        access_token = provider.registration_token(profile)
         headers = {"Authorization": f"Bearer {access_token}"} if access_token else None
         status, _, response = await hosted.fetch(
             profile["registration_endpoint"], json_body=metadata, **({"headers": headers} if headers else {})
@@ -269,8 +272,11 @@ async def register(name: str, profile: dict) -> dict:
         and client.isascii()
         and not any(ord(c) < 33 for c in client)
         and response.get("token_endpoint_auth_method", "none") == metadata["token_endpoint_auth_method"]
-        and isinstance(response.get("redirect_uris"), list)
-        and profile["redirect_uri"] in response["redirect_uris"]
+        and (
+            profile.get("grant_type") == "device_code"
+            or isinstance(response.get("redirect_uris"), list)
+            and profile["redirect_uri"] in response["redirect_uris"]
+        )
     )
     if not valid:
         save(name, {**candidate, "registration_outcome": "rejected"})
@@ -293,6 +299,10 @@ async def register(name: str, profile: dict) -> dict:
             result, {"client_secret": response.get("client_secret")}, profile
         )
         provider.require_credentials(result)
+    else:
+        # The initial registration token is no longer needed once a public
+        # client ID is issued; never retain it with a different client binding.
+        result = provider.configure_credentials(result, {}, profile)
     save(name, {**result, "redirect_uri": result["redirect_uri_template"]})
     return result
 

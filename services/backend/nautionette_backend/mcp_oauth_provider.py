@@ -125,10 +125,17 @@ def credentials(profile: dict) -> dict:
 
 def configure_credentials(profile: dict, payload: dict, previous: dict | None) -> dict:
     # A client/issuer change must never silently send an old secret to a new provider.
-    same_client = previous and all(
-        previous.get(k) == profile.get(k) for k in ("issuer", "client_id", "token_endpoint")
-    )
-    values = credentials(previous) if same_client else {}
+    stored = credentials(previous) if previous else {}
+    bindings = stored.get("_bindings", {})
+    same_client = all(bindings.get(k) == profile.get(k) for k in ("issuer", "client_id", "token_endpoint"))
+    values = {key: stored[key] for key in SECRETS if key in stored} if same_client else {}
+    if bindings.get("registration_endpoint") != profile.get("registration_endpoint"):
+        values.pop("registration_access_token", None)
+    if profile.get("grant_type") == "device_code" and (
+        bindings.get("device_authorization_endpoint") != profile.get("device_authorization_endpoint")
+    ):
+        values.pop("client_secret", None)
+        values.pop("private_key", None)
     for key in SECRETS:
         value = payload.get(key)
         if value in (None, ""):
@@ -148,6 +155,16 @@ def configure_credentials(profile: dict, payload: dict, previous: dict | None) -
         from .mcp_http_oauth import ready_key
 
         ready_key()
+        values["_bindings"] = {
+            key: profile.get(key)
+            for key in (
+                "issuer",
+                "client_id",
+                "token_endpoint",
+                "device_authorization_endpoint",
+                "registration_endpoint",
+            )
+        }
         result["sealed_client_credentials"] = seal(values, namespace="mcp-oauth")
     return result
 
@@ -174,8 +191,28 @@ def require_credentials(profile):
     required = "private_key" if method == "private_key_jwt" else "client_secret"
     if method != "none" and not values.get(required):
         raise HTTPException(400, f"This OAuth client requires a stored {required}")
+    if method != "none":
+        verify_binding(profile, values, "token_endpoint", profile["token_endpoint"])
     if method in {"private_key_jwt", "client_secret_jwt"}:
         signing_key(profile, values)
+
+
+def verify_binding(profile, values, endpoint_key, endpoint):
+    bindings = values.get("_bindings", {})
+    if (
+        not bindings
+        or any(bindings.get(k) != profile.get(k) for k in ("issuer", "client_id", "token_endpoint"))
+        or (bindings.get(endpoint_key) != endpoint)
+    ):
+        raise HTTPException(400, "OAuth credential destination changed; re-enter the client credential")
+
+
+def registration_token(profile):
+    values = credentials(profile)
+    token = values.get("registration_access_token")
+    if token:
+        verify_binding(profile, values, "registration_endpoint", profile["registration_endpoint"])
+    return token
 
 
 def signing_key(profile, values):
@@ -200,12 +237,14 @@ def resource_fields(profile) -> dict:
     return {} if parameter == "none" else {parameter: profile.get("resource_value") or profile["resource"]}
 
 
-def authenticate(profile, data):
+def authenticate(profile, data, *, endpoint=None):
     """Return a fresh token form + optional Authorization header; never mutate caller data."""
     require_credentials(profile)
     form, headers = dict(data), {}
     client, method = profile["client_id"], profile.get("token_endpoint_auth_method", "none")
     values = credentials(profile)
+    if method != "none" and endpoint is not None:
+        verify_binding(profile, values, "device_authorization_endpoint", endpoint)
     form["client_id"] = client
     if method == "client_secret_basic":
         raw = f"{quote_plus(client, safe='')}:{quote_plus(values['client_secret'], safe='')}".encode()

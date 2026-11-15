@@ -17,11 +17,36 @@ def test_readonly_staging_check_does_not_launch_cli_or_log_credentials(monkeypat
         def open(self, request, timeout):
             assert request.get_header("Authorization") == "Bearer test-only-token"
             if request.get_method() == "GET":
-                assert request.full_url == "https://app.test/api/mcp-oauth/capabilities"
                 assert timeout == 30
+                if request.full_url == "https://app.test/api/mcp-oauth/client-metadata":
+                    return io.BytesIO(
+                        json.dumps(
+                            {
+                                "client_id": "https://app.test/api/mcp-oauth/client-metadata",
+                                "redirect_uris": ["https://app.test/api/mcp-oauth/web-callback"],
+                                "token_endpoint_auth_method": "none",
+                            }
+                        ).encode()
+                    )
+                assert request.full_url == "https://app.test/api/mcp-oauth/capabilities"
                 return io.BytesIO(
                     json.dumps(
-                        {"available": True, "desktop_bridge_version": 1, "http": {"available": True}}
+                        {
+                            "available": True,
+                            "desktop_bridge_version": 1,
+                            "http": {
+                                "available": True,
+                                "grant_types": ["authorization_code", "device_code", "client_credentials"],
+                                "token_endpoint_auth_methods": [
+                                    "none",
+                                    "client_secret_basic",
+                                    "client_secret_post",
+                                    "private_key_jwt",
+                                    "client_secret_jwt",
+                                ],
+                                "web_callback": "https://app.test/api/mcp-oauth/web-callback",
+                            },
+                        }
                     ).encode()
                 )
             assert (
@@ -45,6 +70,9 @@ def test_readonly_staging_check_does_not_launch_cli_or_log_credentials(monkeypat
         "desktop_bridge_version": 1,
         "https_oauth": True,
         "workiq_discovery": True,
+        "generic_oauth_grants": True,
+        "confidential_clients": True,
+        "web_callback_metadata": True,
     }
 
 
