@@ -34,6 +34,23 @@ class Digest:
     await workflow.execute_activity("save_artifact", {"name": "digest.md", "content": params["summary"]})
     return {"ok": True}
 `)
+const protectedFlow = definition(`
+from temporalio import workflow
+@workflow.defn(name="url_digest")
+class Digest:
+  @workflow.run
+  async def run(self):
+    try:
+      await workflow.execute_activity("fetch_page")
+    except ValueError as error:
+      await workflow.execute_activity("recover_page")
+    except:
+      return {"ok": False}
+    else:
+      await workflow.execute_activity("save_page")
+    finally:
+      await workflow.execute_activity("cleanup_page")
+`)
 const start = Date.now() - 45000
 const at = (seconds) => new Date(start + seconds * 1000).toISOString()
 const info = { workflow_id: 'digest-run', run_id: 'temporal-run', workflow_type: 'url_digest', status: 'RUNNING', start_time: at(0), close_time: null }
@@ -118,6 +135,52 @@ test('definition canvas supports inspection, search, direction, zoom, and full s
   await page.screenshot({ path: '/tmp/nautionette-flow-desktop.png' })
   expect(errors).toEqual([])
 })
+
+for (const width of [1440, 320]) {
+  test(`try handlers and finally are inspectable at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 320 ? 700 : 1100 })
+    const errors = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await mockApi(page, { definition: protectedFlow })
+    await page.goto('/workflows/url_digest?tab=Flow')
+    await expect(page.locator('.flow-node')).toHaveCount(protectedFlow.nodes.length)
+    await expect(page.locator('.flow-node--try')).toHaveCount(1)
+    await expect(page.locator('.flow-node--except')).toHaveCount(2)
+    await expect(page.locator('.flow-node--try_else')).toHaveCount(1)
+    await expect(page.locator('.flow-node--finally')).toHaveCount(1)
+    await expect(page.locator('.flow__warning')).toContainText('handler matching depends on runtime errors')
+    await page.getByRole('button', { name: 'Fit all steps', exact: true }).click()
+    for (const direction of ['TB', 'LR']) {
+      const exceptional = protectedFlow.edges.filter((edge) => edge.role === 'exception')
+      for (const edge of exceptional) {
+        const rendered = page.locator(`.vue-flow__edge[data-id="${edge.id}"] .vue-flow__edge-path`)
+        await expect(rendered).toHaveCSS('stroke-dasharray', '5px, 5px')
+      }
+      await page.getByRole('button', { name: 'Change flow direction' }).click()
+    }
+    await page.getByRole('button', { name: 'Search steps', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Search steps' }).fill('except ValueError')
+    await page.getByRole('button', { name: 'Next matching step' }).click()
+    const inspector = page.getByRole('complementary', { name: 'Step details' })
+    await expect(inspector).toContainText('Exception handler')
+    await expect(inspector).toContainText('except ValueError as error')
+    await expect(inspector).toContainText('recover_page')
+    await expect(page.locator('.flow-node--selected')).toBeInViewport({ ratio: 1 })
+    await page.getByRole('button', { name: 'Close step details' }).click()
+    await page.getByRole('textbox', { name: 'Search steps' }).fill('Finally (always)')
+    await page.getByRole('button', { name: 'Next matching step' }).click()
+    await expect(inspector).toContainText('cleanup_page')
+    await expect(page.locator('.flow-node--selected')).toBeInViewport({ ratio: 1 })
+    await page.mouse.move(5, 5)
+    await page.screenshot({ path: `/tmp/nautionette-try-finally-${width}.png` })
+    await page.getByRole('button', { name: 'Close step details' }).click()
+    await page.getByRole('button', { name: 'Search steps', exact: true }).click()
+    await page.getByRole('button', { name: 'Fit all steps', exact: true }).click()
+    await page.screenshot({ path: `/tmp/nautionette-try-overview-${width}.png` })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    expect(errors).toEqual([])
+  })
+}
 
 test('live completion preserves selection and camera, then stops polling', async ({ page }) => {
   const state = await mockApi(page)

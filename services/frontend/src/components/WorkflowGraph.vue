@@ -164,11 +164,11 @@ const positioned = computed(() => layoutGraph(props.graph, direction.value, pref
 const nodes = computed(() => positioned.value.nodes.map((node) => ({ ...node, ariaLabel: `${node.data.label}, ${node.data.status || node.data.kind}` })))
 const edges = computed(() => positioned.value.edges.map((edge) => {
   const target = props.graph.nodes.find((node) => node.id === edge.target)
-  const color = edge.change === 'removed' ? 'var(--danger)' : edge.change === 'added' ? 'var(--success)' : 'var(--text-dim)'
+  const color = edge.change === 'removed' ? 'var(--danger)' : edge.change === 'added' ? 'var(--success)' : edge.role === 'exception' ? 'var(--warning)' : 'var(--text-dim)'
   return {
     ...edge,
     animated: ['running', 'retrying'].includes(target?.status),
-    style: { stroke: color, strokeWidth: 1.5, strokeDasharray: edge.change === 'removed' ? '5 5' : undefined },
+    style: { stroke: color, strokeWidth: 1.5, strokeDasharray: edge.change === 'removed' || edge.role === 'exception' ? '5 5' : undefined },
     markerEnd: { type: 'arrowclosed', color, width: 14, height: 14 },
     labelStyle: { fill: 'var(--text-muted)', fontSize: '0.6875rem' },
     labelBgStyle: { fill: 'var(--surface-app)' }, labelBgPadding: [6, 4]
@@ -196,11 +196,11 @@ const payloadFields = computed(() => [
 ].filter((field) => selected.value?.[field.key] != null))
 
 function icon (kind) {
-  return { agent_call: 'smart_toy', mcp_call: 'extension', http_fetch: 'http', save_artifact: 'save_alt', read_artifact: 'description', emit_event: 'sensors', workflow: 'account_tree', activity: 'bolt', child: 'account_tree', condition: 'call_split', loop: 'repeat', parallel: 'call_split', join: 'call_merge', timer: 'schedule', return: 'flag', error: 'error_outline', signal: 'sensors', continue: 'autorenew', step: 'code' }[kind] || 'code'
+  return { agent_call: 'smart_toy', mcp_call: 'extension', http_fetch: 'http', save_artifact: 'save_alt', read_artifact: 'description', emit_event: 'sensors', workflow: 'account_tree', activity: 'bolt', child: 'account_tree', condition: 'call_split', try: 'shield', except: 'alt_route', try_else: 'check_circle_outline', finally: 'cleaning_services', loop: 'repeat', parallel: 'call_split', join: 'call_merge', timer: 'schedule', return: 'flag', error: 'error_outline', signal: 'sensors', continue: 'autorenew', step: 'code' }[kind] || 'code'
 }
 
 function kindLabel (kind) {
-  return { child: 'Child workflow', return: 'Result', join: 'Join', step: 'Source block', continue: 'Continue as new' }[kind] || kind
+  return { child: 'Child workflow', return: 'Result', join: 'Join', step: 'Source block', continue: 'Continue as new', try: 'Try', except: 'Exception handler', try_else: 'Else', finally: 'Finally' }[kind] || kind
 }
 
 function pretty (value) { return typeof value === 'string' ? value : JSON.stringify(value, null, 2) }
@@ -300,6 +300,8 @@ onUnmounted(() => { clearInterval(clock); document.removeEventListener('keydown'
 .flow-node--workflow, .flow-node--child { --node-color: var(--warning); }
 .flow-node--activity { --node-color: var(--flow-activity); }
 .flow-node--condition, .flow-node--loop, .flow-node--timer { --node-color: var(--warning); }
+.flow-node--try, .flow-node--except, .flow-node--try_else, .flow-node--finally { --node-color: var(--warning); }
+.flow-node--error { --node-color: var(--danger); }
 .flow-node--signal { --node-color: var(--flow-signal); }
 .flow-node--completed, .flow-node--added { border-color: var(--success); }
 .flow-node--running { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }

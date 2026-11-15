@@ -13,6 +13,7 @@ def definition_graph(code: str, name: str) -> dict[str, Any]:
     edges: list[dict[str, str]] = []
     warnings: list[str] = []
     loops: list[dict[str, Any]] = []
+    try_scopes: list[dict[str, Any]] = []
 
     def add(kind: str, label: str, source: ast.AST | None = None) -> str:
         node_id = f"node-{len(nodes)}"
@@ -168,6 +169,111 @@ def definition_graph(code: str, name: str) -> dict[str, Any]:
             return [(node_id, "")]
         return incoming
 
+    def transfer(
+        kind: str,
+        label: str,
+        source: ast.AST,
+        incoming: list[tuple[str, str]],
+        target: dict[str, Any] | None = None,
+        role: str = "flow",
+    ) -> None:
+        # Only transfers leaving a protected scope must run its cleanup. A break
+        # in a loop wholly inside the try must still go straight to that loop's exit.
+        scope = next(
+            (
+                scope
+                for scope in reversed(try_scopes)
+                if kind == "error"
+                or (scope["finally"] and (target is None or any(target is loop for loop in scope["loops"])))
+            ),
+            None,
+        )
+        node = add("step" if scope or target else kind, label, source)
+        connect(incoming, node, role)
+        if scope:
+            scope["exits"].append(
+                {"kind": kind, "label": label, "source": source, "target": target, "node": node}
+            )
+        elif kind == "break":
+            target["breaks"].append((node, "Exit"))
+        elif kind == "continue_loop":
+            connect([(node, "Next")], target["id"], role="repeat")
+
+    def block(kind: str, label: str, body: list[ast.stmt]) -> str:
+        node = add(kind, label, body[0])
+        nodes[-1]["code"] = "\n".join(ast.get_source_segment(code, item) or "" for item in body)
+        nodes[-1]["signature"] = ast.dump(ast.Module(body=body, type_ignores=[]))
+        return node
+
+    def try_statement(
+        statement: ast.Try | ast.TryStar, incoming: list[tuple[str, str]]
+    ) -> list[tuple[str, str]]:
+        warnings.append("Exception paths are structural; handler matching depends on runtime errors.")
+        if isinstance(statement, ast.TryStar):
+            warnings.append("Exception-group handlers may run together; subgroup matching is not expanded.")
+        protected = add("try", "Try", statement)
+        connect(incoming, protected)
+        scope = {"finally": bool(statement.finalbody), "loops": list(loops), "exits": []}
+        try_scopes.append(scope)
+        normal = statements(statement.body, [(protected, "Try")])
+        raised = [exit for exit in scope["exits"] if exit["kind"] == "error"]
+        scope["exits"] = [exit for exit in scope["exits"] if exit["kind"] != "error"]
+        # Else and handler failures are outside this try's handler matching.
+        # They remain pending exits so finally still runs before propagation.
+        if statement.orelse and normal:
+            success = block("try_else", "Else (no exception)", statement.orelse)
+            connect(normal, success)
+            normal = statements(statement.orelse, [(success, "")])
+        handled = []
+        for handler in statement.handlers:
+            exception = ast.unparse(handler.type) if handler.type else "Any exception"
+            label = f"except{'*' if isinstance(statement, ast.TryStar) else ''} {exception}"
+            if handler.name:
+                label += f" as {handler.name}"
+            catch = add("except", label, handler)
+            connect([(protected, "On exception")], catch, role="exception")
+            connect([(exit["node"], "Raised") for exit in raised], catch, role="exception")
+            handled.extend(statements(handler.body, [(catch, "")]))
+        # Typed handlers may not match. A bare except is the only unconditional
+        # catch; determining types (or exception-group splits) would execute code.
+        if not any(handler.type is None for handler in statement.handlers):
+            transfer(
+                "error",
+                "Unhandled error",
+                statement,
+                [(protected, "Unhandled")] + [(exit["node"], "Unmatched") for exit in raised],
+                role="exception",
+            )
+        try_scopes.pop()
+        normal += handled
+        if statement.finalbody:
+            cleanup = block("finally", "Finally (always)", statement.finalbody)
+            connect([(node, label or "Normal") for node, label in normal], cleanup)
+            connect([(exit["node"], exit["label"]) for exit in scope["exits"]], cleanup)
+            finished = statements(statement.finalbody, [(cleanup, "")])
+            if not finished:
+                return []  # A transfer in finally overrides the pending transfer.
+            if scope["exits"]:
+                resume = add("join", "Resume after finally", statement)
+                nodes[-1]["description"] = (
+                    "Resumes the incoming path; pending exits do not become normal completion."
+                )
+                connect(finished, resume)
+                finished = [(resume, "Normal")]
+            for exit in scope["exits"]:
+                transfer(
+                    exit["kind"],
+                    exit["label"],
+                    exit["source"],
+                    [(node, exit["label"]) for node, _ in finished],
+                    exit["target"],
+                )
+            normal = finished if normal else []
+        else:
+            for exit in scope["exits"]:
+                transfer(exit["kind"], exit["label"], exit["source"], [(exit["node"], "")], exit["target"])
+        return normal
+
     def statements(body: list[ast.stmt], incoming: list[tuple[str, str]]) -> list[tuple[str, str]]:
         for statement in body:
             if not incoming:
@@ -192,32 +298,29 @@ def definition_graph(code: str, name: str) -> dict[str, Any]:
                 loops.pop()
                 incoming = statements(statement.orelse, [(loop, "Done")]) + scope["breaks"]
                 warnings.append("Loops are structural; iteration counts depend on the run.")
+            elif isinstance(statement, (ast.Try, ast.TryStar)):
+                incoming = try_statement(statement, incoming)
             elif isinstance(statement, ast.Return):
                 if statement.value:
                     incoming = expression(statement.value, incoming)
                 if incoming:
-                    result = add("return", "Return result", statement)
-                    connect(incoming, result)
+                    transfer("return", "Return result", statement, incoming)
                 incoming = []
             elif isinstance(statement, ast.Raise):
-                failure = add("error", "Raise error", statement)
-                connect(incoming, failure)
+                transfer("error", "Raise error", statement, incoming)
                 incoming = []
             elif isinstance(statement, (ast.With, ast.AsyncWith)):
                 incoming = statements(statement.body, incoming)
             elif isinstance(statement, (ast.Break, ast.Continue)) and loops:
-                step = add(
-                    "step",
+                transfer(
+                    "continue_loop" if isinstance(statement, ast.Continue) else "break",
                     "Next iteration" if isinstance(statement, ast.Continue) else "Exit loop",
                     statement,
+                    incoming,
+                    loops[-1],
                 )
-                connect(incoming, step)
-                if isinstance(statement, ast.Continue):
-                    connect([(step, "Next")], loops[-1]["id"], role="repeat")
-                else:
-                    loops[-1]["breaks"].append((step, "Exit"))
                 incoming = []
-            elif isinstance(statement, (ast.Try, ast.TryStar, ast.Match, ast.Break, ast.Continue)):
+            elif isinstance(statement, (ast.Match, ast.Break, ast.Continue)):
                 step = add("step", type(statement).__name__, statement)
                 connect(incoming, step)
                 incoming = [(step, "")]

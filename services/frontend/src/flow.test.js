@@ -32,6 +32,37 @@ test('edge changes are preserved even if node content did not change', () => {
   assert.deepEqual(result.edges.map((edge) => edge.change), ['added', 'removed'])
 })
 
+test('draft comparisons retain changes to exception edge roles', () => {
+  const nodes = [{ id: 'try', kind: 'try', label: 'Try' }, { id: 'catch', kind: 'except', label: 'except Error' }]
+  const edge = { id: 'edge', source: 'try', target: 'catch', label: 'Error' }
+  const result = compareGraphs(graph(nodes, [edge]), graph(nodes, [{ ...edge, role: 'exception' }]))
+  assert.deepEqual(result.edges.map((item) => item.change), ['added', 'removed'])
+  assert.equal(result.edges[0].role, 'exception')
+})
+
+test('try branches and cleanup retain their labelled exception edges in both orientations', () => {
+  const source = graph([
+    { id: 'try', kind: 'try' }, { id: 'call', kind: 'activity' },
+    { id: 'catch', kind: 'except' }, { id: 'else', kind: 'try_else' },
+    { id: 'finally', kind: 'finally' }, { id: 'end', kind: 'return' }
+  ], [
+    { id: 'body', source: 'try', target: 'call', label: 'Try' },
+    { id: 'exception', source: 'try', target: 'catch', label: 'On exception', role: 'exception' },
+    { id: 'success', source: 'call', target: 'else' },
+    { id: 'normal', source: 'else', target: 'finally', label: 'Normal' },
+    { id: 'handled', source: 'catch', target: 'finally', label: 'Normal' },
+    { id: 'done', source: 'finally', target: 'end' }
+  ])
+  for (const direction of ['TB', 'LR']) {
+    const result = layoutGraph(source, direction)
+    assert.equal(result.nodes.length, source.nodes.length)
+    assert.equal(result.edges.length, source.edges.length)
+    assert.equal(result.edges.find((edge) => edge.id === 'exception').role, 'exception')
+    assert.ok(result.nodes.every((node) => Number.isFinite(node.position.x) && Number.isFinite(node.position.y)))
+    assert.ok(result.nodes.every((node) => node.type === 'operation'))
+  }
+})
+
 test('automatic layout handles branches and cycles in both orientations', () => {
   const source = graph([{ id: 'a' }, { id: 'b' }, { id: 'c' }], [
     { id: 'ab', source: 'a', target: 'b' }, { id: 'ac', source: 'a', target: 'c' }, { id: 'ba', source: 'b', target: 'a' }

@@ -1224,9 +1224,15 @@ removals, including changed connections. **Proposed**, **Deployed**, and **Code 
 remain available for inspection and deployment. Changes outside diagrammed steps are reflected on
 the workflow node and in the code diff.
 
-Definition diagrams are structural previews, not a Python execution engine. Helper
-calls, dynamic expressions, and complex exception handling stay as source blocks;
-warnings flag partial diagrams. Run diagrams cover ordinary activities, child workflows,
+Definition diagrams expand Python `try` / `except` blocks, including typed and bare
+handlers, `else` (only on normal completion), and `finally` cleanup. Dashed amber
+connections identify possible exception paths, not failed runs. Returns, raises, and
+loop exits pass through cleanup before resuming their original control flow. Nested
+blocks and `except*` handlers are visible, but exception type matching and exception-group
+splitting remain runtime-dependent and are explicitly marked as structural previews.
+
+Definition diagrams are not a Python execution engine. Helper calls, dynamic expressions,
+and unsupported control flow stay as source blocks; warnings flag partial diagrams. Run diagrams cover ordinary activities, child workflows,
 timers, and received signals in a single execution, with edges based on observed command
 and completion order, not inferred data dependencies. Local activity markers and child
 execution internals are not expanded; child nodes link to their own run. History is

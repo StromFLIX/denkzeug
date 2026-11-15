@@ -22,7 +22,7 @@ export function compareGraphs (before, after) {
   for (const node of nodes) {
     if (node.change === 'removed') node.parent_id = mapped.get(node.parent_id) || null
   }
-  const edgeKey = (edge) => JSON.stringify([edge.source, edge.target, edge.label || ''])
+  const edgeKey = (edge) => JSON.stringify([edge.source, edge.target, edge.label || '', edge.role || 'flow'])
   const oldEdges = (before?.edges || []).map((edge) => ({
     ...edge, id: `previous-${edge.id}`, source: mapped.get(edge.source), target: mapped.get(edge.target)
   }))
