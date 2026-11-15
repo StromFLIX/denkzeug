@@ -36,6 +36,10 @@
 - [Architecture](reference.md#architecture) and [repository layout](reference.md#layout).
 - [Development and integration tests](reference.md#python-development-and-integration-tests).
 - [Frontend design](frontend-design.md) and [canonical branding](../branding/README.md).
+- [Workflow experience design](workflow-experience-design.md) — researched UX audit,
+  unified workflow/run navigation, typed input and resource selector wireframes (proposal).
+- [Workflow experience delivery plan](workflow-experience-plan.md) — schema/API contracts,
+  authorization gates, compatibility, implementation increments and acceptance tests (proposal).
 - [Telemetry](telemetry.md) — optional OTLP configuration and payload/privacy limits.
 - [Project-chat latency investigation](spikes/project-chat-ttft.md) — measured startup
   timings, limitations and the authenticated HTTP/SSE benchmark.
