@@ -467,13 +467,23 @@ async def bootstrap_backend() -> None:
             "Backend MCP disabled: internal service credential is required"
         )
         return
-    target = target_value("backend", settings.backend_mcp_url, credential)
     phase, last_status = "backend registration", None
     for retry in range(8):
         try:
             async with mcp_oauth._lock:
                 mode, targets = await fetch_resources()
                 require_writable(mode)
+                previous = resource_map(targets).get("backend", {}).get("value", {})
+                target = target_value("backend", settings.backend_mcp_url, credential)
+                if isinstance(previous.get("mcp"), dict):
+                    # Host and service authentication are owned here. Retain
+                    # explicit administrator limits/TLS/other policies instead
+                    # of replacing them with our default on every restart.
+                    target = {
+                        **previous,
+                        **target,
+                        "policies": {**(previous.get("policies") or {}), **target["policies"]},
+                    }
                 await recover_stdio_probes()
                 verdict = await probe(settings.backend_mcp_url, credential)
                 if verdict["ok"]:

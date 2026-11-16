@@ -42,6 +42,7 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
   let sessionId: string | undefined;
   let connected = false;
   let connecting: Promise<void> | undefined;
+  let connectionAbort: AbortController | undefined;
   let readonlyTools = new Set<string>();
 
   class HttpFailure extends Error {
@@ -96,26 +97,41 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
 
   async function connect(signal?: AbortSignal): Promise<void> {
     signal?.throwIfAborted();
-    if (connecting) return connecting;
-    if (connected) return;
-    connecting = (async () => {
-      sessionId = undefined;
-      try {
-        await withMcpDeadline(async requestSignal => {
-          await send("initialize", {
-            protocolVersion: "2025-06-18", capabilities: {},
-            clientInfo: { name: "nautionette-agent-set", version: "1.0.0" },
-          }, requestSignal);
-          await send("notifications/initialized", {}, requestSignal);
-          connected = true;
-        }, MCP_DISCOVERY_TIMEOUT_SECONDS, "MCP initialization", signal);
-      } catch (error) {
+    if (connected && !connecting) return;
+    if (!connecting) {
+      const controller = connectionAbort = new AbortController();
+      const attempt = (async () => {
         sessionId = undefined;
-        connected = false;
-        throw error;
-      }
-    })();
-    try { await connecting; } finally { connecting = undefined; }
+        try {
+          await withMcpDeadline(async requestSignal => {
+            await send("initialize", {
+              protocolVersion: "2025-06-18", capabilities: {},
+              clientInfo: { name: "nautionette-agent-set", version: "1.0.0" },
+            }, requestSignal);
+            await send("notifications/initialized", {}, requestSignal);
+            connected = true;
+          }, MCP_DISCOVERY_TIMEOUT_SECONDS, "MCP initialization", controller.signal);
+        } catch (error) {
+          sessionId = undefined;
+          connected = false;
+          throw error;
+        }
+      })();
+      connecting = attempt;
+      void attempt.finally(() => { if (connecting === attempt) connecting = undefined; }).catch(() => {});
+    }
+    // One caller's cancellation/deadline must not kill a shared handshake
+    // needed by a concurrent call with a different budget. Discovery itself
+    // remains bounded by its independent 30s deadline.
+    if (!signal) return connecting;
+    const pending = connecting;
+    let rejectAbort: () => void = () => {};
+    const aborted = new Promise<never>((_resolve, reject) => {
+      rejectAbort = () => reject(signal.reason);
+      signal.addEventListener("abort", rejectAbort, { once: true });
+    });
+    try { await Promise.race([pending, aborted]); }
+    finally { signal.removeEventListener("abort", rejectAbort); }
   }
 
   async function rpc(method: string, params: Record<string, any> = {}, signal?: AbortSignal, timeoutSeconds?: number): Promise<Record<string, any>> {
@@ -144,6 +160,7 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
   }
 
   async function close() {
+    connectionAbort?.abort(new Error("MCP connection closed"));
     if (!sessionId) return;
     try {
       const response = await fetcher(url, { method: "DELETE", headers: {
@@ -159,7 +176,10 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
     // a shared session underneath concurrent tool calls.
     const fresh = createMcpTransport(url, fetcher, targets);
     try { return await fresh.rpc(method, params, signal, timeoutSeconds); }
-    finally { await fresh.close(); }
+    // Best-effort DELETE must not add another 5s to a chosen request deadline
+    // (or hide a completed result behind an unavailable cleanup endpoint).
+    // close() handles all errors and carries its own bounded abort signal.
+    finally { void fresh.close(); }
   }
 
   return {

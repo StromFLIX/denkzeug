@@ -177,6 +177,35 @@ async def test_backend_bootstrap_probes_with_service_auth_before_registering(bac
     assert target["policies"]["backendAuth"]["key"]["value"] == settings.internal_token
 
 
+@pytest.mark.parametrize("rotate_credential", [False, True])
+async def test_backend_bootstrap_preserves_explicit_admin_timeout(backend, monkeypatch, rotate_credential):
+    backend.gateway.resources["mcp.target"] = {
+        "backend": {
+            "name": "backend",
+            "mcp": {"host": settings.backend_mcp_url},
+            "condition": "true",
+            "policies": {
+                "http": {"requestTimeout": "45s", "version": "HTTP/1.1"},
+                "backendAuth": {
+                    "key": {"value": "previous-service-key" if rotate_credential else settings.internal_token}
+                },
+            },
+        }
+    }
+
+    async def probe(url, credential):
+        assert url == settings.backend_mcp_url
+        assert credential == settings.internal_token
+        return {"ok": True}
+
+    monkeypatch.setattr(mcp_servers, "probe", probe)
+    await mcp_servers.bootstrap_backend()
+    saved = backend.gateway.resources["mcp.target"]["backend"]
+    assert saved["policies"]["http"] == {"requestTimeout": "45s", "version": "HTTP/1.1"}
+    assert saved["policies"]["backendAuth"]["key"]["value"] == settings.internal_token
+    assert saved["condition"] == "true"
+
+
 async def test_unreachable_backend_is_never_registered(backend, monkeypatch):
     async def probe(url, credential):
         return {"ok": False}
