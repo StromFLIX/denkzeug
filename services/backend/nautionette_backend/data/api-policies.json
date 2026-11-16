@@ -346,6 +346,11 @@
     "authentication": "account",
     "resource": null
   },
+  "GET /api/mcp-apps/runtime": {
+    "scope": "apps:read",
+    "authentication": "account",
+    "resource": null
+  },
   "GET /api/mcp-servers": {
     "scope": "mcp:read",
     "authentication": "account",

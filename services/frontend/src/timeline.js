@@ -31,6 +31,8 @@ export function finishTool (steps, event) {
   ) || startTool(steps, event)
   step.ok = !event.error
   step.result = event.result || ''
+  if (event.app) step.app = event.app
+  if (event.app_error) step.app_error = event.app_error
 }
 
 /** Folds one streamed agent event into the timeline. Anything else is ignored. */

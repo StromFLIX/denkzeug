@@ -551,6 +551,9 @@ class Database:
             from .local_apps import install_schema as install_apps_schema
 
             install_apps_schema(self._conn)
+            from .mcp_app_results import install_schema as install_mcp_app_schema
+
+            install_mcp_app_schema(self._conn)
             # Ownership is migrated above; recent diagnostic pages should seek
             # directly into this account's ordering, not sort every owned chat.
             self._conn.execute(

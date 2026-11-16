@@ -11,6 +11,7 @@
       <span v-else-if="step.ok === false" class="material-icons tool__failed">error_outline</span>
     </button>
 
+    <p v-if="step.app_error" class="caption dim">{{ step.app_error }}</p>
     <div v-if="open" class="tool__panel">
       <div class="tool__meta caption dim">
         <span class="tool__name">{{ step.name }}</span>

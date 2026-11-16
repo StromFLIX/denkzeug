@@ -395,7 +395,13 @@ class GatewayClient:
                 "initialize",
                 {
                     "protocolVersion": "2025-06-18",
-                    "capabilities": {},
+                    "capabilities": {
+                        "extensions": {
+                            "io.modelcontextprotocol/ui": {
+                                "mimeTypes": ["text/html;profile=mcp-app"],
+                            }
+                        }
+                    },
                     "clientInfo": {"name": "nautionette", "version": settings.version},
                 },
             ),
@@ -434,7 +440,11 @@ class GatewayClient:
                     raise ValueError("MCP tools/list did not return tools")
                 tools.extend(
                     {
-                        **{key: tool[key] for key in ("inputSchema", "annotations", "title") if key in tool},
+                        **{
+                            key: tool[key]
+                            for key in ("inputSchema", "annotations", "title", "_meta")
+                            if key in tool
+                        },
                         "name": tool.get("name", "?"),
                         "description": (tool.get("description") or "").strip().split("\n")[0][:200],
                     }

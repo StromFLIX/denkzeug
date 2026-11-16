@@ -1,6 +1,7 @@
 <template>
   <h2 id="apps-library" class="settings__title">Apps</h2>
   <p class="settings__intro">Your private library of interactive HTML apps. Inspect source, try sample data, then publish a revision.</p>
+  <p v-if="sandboxStatus" class="caption dim" role="status">{{ sandboxStatus }}</p>
   <div class="apps-actions">
     <button class="btn btn--primary" :disabled="busy" @click="create">Create app</button>
     <button class="btn" :disabled="busy" @click="importFile?.click()">Import package</button>
@@ -33,6 +34,7 @@
         <h3>{{ selectedId ? summary?.title || selectedId : 'New app' }}</h3>
         <span class="caption" role="status">{{ historical ? `Viewing revision ${selectedRevision} (read-only)` : dirty ? 'Unsaved draft' : 'Published source' }}</span>
       </div>
+      <p v-if="summary && usage" class="caption dim">{{ usage.saved_results }} saved workflow results<span v-if="usage.workflows?.length"> · {{ usage.workflows.join(', ') }}</span>. Results retain their original revision.</p>
       <p class="caption dim">Drafts stay in memory while this Apps pane is open. Leaving this Settings category or reloading discards unpublished changes.</p>
       <div v-if="summary" class="apps-history">
         <label for="apps-revision" class="caption">Revision history</label>
@@ -48,7 +50,7 @@
       <form v-else @submit.prevent="publish">
         <fieldset :disabled="busy" class="apps-fields">
           <div class="apps-grid">
-            <label class="apps-label" for="apps-title">Title<input id="apps-title" v-model="displayed.title" class="field" :readonly="historical" required maxlength="200" /></label>
+            <label class="apps-label" for="apps-title">Title<input id="apps-title" v-model="displayed.title" class="field" :readonly="historical" required maxlength="120" /></label>
             <label class="apps-label" for="apps-slug">Slug<input id="apps-slug" v-model="displayed.id" class="field" :readonly="!!selectedId" required autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="apps-slug-help" /></label>
           </div>
           <p id="apps-slug-help" class="caption dim">A permanent identifier, such as <code>weekly-report</code>. Use lowercase letters, numbers and hyphens.</p>
@@ -82,14 +84,14 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { api } from '../../api'
+import { api, request } from '../../api'
 import { appDraft, appPayload, exportAppPackage, importAppPackage, MAX_APP_PACKAGE_BYTES } from '../../apps.js'
 import McpAppView from '../McpAppView.vue'
 
-const apps = ref([]), loading = ref(true), loadFailed = ref(false), error = ref(''), notice = ref('')
+const apps = ref([]), loading = ref(true), loadFailed = ref(false), error = ref(''), notice = ref(''), sandboxStatus = ref('')
 const showArchived = ref(false), selectedId = ref(null), summary = ref(null), revisions = ref([])
 const draft = ref(null), baseline = ref(''), selectedRevision = ref(null), historicalSource = ref(null)
-const reloadRequired = ref(false)
+const reloadRequired = ref(false), usage = ref(null)
 const detailLoading = ref(false), revisionLoading = ref(false), saving = ref(false), preview = ref(null), previewKey = ref(0), importFile = ref(null)
 const drafts = new Map()
 let requestId = 0
@@ -122,6 +124,7 @@ function create () {
 function acceptDetail (data, id, preserveDraft = false) {
   if (!data.app || !data.revision || typeof data.revision.html !== 'string') throw new Error('App source is unavailable. Refresh history to try again.')
   summary.value = data.app
+  usage.value = data.usage || null
   const source = { ...data.app, ...data.revision, id }
   const active = appDraft(source)
   revisions.value = data.revisions?.length ? data.revisions : [{ revision: data.app.active_revision }]
@@ -238,7 +241,12 @@ async function importPackage (event) {
   } catch (failure) { error.value = failure.message }
   finally { event.target.value = '' }
 }
-onMounted(loadLibrary)
+onMounted(() => {
+  loadLibrary()
+  request('/api/mcp-apps/runtime').then(config => {
+    sandboxStatus.value = config.sandbox_url ? `Sandbox: ${config.sandbox_url}` : 'Preview requires a separate sandbox origin. Administrators: configure MCP_APPS_SANDBOX_URL and MCP_APPS_HOST_ORIGINS. Source management remains available.'
+  }).catch(() => { sandboxStatus.value = 'Sandbox configuration could not be read. Source management remains available.' })
+})
 </script>
 
 <style scoped>

@@ -27,6 +27,7 @@ from .output_fakes import MemoryS3
 _TEST_PASSWORD_HASH = PASSWORDS.hash("a correct horse battery staple for tests")
 
 _TABLES = (
+    "mcp_app_instances",
     "app_instances",
     "workflow_app_diagnostics",
     "local_app_revisions",

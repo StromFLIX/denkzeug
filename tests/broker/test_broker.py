@@ -471,6 +471,7 @@ def test_every_deployed_compose_service_has_a_healthcheck(repo_root):
         if not set(service.get("profiles", [])) & {"debug", "images", "maintenance"}
     }
     assert deployed == {
+        "app-sandbox",
         "agentgateway",
         "backend",
         "docker-broker",

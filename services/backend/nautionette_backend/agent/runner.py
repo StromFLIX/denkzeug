@@ -69,6 +69,10 @@ class Timeline:
         self._finish_tool_clock(step)
         step["ok"] = not event.get("error")
         step["result"] = (event.get("result") or "")[:TOOL_RESULT_CHARS]
+        if event.get("app"):
+            step["app"] = event["app"]
+        if event.get("app_error"):
+            step["app_error"] = event["app_error"]
 
     def _finish_tool_clock(self, step: dict[str, Any]) -> None:
         start = self._tool_started.pop(step["id"], None)
@@ -228,6 +232,10 @@ async def stream_agent(job: dict[str, Any]) -> AsyncIterator[dict[str, Any]]:
         if grant := chat_grant or workflow_grant:
             outgoing["output_publication"] = grant
         async for event in broker.run_agent(outgoing, timeout=timeout):
+            if "mcp_app" in event:
+                from ..mcp_app_results import capture_result
+
+                event = capture_result(job, event)
             yield event
 
 

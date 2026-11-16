@@ -12,6 +12,8 @@ import brand from "./brand.json" with { type: "json" };
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { modelApi } from "./model-api.ts";
 import { createMcpTransport } from "./mcp-transport.ts";
+import { modelVisible, modelResult, snapshotApp } from "./mcp-apps.ts";
+import { appAuthoringSchema, appAuthoringInput, appAuthoringResult } from "./app-authoring.ts";
 import { MCP_TIMEOUT_TOOL, currentMcpTimeout, registerMcpTimeoutTool } from "./mcp-timeout.ts";
 import { AUTH_TRANSPORT_TOOLS, authControl, waitForMcpAuth } from "./mcp-auth.ts";
 import { modelLimits } from "./model-limits.ts";
@@ -29,8 +31,6 @@ const PROVIDER = "nautionette";
 // A null selection means all tools; an empty set deliberately bridges none.
 const ALLOWED = allowedTools(process.env.NAUTIONETTE_TOOLS_JSON, process.env.NAUTIONETTE_TOOLS);
 
-type JsonRpcResult = Record<string, any>;
-
 const TARGETS = allowedTools(process.env.NAUTIONETTE_MCP_TARGETS_JSON);
 const transport = createMcpTransport(MCP_URL, fetch, TARGETS === null ? null : [...TARGETS]);
 // First-party control must not retain an external session snapshot from before
@@ -38,14 +38,7 @@ const transport = createMcpTransport(MCP_URL, fetch, TARGETS === null ? null : [
 const control = createMcpTransport(MCP_URL, fetch, []);
 const rpc = transport.rpc;
 
-function renderToolResult(result: JsonRpcResult): string {
-  const content = Array.isArray(result?.content) ? result.content : [];
-  const text = content
-    .filter((part: any) => part?.type === "text")
-    .map((part: any) => part.text)
-    .join("\n");
-  return text || JSON.stringify(result ?? {}, null, 2);
-}
+const renderToolResult = modelResult;
 
 export default async function (pi: ExtensionAPI) {
   pi.on("session_shutdown", () => Promise.all([transport.close(), control.close()]));
@@ -114,7 +107,7 @@ export default async function (pi: ExtensionAPI) {
       }
     }
     transport.setReadOnlyTools(all.filter(tool => tool.annotations?.readOnlyHint === true).map(tool => tool.name));
-    const tools = all.filter((tool) => tool.name !== MCP_TIMEOUT_TOOL && !AUTH_TRANSPORT_TOOLS.has(tool.name) && !isOutputTransportTool(tool.name) && !SUBAGENT_TOOLS.has(tool.name) && !CRAFT_TOOL_NAMES.has(tool.name) && (ALLOWED === null || ALLOWED.has(tool.name)));
+    const tools = all.filter((tool) => modelVisible(tool) && tool.name !== MCP_TIMEOUT_TOOL && !AUTH_TRANSPORT_TOOLS.has(tool.name) && !isOutputTransportTool(tool.name) && !SUBAGENT_TOOLS.has(tool.name) && !CRAFT_TOOL_NAMES.has(tool.name) && (ALLOWED === null || ALLOWED.has(tool.name)));
 
     // Payload-free provenance for the supervisor's workflow accounting. Tool
     // names come from discovery, never namespace/name heuristics.
@@ -129,7 +122,7 @@ export default async function (pi: ExtensionAPI) {
         label: tool.title ?? tool.name,
         description: tool.description ?? `MCP tool ${tool.name}`,
         promptSnippet: tool.description?.split("\n")[0],
-        parameters: tool.inputSchema ?? { type: "object", properties: {} },
+        parameters: appAuthoringSchema(tool, process.env.NAUTIONETTE_MEMBER_MODE === "true") ?? { type: "object", properties: {} },
         async execute(_toolCallId: string, params: unknown, signal?: AbortSignal) {
           if (oauthTools.has(tool.name)) {
             await waitForMcpAuth(control.rpc, grant || {}, tool.name, _toolCallId, signal);
@@ -138,13 +131,25 @@ export default async function (pi: ExtensionAPI) {
           // The gateway's service credential is transport-only. A hidden,
           // live turn capability carries this account's authority; it never
           // enters the model-visible schema or persisted tool arguments.
+          params = await appAuthoringInput(tool.name, params, process.env.NAUTIONETTE_MEMBER_MODE === "true");
           const argumentsWithActor = (tool.name.startsWith("backend_") || tool.name.startsWith("workflows_")) && grant?.grant
             ? { ...(params as Record<string, unknown> ?? {}), __denkzeug_actor: grant.grant }
             : params ?? {};
           const result = await dispatch("tools/call", { name: tool.name, arguments: argumentsWithActor }, signal, currentMcpTimeout());
-          const text = renderToolResult(result);
+          const text = renderToolResult(appAuthoringResult(tool.name, result));
           if (result?.isError) throw new Error(text);
-          return { content: [{ type: "text", text }], details: result ?? {} };
+          let mcpApp;
+          let mcpAppError;
+          if (process.env.NAUTIONETTE_TURN_ID) {
+            try {
+              mcpApp = await snapshotApp(dispatch, tool, params, result, signal);
+            } catch {
+              // The business tool already finished. A failed view fetch must
+              // never turn that success into a retryable tool failure.
+              mcpAppError = "The MCP App interface could not be loaded. The original tool result is unchanged.";
+            }
+          }
+          return { content: [{ type: "text", text }], details: { ...result, mcpApp, mcpAppError } };
         },
       }));
     registerMcpTools(pi, definitions);

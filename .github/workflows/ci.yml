@@ -75,6 +75,9 @@ jobs:
       - name: Model capability, images and durable chat output guards
         run: uv run pytest tests/backend/test_catalog.py tests/backend/test_model_limits.py tests/backend/test_model_capabilities.py tests/backend/test_chat_images.py tests/backend/test_chat_drafts.py tests/backend/test_chat_outputs.py tests/backend/test_output_storage.py
 
+      - name: Private MCP Apps registry, workflow snapshots and isolated sandbox
+        run: uv run pytest tests/backend/test_local_apps.py tests/backend/test_mcp_app_results.py tests/lib/test_mcp_apps.py
+
       - name: Real MaxIO binary uploads, large-file restore, integrity and migration
         env:
           MAXIO_TEST_ENDPOINT: http://127.0.0.1:${{ job.services.maxio.ports[9000] }}
@@ -175,7 +178,7 @@ jobs:
           tests/account-auth.spec.js tests/speech.spec.js tests/chat.spec.js tests/chat-branch.spec.js tests/chat-row.spec.js tests/chat-tree.spec.js tests/chat-ordering.spec.js tests/live-connection.spec.js tests/appearance.spec.js tests/workspace.spec.js
           tests/projects.spec.js tests/settings-navigation.spec.js tests/usage.spec.js tests/command-palette.spec.js tests/hybrid-search.spec.js tests/website.spec.js
           tests/branding.spec.js tests/settings-redesign.spec.js tests/process-redesign.spec.js tests/skins.spec.js tests/sidebar.spec.js
-          tests/workspace-polish.spec.js tests/build-version.spec.js
+          tests/workspace-polish.spec.js tests/build-version.spec.js tests/mcp-apps.spec.js tests/apps.spec.js
           tests/git-authorship.spec.js tests/system.spec.js tests/agent-profiles.spec.js tests/composer-agent.spec.js tests/agent-views.spec.js tests/subagents.spec.js
           tests/packages.spec.js tests/new-chat-settings.spec.js tests/new-chat.spec.js
           tests/copilot-login.spec.js tests/mcp-oauth.spec.js tests/mcp-http-oauth.spec.js tests/mcp-stdio.spec.js tests/tool-calls.spec.js tests/activity-timing.spec.js tests/clipboard.spec.js
@@ -240,6 +243,7 @@ jobs:
       matrix:
         include:
           - { name: backend, context: ., file: services/backend/Dockerfile }
+          - { name: app-sandbox, context: ., file: services/app-sandbox/Dockerfile }
           - { name: worker, context: ., file: services/worker/Dockerfile }
           - { name: workflow-mcp, context: ., file: services/workflow-mcp/Dockerfile }
           - { name: docker-broker, context: ., file: services/docker-broker/Dockerfile }
@@ -402,7 +406,7 @@ jobs:
             "${artcraft_mounts[@]}" \
             --env HOME=/workspace --env ARTCRAFT_REQUIRE_NATIVE=1 --tmpfs /workspace:rw,mode=1777 \
             --volume "$PWD:/source:ro" --entrypoint bash nautionette/pi-agent-default:dev -c \
-            'pi --version && node --test /source/tests/agent/test_artcraft.mjs /source/tests/agent/test_artcraft_native.mjs /source/tests/agent/test_artcraft_rpc.mjs /source/tests/agent/test_chat_files.mjs /source/tests/agent/test_chat_session.mjs /source/tests/agent/test_workflow_context.mjs /source/tests/agent/test_chat_session_rpc.mjs /source/tests/agent/test_tool_context.mjs /source/tests/agent/test_tool_context_rpc.mjs /source/tests/agent/test_outputs.mjs /source/tests/agent/test_subagents.mjs /source/tests/agent/test_outputs_rpc.mjs /source/tests/agent/test_images.mjs /source/tests/agent/test_provider.ts /source/tests/agent/test_model_api.ts /source/tests/agent/test_reasoning.ts /source/tests/agent/test_tool_selection.ts /source/tests/agent/test_member_tools.mjs /source/tests/agent/test_mcp_transport.mjs /source/tests/agent/test_mcp_timeout.mjs /source/tests/agent/test_mcp_deadlines.mjs /source/tests/agent/test_mcp_direct.mjs /source/tests/agent/test_image_transport.mjs /source/tests/agent/test_packages_rpc.mjs /source/tests/agent/test_context_usage.mjs /source/tests/agent/test_chat_control.mjs /source/tests/agent/test_chat_recovery.mjs /source/tests/agent/test_chat_recovery_rpc.mjs /source/tests/agent/test_project_git.mjs /source/tests/agent/test_telemetry.mjs'
+            'pi --version && node --test /source/tests/agent/test_artcraft.mjs /source/tests/agent/test_artcraft_native.mjs /source/tests/agent/test_artcraft_rpc.mjs /source/tests/agent/test_chat_files.mjs /source/tests/agent/test_chat_session.mjs /source/tests/agent/test_workflow_context.mjs /source/tests/agent/test_chat_session_rpc.mjs /source/tests/agent/test_tool_context.mjs /source/tests/agent/test_tool_context_rpc.mjs /source/tests/agent/test_outputs.mjs /source/tests/agent/test_subagents.mjs /source/tests/agent/test_outputs_rpc.mjs /source/tests/agent/test_images.mjs /source/tests/agent/test_provider.ts /source/tests/agent/test_model_api.ts /source/tests/agent/test_reasoning.ts /source/tests/agent/test_tool_selection.ts /source/tests/agent/test_member_tools.mjs /source/tests/agent/test_mcp_transport.mjs /source/tests/agent/test_mcp_apps.mjs /source/tests/agent/test_mcp_timeout.mjs /source/tests/agent/test_mcp_deadlines.mjs /source/tests/agent/test_mcp_direct.mjs /source/tests/agent/test_image_transport.mjs /source/tests/agent/test_packages_rpc.mjs /source/tests/agent/test_context_usage.mjs /source/tests/agent/test_chat_control.mjs /source/tests/agent/test_chat_recovery.mjs /source/tests/agent/test_chat_recovery_rpc.mjs /source/tests/agent/test_project_git.mjs /source/tests/agent/test_telemetry.mjs'
 
       - name: Development tools work offline as the project user
         run: |

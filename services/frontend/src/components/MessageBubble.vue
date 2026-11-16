@@ -13,9 +13,12 @@
         <ChatAttachment v-for="attachment in meta.attachments" :key="attachment.id" :attachment="attachment" :chat-id="chatId" />
       </div>
       <template v-for="(part, index) in groupedParts" :key="part.id || index">
-        <ToolCallGroup v-if="part.kind === 'tool-group'" :steps="part.steps" :live="live" :current="part === latestToolGroup" :timing="meta.timing">
-          <ToolCall v-for="(step, stepIndex) in part.steps" :key="step.id || stepIndex" :step="step" :live="live" />
-        </ToolCallGroup>
+        <template v-if="part.kind === 'tool-group'">
+          <ToolCallGroup :steps="part.steps" :live="live" :current="part === latestToolGroup" :timing="meta.timing">
+            <ToolCall v-for="(step, stepIndex) in part.steps" :key="step.id || stepIndex" :step="step" :live="live" />
+          </ToolCallGroup>
+          <McpAppView v-for="step in part.steps.filter(step => step.app)" :key="step.app.id" :instance="step.app" :chat-id="chatId" />
+        </template>
         <div v-else-if="part.kind === 'recovery'" class="bubble__recovery caption" role="status">
           <span class="material-icons" aria-hidden="true">history</span>{{ part.message }}
         </div>
@@ -25,6 +28,8 @@
         </div>
         <div v-else-if="part.kind === 'text' && part.text.trim()" class="bubble__body" @click="copyCode" v-html="renderMarkdown(part.text)" />
       </template>
+      <p v-if="meta.app_diagnostic" class="caption dim" role="status">The interactive view was unavailable when this result was saved. The original run data is retained.</p>
+      <McpAppView v-for="app in meta.apps || []" :key="app.id" :instance="app" :chat-id="chatId" />
       <OutputRow v-for="output in meta.outputs || []" :key="`${output.id}:${output.revision}`" :chat-id="chatId" :output="output" @open="$emit('open-output', $event)" />
       <div v-if="status" class="bubble__status caption">
         <span class="material-icons bubble__spinner">autorenew</span>{{ status }}
@@ -62,6 +67,7 @@ import ToolCall from './ToolCall.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
 import ChatAttachment from './ChatAttachment.vue'
 import OutputRow from './OutputRow.vue'
+import McpAppView from './McpAppView.vue'
 import AgentAvatar from './AgentAvatar.vue'
 import MessageOrigin from './MessageOrigin.vue'
 import { messageOrigin } from '../message-origin'

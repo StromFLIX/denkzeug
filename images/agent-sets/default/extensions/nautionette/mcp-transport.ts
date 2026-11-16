@@ -1,4 +1,5 @@
 /** Recover the shared MCP session without blindly repeating a mutation. */
+import { APP_CAPABILITIES } from "./mcp-apps.ts";
 import { MCP_DISCOVERY_TIMEOUT_SECONDS, MCP_TIMEOUT_PRESETS, validateMcpTimeout, withMcpDeadline } from "./mcp-timeout.ts";
 
 // Only fixed gateway diagnostics may be surfaced. Upstream bodies can contain
@@ -105,7 +106,7 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
         try {
           await withMcpDeadline(async requestSignal => {
             await send("initialize", {
-              protocolVersion: "2025-06-18", capabilities: {},
+              protocolVersion: "2025-06-18", capabilities: APP_CAPABILITIES,
               clientInfo: { name: "nautionette-agent-set", version: "1.0.0" },
             }, requestSignal);
             await send("notifications/initialized", {}, requestSignal);
@@ -144,7 +145,7 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
         // errors are never replayed, even for an explicitly read-only tool.
         if (!(error instanceof HttpFailure) || !error.session || ![400, 404].includes(error.status)) throw error;
         if (sessionId === error.session) connected = false;
-        const safe = method === "tools/list" || (method === "tools/call" && readonlyTools.has(params.name));
+        const safe = method === "tools/list" || method === "resources/read" || (method === "tools/call" && readonlyTools.has(params.name));
         try { await connect(requestSignal); }
         catch {
           requestSignal.throwIfAborted();

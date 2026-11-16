@@ -392,6 +392,8 @@ async function main() {
           source: toolSource(event.toolName),
           error: Boolean(event.isError),
           result: toolResultText(event.result),
+          ...(event.result?.details?.mcpApp ? { mcp_app: event.result.details.mcpApp } : {}),
+          ...(event.result?.details?.mcpAppError ? { app_error: event.result.details.mcpAppError } : {}),
         });
         break;
       case "message_end": {

@@ -188,6 +188,10 @@ async def test_workflow_pins_source_data_and_title_at_finish_before_delivery(bac
     }
     assert backend.db.one("SELECT state FROM run_deliveries")["state"] == "delivered"
     assert backend.db.list_runs()[0]["result"] == result()
+    # Run retention must not delete an executable revision already attached to
+    # an independent, durable chat message.
+    backend.db.execute("DELETE FROM runs WHERE workflow_id='report-1'")
+    assert client.get(f"/api/chats/{chat['id']}/apps/{app['id']}").json() == value
     token = current_principal.set(Principal("other-admin", "admin"))
     try:
         with pytest.raises(HTTPException) as error:

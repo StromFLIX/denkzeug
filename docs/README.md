@@ -19,6 +19,7 @@
 | --- | --- |
 | [Agent configuration](agent-configuration.md) | Models, global defaults, saved agents, per-chat overrides and delegation. |
 | [MCP servers](mcp-servers.md) | HTTP/stdio tools, hosted OAuth and CLI sign-in. |
+| [MCP Apps](mcp-apps.md) | Interactive workflow/tool results, private app revisions in Settings, and the isolated sandbox. |
 | [Native creative apps](creative-apps.md) | ArtCraft tools, versions, updates and sandbox boundaries. |
 | [Chat outputs](chat-outputs.md) | Published files, editable sources, immutable revisions and storage quotas. |
 | [Workflow authoring](reference.md#workflows-are-python-files) | Python manifests, validation, deployment, flow views and execution statistics. |

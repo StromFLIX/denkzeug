@@ -49,7 +49,7 @@ def install_schema(conn: sqlite3.Connection) -> None:
         "REFERENCES local_apps(owner_user_id,id))",
         "CREATE TABLE IF NOT EXISTS app_instances (id TEXT PRIMARY KEY, owner_user_id TEXT NOT NULL, "
         "chat_id TEXT REFERENCES chats(id) ON DELETE CASCADE, "
-        "run_id TEXT UNIQUE REFERENCES runs(id) ON DELETE CASCADE, app_id TEXT NOT NULL, "
+        "run_id TEXT UNIQUE REFERENCES runs(id) ON DELETE SET NULL, app_id TEXT NOT NULL, "
         "revision INTEGER NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, data TEXT NOT NULL, "
         "created_at REAL NOT NULL, size_bytes INTEGER NOT NULL, "
         "FOREIGN KEY(owner_user_id,app_id,revision) "
@@ -193,6 +193,20 @@ def get_app(app_id: str) -> dict:
         "app": _summary(row),
         "revisions": revisions,
         "revision": get_revision(app_id, row["active_revision"]),
+        "usage": {
+            "saved_results": db.one(
+                "SELECT COUNT(*) AS n FROM app_instances WHERE owner_user_id=? AND app_id=?",
+                (user, app_id),
+            )["n"],
+            "workflows": [
+                item["workflow"]
+                for item in db.query(
+                    "SELECT DISTINCT r.workflow FROM app_instances i JOIN runs r ON r.id=i.run_id "
+                    "WHERE i.owner_user_id=? AND i.app_id=? ORDER BY r.workflow",
+                    (user, app_id),
+                )
+            ],
+        },
     }
 
 
@@ -381,7 +395,9 @@ def get_instance(chat_id: str, instance_id: str) -> dict:
         (instance_id, chat_id, owner()),
     )
     if not row:
-        raise HTTPException(404, "App instance not found")
+        from .mcp_app_results import get_instance as get_mcp_instance
+
+        return get_mcp_instance(chat_id, instance_id)
     return {
         "html": row["html"],
         "input": {},

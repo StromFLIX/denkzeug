@@ -20,8 +20,13 @@ export function parseAppObject (text, label) {
 export function appPayload (draft, expectedRevision = 0) {
   const id = draft.id.trim(), title = draft.title.trim()
   if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(id)) throw new Error('Use a slug starting with a letter, with lowercase letters, numbers and single hyphens.')
-  if (!title) throw new Error('Enter an app title.')
+  if (id.length > 80) throw new Error('App slugs must be 80 characters or shorter.')
+  if (!title || title.length > 120) throw new Error('Enter an app title of 1–120 characters.')
   if (!draft.html.trim()) throw new Error('Add self-contained HTML source before publishing.')
+  const bytes = value => new TextEncoder().encode(value).length
+  if (bytes(draft.html) > 1024 * 1024) throw new Error('App HTML must be 1 MiB or smaller.')
+  if (bytes(draft.input_schema) > 64 * 1024) throw new Error('Input schema must be 64 KiB or smaller.')
+  if (bytes(draft.sample_data) > 1024 * 1024) throw new Error('Sample data must be 1 MiB or smaller.')
   return {
     id, title, description: draft.description.trim(), html: draft.html,
     input_schema: parseAppObject(draft.input_schema, 'Input schema'),
