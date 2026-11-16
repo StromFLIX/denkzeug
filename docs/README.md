@@ -45,8 +45,10 @@
   external callback migration and the stateful identities that must not be blindly renamed.
 - [Isolated staging](staging.md) — provisioning, production-data snapshots and
   quarantine precautions. This is an operator procedure, not the normal quick start.
-- [Current dependency audit](dependency-audit-2026-11-13.md),
-  [previous audit](dependency-audit-2026-11-10.md), and
+- [Current dependency audit](dependency-audit-2026-11-16.md),
+  [upstream inventory and compatibility holds](dependency-audit-2026-11-16-upstream.json),
+  [image advisory ledger](dependency-audit-2026-11-16-images.json),
+  [previous audit](dependency-audit-2026-11-13.md), and
   [chat-finalization incident notes](incidents/2026-11-11-abandoned-chat-turns.md).
 
 The [technical reference](reference.md) retains the detailed runtime/API and build

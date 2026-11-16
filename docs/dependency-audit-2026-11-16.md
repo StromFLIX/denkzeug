@@ -143,13 +143,17 @@ This inventory is not an override list. In particular:
 
 Downloaded and inspected **all 40 SPDX/Grype JSON files** (38 artifact archives)
 from successful [baseline CI 43729833456](https://github.com/StromFLIX/denkzeug/actions/runs/43729833456),
-source **34fdcb56d6ad7ff7b5b35caf6f2a9e01eee6dc66**. The
-[full image finding ledger](dependency-audit-2026-11-16-images.json) records original
-file SHA-256 values, **20** full inventory counts/fingerprints and **1,916** distinct
-package/version/advisory/namespace/fix tuples. No severity or unfixed/CPE match was
-filtered. Multiple images/binaries can duplicate a finding. This is baseline
-image evidence, **not** a claim about post-update images, every architecture or
-the live staging/production filesystem.
+source **34fdcb56d6ad7ff7b5b35caf6f2a9e01eee6dc66**. Then downloaded and inspected
+all **40** JSON files from successful [implementation CI 43798227269](https://github.com/StromFLIX/denkzeug/actions/runs/43798227269),
+source **ab6feac8489c3d404378536a949d8a262fbb31ae**. The
+[full image finding ledger](dependency-audit-2026-11-16-images.json) now records
+that tested implementation's original file SHA-256 values, **20** full inventory
+counts/fingerprints and **1,916** distinct package/version/advisory/namespace/fix
+tuples. No new advisory tuple appeared relative to baseline. No severity or
+unfixed/CPE match was filtered. Multiple images/binaries can duplicate a finding.
+This is actual CI image evidence, **not** a claim about every architecture or
+the live staging/production filesystem. The baseline ledger remains in commit
+ab6feac's original revision of this file; it was not rewritten in Git history.
 
 Actual inventories confirm Python **3.13.18**, Node **24.22.3**, npm **11.21.2**,
 uv **0.13.8**, PostgreSQL **17.12**, gosu embedded Go **1.27.4**, compiler's
@@ -256,3 +260,33 @@ all smokes/post-hook/component checks) authorize completion. Verify that same
 SHA and successful deployment UUID in Coolify. A queued job, old successful SHA
 or HTTP200 alone is insufficient. Production stays separately release-gated.
 Final run identifiers are reported after actual verification, never guessed here.
+
+### Verified implementation candidate
+
+The implementation commit **ab6feac8489c3d404378536a949d8a262fbb31ae** passed
+all **24 CI jobs** in [43798227269](https://github.com/StromFLIX/denkzeug/actions/runs/43798227269),
+including the full Chromium/WebKit suites, native ArtCraft, locked offline
+compiler/runtime isolation, PostgreSQL volume/privilege reuse, MaxIO, and real
+Temporal migration/history/replay/restore rehearsals. No browser skips, assertion
+loosening or automatic retries were introduced to get this result. The corrected
+compiler SPDX contains **1,153 packages** and explicitly attributes rusqlite
+**0.43.0** / libsqlite3-sys **0.40.0** to `/sdk/template/Cargo.lock`; PostgreSQL's
+actual inventory still records **17.12 / Go1.27.4**, and Pi's image records
+**Pi1.5.2 / Playwright1.65.1**. The 1,916 retained image findings are **not**
+claimed fixed by a clean application dependency audit.
+
+The same SHA passed the normal [staging Deploy 43800154294](https://github.com/StromFLIX/denkzeug/actions/runs/43800154294),
+including authenticated component/output-storage readiness, usage analytics,
+the complete isolated miniapp/SQLite/rollback/scoped-workflow lifecycle,
+workflow disable/result delivery, CLI/HTTPS MCP OAuth compatibility, real HTTPS/
+WebSocket streaming dictation and creative-app artifact readiness. Coolify staging
+application `tstmjujqyyl3zkvtwb0sx8nc` finished deployment
+**oleflb3xnfvy65ef5o67rh3h** at that exact SHA. Android, iOS and Desktop build
+workflows also succeeded for this SHA; these do not certify physical mobile
+hardware, production signing/distribution or aarch64 execution.
+
+This evidence-only follow-up updates the audit/index and artifact ledger, not the
+implementation or image fingerprints. Its own final pushed SHA must still pass
+normal CI and staging again; candidate success is not a substitute for that final
+gate. Final SHA/run/deployment identifiers are returned by the maintenance task.
+No stable release or production promotion was created.
