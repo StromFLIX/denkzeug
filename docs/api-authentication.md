@@ -49,7 +49,6 @@ the account are shown in the key-creation catalogue.
 | chats | read, write, delete |
 | agents | read, write |
 | projects | read, write |
-| miniapps | read, write, invoke |
 | outputs | read, write |
 | settings | read, write |
 | tokens | read, manage |

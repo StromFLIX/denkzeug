@@ -61,6 +61,7 @@ _AWARENESS = (
 
 def assert_retired_state_absent(database):
     assert not database.query("SELECT name FROM sqlite_master WHERE name LIKE 'dashboard%'")
+    assert not database.query("SELECT name FROM sqlite_master WHERE name LIKE 'mini_app%'")
     assert database.query("PRAGMA foreign_key_check") == []
 
 
@@ -116,6 +117,10 @@ def test_upgrade_retires_state_preserves_chats_jobs_and_runs_and_survives_restar
         "/api/dashboards/registry",
         "/api/dashboards/old/snapshot",
         "/api/dashboards/old/stream",
+        "/api/miniapps",
+        "/api/miniapps/contract",
+        "/api/miniapps/overview",
+        "/api/miniapps/old/status",
     ],
 )
 def test_retired_http_surface_returns_not_found_without_proxying(client, path):
@@ -128,9 +133,12 @@ def test_retired_http_surface_returns_not_found_without_proxying(client, path):
 
 async def test_retired_surface_is_not_advertised_by_openapi_or_mcp(backend):
     document = main.app.openapi()
-    assert not any("/dashboards" in path for path in document["paths"])
-    assert not any("dashboard" in name.lower() for name in document["components"]["schemas"])
+    assert not any("/dashboards" in path or "/miniapps" in path for path in document["paths"])
+    assert not any(
+        "dashboard" in name.lower() or "miniapp" in name.lower() for name in document["components"]["schemas"]
+    )
     tools = await main.backend_mcp.list_tools(None, None)
-    assert not any("dashboard" in tool.name for tool in tools.tools)
+    assert not any("dashboard" in tool.name or "miniapp" in tool.name for tool in tools.tools)
     assert (await main.backend_mcp.call("list_dashboards", {})).is_error
+    assert (await main.backend_mcp.call("list_miniapps", {})).is_error
     assert not (await main.backend_mcp.call("list_workflows", {})).is_error

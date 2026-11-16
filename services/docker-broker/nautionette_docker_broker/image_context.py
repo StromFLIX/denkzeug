@@ -42,7 +42,7 @@ def agent_set_hash(root: Path, agent_set: str) -> str:
     return hashlib.sha256((context_hash(directory) + base_hash(root)).encode()).hexdigest()[:12]
 
 
-def source_fingerprints(root: Path, sdk: Path) -> dict:
+def source_fingerprints(root: Path) -> dict:
     return {
         "schema": 1,
         "base": base_hash(root),
@@ -51,7 +51,6 @@ def source_fingerprints(root: Path, sdk: Path) -> dict:
             for p in sorted((root / "agent-sets").iterdir())
             if p.is_dir() and (p / "Dockerfile").is_file()
         },
-        "miniapp": context_hash(sdk),
     }
 
 
@@ -68,11 +67,11 @@ def bundled_hash(kind: str, agent_set: str | None = None) -> str | None:
     if (
         not isinstance(value, dict)
         or value.get("schema") != 1
-        or set(value) != {"schema", "base", "agent_sets", "miniapp"}
+        or set(value) != {"schema", "base", "agent_sets"}
         or not isinstance(value["agent_sets"], dict)
         or any(
             not isinstance(v, str) or not re.fullmatch(r"[0-9a-f]{12}", v)
-            for v in [value["base"], value["miniapp"], *value["agent_sets"].values()]
+            for v in [value["base"], *value["agent_sets"].values()]
         )
     ):
         raise ValueError("Invalid bundled image fingerprint lock")
@@ -88,7 +87,7 @@ if __name__ == "__main__":
     mode.add_argument("--check-lock", action="store_true", help="Fail if the checked-in lock is stale")
     args = parser.parse_args()
     # CI runs from the repository root. No Docker/workspace installation needed.
-    hashes = source_fingerprints(Path("images"), Path("services/miniapp-sdk"))
+    hashes = source_fingerprints(Path("images"))
     if args.write_lock:
         SOURCE_LOCK.write_text(json.dumps(hashes, indent=2) + "\n")
     elif args.check_lock:
@@ -97,4 +96,3 @@ if __name__ == "__main__":
     else:
         print(f"base={hashes['base']}")
         print(f"default={hashes['agent_sets']['default']}")
-        print(f"miniapp={hashes['miniapp']}")

@@ -19,8 +19,8 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
 
-KINDS = frozenset({"agent", "project", "workflow", "app", "tool", "repository"})
-OWNED_TABLES = {"chats": "id", "runs": "id", "mini_apps": "id", "workflow_settings": "name"}
+KINDS = frozenset({"agent", "project", "workflow", "tool", "repository"})
+OWNED_TABLES = {"chats": "id", "runs": "id", "workflow_settings": "name"}
 execution_scope: ContextVar[tuple[str, str] | None] = ContextVar("execution_scope", default=None)
 _delegations: dict[str, Any] = {}
 _activity_delegations: dict[str, dict[str, Any]] = {}
@@ -198,7 +198,7 @@ def install_access_schema(conn: sqlite3.Connection) -> None:
             f"AND (SELECT owner_user_id FROM {table} WHERE {key}=NEW.{key}) IS NULL "
             "THEN RAISE(ABORT,'owner required') END; END"
         )
-    for kind, table in (("agent", "agent_profiles"), ("project", "projects"), ("app", "mini_apps")):
+    for kind, table in (("agent", "agent_profiles"), ("project", "projects")):
         conn.execute(
             f"CREATE TRIGGER IF NOT EXISTS {table}_resource_owner AFTER INSERT ON {table} "  # noqa: S608
             "WHEN access_user_id() IS NOT NULL BEGIN "
@@ -223,7 +223,6 @@ def claim_legacy(user_id: str, conn: sqlite3.Connection | None = None) -> None:
     for kind, table, column in (
         ("agent", "agent_profiles", "id"),
         ("project", "projects", "id"),
-        ("app", "mini_apps", "id"),
         ("workflow", "workflow_settings", "name"),
     ):
         conn.execute(
@@ -343,7 +342,7 @@ def require_owner_execution(table: str, resource_id: str) -> None:
     """Revalidate durable job ownership even after its originating request ends."""
     from .db import db
 
-    if table not in {"chats", "mini_apps"}:
+    if table != "chats":
         raise ValueError("unsupported execution resource")
     row = db.one(f"SELECT owner_user_id FROM {table} WHERE id=?", (resource_id,))  # noqa: S608
     state = db.one("SELECT legacy_owner FROM access_state WHERE id=1")
@@ -564,7 +563,6 @@ async def authorize_request(request: Request, who) -> None:
         ("agents", "agent"),
         ("projects", "project"),
         ("workflows", "workflow"),
-        ("miniapps", "app"),
     ):
         prefix = f"/api/{collection}"
         if path == prefix and method == "GET":
@@ -575,16 +573,11 @@ async def authorize_request(request: Request, who) -> None:
             if resource_id in {"overview", "contract", "repositories", "github-app", "validate"}:
                 break
             require_resource(kind, resource_id, who)
-            if (
-                collection in {"workflows", "miniapps"}
-                and len(parts) == 5
-                and parts[4] in {"run", "invoke", "request"}
-            ):
+            if collection == "workflows" and len(parts) == 5 and parts[4] == "run":
                 execution_scope.set((kind, resource_id))
                 return
             if method == "GET" and (
                 len(parts) == 4
-                or (collection == "miniapps" and len(parts) == 5 and parts[4] == "status")
                 or (collection == "workflows" and len(parts) == 5 and parts[4] == "input-options")
             ):
                 return
@@ -623,8 +616,6 @@ def list_resources() -> dict:
         kind, key = row["kind"], row["resource_id"]
         if kind == "agent":
             named = db.one("SELECT name FROM agent_profiles WHERE id=?", (key,))
-        elif kind == "app":
-            named = db.one("SELECT title AS name FROM mini_apps WHERE id=?", (key,))
         elif kind == "project":
             named = db.one("SELECT full_name AS name FROM projects WHERE id=?", (key,))
         else:
@@ -658,7 +649,7 @@ def grant(request: Request, payload: dict = Body(...)) -> dict:
         raise HTTPException(422, "Provide kind, resource_id and user_id")
     if not db.one("SELECT id FROM auth_users WHERE id=? AND status='active'", (user_id,)):
         raise HTTPException(404, "Active user not found")
-    if kind in {"agent", "project", "workflow", "app"} and not db.one(
+    if kind in {"agent", "project", "workflow"} and not db.one(
         "SELECT 1 FROM access_resources WHERE kind=? AND resource_id=?", (kind, resource_id)
     ):
         raise HTTPException(404, "Resource not found")

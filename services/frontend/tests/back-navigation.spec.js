@@ -81,13 +81,11 @@ for (const [detail, list] of [
   ['/chats/alpha', '/chats'],
   ['/workflows/digest?tab=Code', '/workflows'],
   ['/runs/example', '/workflows?view=runs'],
-  ['/apps/example?agent=agent-1', '/apps?agent=agent-1'],
   ['/settings/general', '/chats']
 ]) {
   test(`a deep link has exactly one parent even after reload: ${detail}`, async ({ page, context }) => {
     const state = await mockAgents(context)
     state.addAgent('Ada')
-    await context.route('**/api/miniapps/example', route => route.fulfill({ json: { id: 'example', title: 'Example', agent_id: 'agent-1', revision: 1, releases: [] } }))
     await context.route('**/api/runs/example', route => route.fulfill({ json: { run: { workflow: 'digest', status: 'completed' }, history_status: 'expired', note: 'Saved run' } }))
     const errors = []
     page.on('pageerror', error => errors.push(error.message))

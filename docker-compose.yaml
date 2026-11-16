@@ -150,7 +150,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - projects:/projects:ro
       - chat-sessions:/chat-sessions
-      - miniapps:/miniapps
     environment:
       <<: *telemetry
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:-}
@@ -161,8 +160,6 @@ services:
       IMAGE_PREFIX: ${STACK_NAMESPACE:-nautionette}/pi-
       BASE_IMAGE: ${STACK_NAMESPACE:-nautionette}/pi-base:dev
       AGENT_IMAGE_REGISTRY_PREFIX: ${AGENT_IMAGE_REGISTRY_PREFIX:-}
-      # Optional reserved per-deployment pool: isolated /29 per mini-app, not /16.
-      MINIAPP_NETWORK_CIDR: ${MINIAPP_NETWORK_CIDR:-}
       WORKER_SERVICE_LABEL: com.docker.compose.service=worker
       WORKER_IMAGE: ${STACK_NAMESPACE:-nautionette}/worker:dev
       WORKER_REPLICAS: ${WORKER_REPLICAS:-1}
@@ -499,12 +496,6 @@ services:
   # runs one container per agent call.
   #   docker compose --profile images build
 
-  miniapp-builder:
-    build: ./services/miniapp-sdk
-    image: ${STACK_NAMESPACE:-nautionette}/miniapp-builder:dev
-    profiles: [images]
-    entrypoint: ["true"]
-
   pi-base:
     build: ./images/pi-base
     image: ${STACK_NAMESPACE:-nautionette}/pi-base:dev
@@ -609,7 +600,6 @@ volumes:
     name: ${STACK_NAMESPACE:-nautionette}-workflows
   projects:
     name: ${STACK_NAMESPACE:-nautionette}-projects
-  miniapps:
   chat-sessions:
   artifacts:
   backend-data:

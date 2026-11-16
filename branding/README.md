@@ -44,9 +44,9 @@ Do not independently redraw or manually copy marks into each platform. See
 
 ## Redesign contract
 
-- Main navigation stays Chats / Workflows / Runs / Apps; URLs are unchanged.
+- Main navigation stays Chats / Workflows; runs are available under Workflows.
 - Agents are reusable configurations; chats are conversations with those agents;
-  workflows are repeatable processes; runs are their history; miniapps are interfaces.
+  workflows are repeatable processes; runs are their history.
 - Settings should distinguish this device's experience, tools/connections and
   instance operations, with scope explained beside the controls.
 - Sora for the interface, Source Serif only for reflective/definition copy.
@@ -62,9 +62,8 @@ Public origins, repository URL and the installer filename prefix are fields in
 release-preparation links. Newly built installers use `denkzeug-*`; old published
 assets are not renamed and remain downloadable.
 
-New mini-app code uses `window.denkzeug`; new skin exports use `denkzeug-skin`;
-new desktop return links use `denkzeug://`. Compatibility aliases accept existing
-code, packs and links. Fresh desktop profiles and fresh `.env.example` installations
+New skin exports use `denkzeug-skin`; new desktop return links use `denkzeug://`.
+Compatibility aliases accept existing packs and links. Fresh desktop profiles and fresh `.env.example` installations
 use Denkzeug names without moving an existing profile, queue, bucket or volume.
 
 Package distribution names, installed app IDs/signing identities, updater identity,

@@ -11,7 +11,6 @@ publish a release or rewrite an independently deployed workflow.
 | --- | --- | --- |
 | Public links | `denkzeug.ai`, `app.denkzeug.ai`, `stage.denkzeug.ai`, `app.stage.denkzeug.ai` | Old hosts remain aliases until integrations migrate. |
 | New installer downloads | `denkzeug-v…` | Existing `nautionette-v…` assets remain downloadable; canonical assets win per platform if both exist. |
-| New mini-app source | `window.denkzeug`, `denkzeug-theme` | `window.nautionette` is the same frozen bridge, not a duplicate request stream. Both event names work. Saved app source and SQLite are untouched. |
 | Skin exports | `denkzeug-skin` | Existing v2 legacy packs remain accepted. Loading a saved library preserves its markers; explicit exports use the new spelling. |
 | Desktop bridge | `denkzeugDesktop` | The old global retains the same narrow IPC capabilities. New renderers also work with older installed preloads. |
 | Desktop focus links | `denkzeug://oauth-return/<opaque-token>` | Old scheme accepted and registered. Tokens remain owner-bound, expiring and single-use across both spellings. OAuth codes never enter custom URLs. |
@@ -46,8 +45,7 @@ CI resolves three Compose configurations without starting containers: a fresh
 Denkzeug installation, explicit legacy identities, and an older `.env` that
 predates explicit namespace/queue settings. All must retain the intended volumes,
 queue and bucket. Installed-wheel tests check both Python import orders and
-nested imports for singleton identity. Browser tests exercise old/new mini-app
-APIs on one isolated channel; native tests retain old IPC/protocol compatibility.
+nested imports for singleton identity. Native tests retain old IPC/protocol compatibility.
 
 ## Finish external URL migration before retiring old hosts
 
@@ -117,7 +115,7 @@ merely because public links now use the new names.
 | Distribution/module implementation names | Existing workflows, commands and serialized identities use them. | Additive import aliases ship first. Test installed wheels and module state before moving implementations or deployment commands. |
 | `dev.nautionette.app`, desktop package/launcher identity and signing keys | OS updates must recognize the installed application. | Keep these stable for in-place upgrades. A different app ID is a separate new-app/data-transfer project, not cosmetic cleanup. |
 | Legacy GHCR namespace | Existing deployments and rollback commits pull it. | Publish all fingerprints in the new namespace, verify permissions and cold-pull staging, then coordinate deployment prefixes. Keep old images for rollback. |
-| Persisted user workflows/mini-apps/skins and GitHub deduplication markers | Blind rewriting changes user code or can duplicate remote actions. | Explicit owner migrations with source/data backups and behavior tests. Existing aliases remain until users have migrated. |
+| Persisted user workflows/skins and GitHub deduplication markers | Blind rewriting changes user code or can duplicate remote actions. | Explicit owner migrations with source/data backups and behavior tests. Existing aliases remain until users have migrated. |
 
 A literal zero-match search is not an upgrade-safety criterion. Legacy strings in
 compatibility code and its tests are intentional. Do not rewrite Git history,

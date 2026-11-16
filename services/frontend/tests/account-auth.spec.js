@@ -44,7 +44,6 @@ async function fixture (page, state = {}) {
     if (path === '/api/catalog') return json({ models: [], tools: [], agents: [], agent_sets: [], default_model: '' })
     if (path === '/api/chats') return json({ chats: [] })
     if (path === '/api/agents') return json({ agents: [] })
-    if (path === '/api/miniapps') return json({ apps: [] })
     if (path === '/api/projects') return json({ projects: [] })
     if (path === '/api/workflows') return json({ workflows: [] })
     if (path === '/api/drafts') return json({ drafts: [] })

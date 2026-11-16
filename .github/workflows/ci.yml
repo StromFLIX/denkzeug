@@ -56,7 +56,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Deployment, snapshot, gateway buffers and agent image safety tests
-        run: uv run pytest tests/test_account_session.py tests/test_auth_deployment.py tests/test_smoke_auth.py tests/test_chat_ttft.py tests/test_dependencies.py tests/test_playwright_ci.py tests/test_coolify_release.py tests/test_usage_deployment.py tests/test_cli_oauth_deployment.py tests/test_dictation_deployment.py tests/worker/test_prepare_release.py tests/test_publish_agent_images.py tests/test_miniapp_smoke.py tests/test_workflow_lifecycle_smoke.py tests/test_staging_refresh.py tests/agentgateway tests/broker/test_broker.py tests/broker/test_chat_sessions.py tests/broker/test_chat_recovery.py tests/broker/test_sandbox_network.py
+        run: uv run pytest tests/test_account_session.py tests/test_auth_deployment.py tests/test_smoke_auth.py tests/test_chat_ttft.py tests/test_dependencies.py tests/test_playwright_ci.py tests/test_coolify_release.py tests/test_usage_deployment.py tests/test_cli_oauth_deployment.py tests/test_dictation_deployment.py tests/worker/test_prepare_release.py tests/test_publish_agent_images.py tests/test_workflow_lifecycle_smoke.py tests/test_smoke_api.py tests/test_staging_refresh.py tests/agentgateway tests/broker/test_broker.py tests/broker/test_chat_sessions.py tests/broker/test_chat_recovery.py tests/broker/test_sandbox_network.py
 
       - name: Accounts, private ownership, scoped delegation and session lifecycle
         run: >-
@@ -101,7 +101,7 @@ jobs:
         run: uv run pytest tests/backend/test_auth.py tests/backend/test_agent_profiles.py tests/backend/test_agent_grouping.py tests/backend/test_subagents.py tests/backend/test_delegated_chat_tree.py tests/backend/test_reasoning.py tests/backend/test_settings.py tests/backend/test_chats.py tests/backend/test_backend_mcp.py tests/backend/test_chat_inspection.py tests/backend/test_activity_timing.py tests/backend/test_usage.py
 
       - name: Database upgrades, API retirement and workflow transports
-        run: uv run pytest tests/backend/test_db.py tests/backend/test_retired_features.py tests/backend/test_miniapps.py tests/backend/test_miniapp_workflow_authority.py tests/backend/test_miniapp_development.py tests/broker/test_miniapps.py tests/broker/test_miniapp_networks.py tests/broker/test_image_context.py tests/workflow_mcp/test_tools.py tests/backend/test_gateway_mcp.py tests/backend/test_temporal_schedules.py
+        run: uv run pytest tests/backend/test_db.py tests/backend/test_retired_features.py tests/backend/test_retired_state.py tests/broker/test_retired_resources.py tests/broker/test_image_context.py tests/workflow_mcp/test_tools.py tests/backend/test_gateway_mcp.py tests/backend/test_temporal_schedules.py
 
       - name: Workflow history expiry, retention and run recovery
         run: uv run pytest tests/backend/test_run_retention.py tests/backend/test_runs.py tests/backend/test_workflow_inputs.py tests/backend/test_workflow_graph.py tests/backend/test_execution_graph.py tests/backend/test_internal.py tests/backend/test_workflow_agents.py tests/backend/test_provenance.py tests/backend/test_schedule_recovery.py tests/backend/test_silent_runs.py tests/backend/test_workflow_lifecycle.py tests/backend/test_run_statistics.py tests/worker/test_activities.py
@@ -179,7 +179,7 @@ jobs:
           tests/git-authorship.spec.js tests/system.spec.js tests/agent-profiles.spec.js tests/composer-agent.spec.js tests/agent-views.spec.js tests/subagents.spec.js
           tests/packages.spec.js tests/new-chat-settings.spec.js tests/new-chat.spec.js
           tests/copilot-login.spec.js tests/mcp-oauth.spec.js tests/mcp-http-oauth.spec.js tests/mcp-stdio.spec.js tests/tool-calls.spec.js tests/activity-timing.spec.js tests/clipboard.spec.js
-          tests/workflow-inputs.spec.js tests/workflow-workspace.spec.js tests/schedule.spec.js tests/flow.spec.js tests/run-retention.spec.js tests/run-statistics.spec.js tests/outputs.spec.js tests/creative-apps.spec.js tests/storage.spec.js tests/navigation.spec.js tests/back-navigation.spec.js tests/miniapps.spec.js
+          tests/workflow-inputs.spec.js tests/workflow-workspace.spec.js tests/schedule.spec.js tests/flow.spec.js tests/run-retention.spec.js tests/run-statistics.spec.js tests/outputs.spec.js tests/creative-apps.spec.js tests/storage.spec.js tests/navigation.spec.js tests/back-navigation.spec.js
           --workers=1 --reporter=dot,github
 
       - name: Chat list tiles, tree controls and stable action slots (WebKit)
@@ -192,7 +192,7 @@ jobs:
         run: npx playwright test tests/website.spec.js --browser=webkit --grep 'actual screenshot targets|missing tour screenshot' --workers=1 --reporter=dot,github
 
       - name: Live stream recovery and navigation (WebKit)
-        run: npx playwright test tests/live-connection.spec.js tests/navigation.spec.js tests/back-navigation.spec.js tests/workflow-workspace.spec.js tests/miniapps.spec.js --browser=webkit --workers=1 --reporter=dot,github
+        run: npx playwright test tests/live-connection.spec.js tests/navigation.spec.js tests/back-navigation.spec.js tests/workflow-workspace.spec.js --browser=webkit --workers=1 --reporter=dot,github
 
       - name: Streaming text selection and copying (WebKit)
         run: npx playwright test tests/clipboard.spec.js --browser=webkit --grep 'selection survives|a drag is protected' --workers=1 --reporter=dot,github
@@ -361,44 +361,8 @@ jobs:
           name: vulnerabilities-${{ matrix.name }}
           path: vulnerabilities.json
 
-  miniapps:
-    name: Mini-app compiler and isolated runtime
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: docker/setup-buildx-action@v4
-      - uses: astral-sh/setup-uv@v10.3.3
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-      - name: Build locked mini-app compiler
-        uses: docker/build-push-action@v7
-        with:
-          context: services/miniapp-sdk
-          load: true
-          tags: nautionette/miniapp-builder:dev
-          cache-from: type=gha,scope=miniapp-builder
-          cache-to: type=gha,mode=max,scope=miniapp-builder,ignore-error=true
-      - name: Build broker for real mini-app runtime tests
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: services/docker-broker/Dockerfile
-          pull: true
-          load: true
-          tags: nautionette/docker-broker:dev
-          cache-from: type=gha,scope=miniapp-test-broker
-          cache-to: type=gha,mode=max,scope=miniapp-test-broker,ignore-error=true
-      - name: Offline compiler, scratch runtime, SQLite, syscall and socket isolation
-        run: |
-          uv sync --locked --all-packages
-          NAUTIONETTE_DOCKER_TESTS=1 uv run pytest tests/broker/test_miniapps_docker.py
-
   agent-images:
     name: Image (agent sets)
-    needs: miniapps
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -447,16 +411,6 @@ jobs:
             --volume "$PWD/scripts/check-pi-dev-tools.sh:/check-pi-dev-tools.sh:ro" \
             --entrypoint bash nautionette/pi-agent-default:dev /check-pi-dev-tools.sh
 
-      - name: Build locked mini-app compiler
-        uses: docker/build-push-action@v7
-        with:
-          context: services/miniapp-sdk
-          load: true
-          tags: nautionette/miniapp-builder:dev
-          cache-from: type=gha,scope=miniapp-builder
-          cache-to: type=gha,mode=max,scope=miniapp-builder,ignore-error=true
-          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-
       - name: Git credential rotation in a live unprivileged container (offline)
         run: |
           uv sync --locked --all-packages
@@ -492,25 +446,6 @@ jobs:
           output-format: json
           output-file: vulnerabilities-pi-agent-default.json
 
-      - name: Inventory mini-app compiler and vendored Rust crates
-        uses: anchore/sbom-action@v0.24.3
-        with:
-          image: nautionette/miniapp-builder:dev
-          config: .github/syft-miniapp.yaml
-          artifact-name: sbom-miniapp-builder.spdx.json
-          output-file: sbom-miniapp-builder.spdx.json
-          upload-release-assets: false
-
-      - name: Compiler image SBOM includes every vendored Cargo dependency
-        run: python3 -m scripts.check_miniapp_sbom sbom-miniapp-builder.spdx.json
-
-      - uses: anchore/scan-action@v7.4.2
-        with:
-          sbom: sbom-miniapp-builder.spdx.json
-          fail-build: false
-          output-format: json
-          output-file: vulnerabilities-miniapp-builder.json
-
       - uses: actions/upload-artifact@v7
         with:
           name: vulnerabilities-agent-images
@@ -540,7 +475,6 @@ jobs:
           REPOSITORY: ${{ vars.AGENT_IMAGE_REPOSITORY || (github.repository_id == '1353247647' && 'StromFLIX/nautionette') || github.repository }}
           BASE_HASH: ${{ steps.images.outputs.base }}
           DEFAULT_HASH: ${{ steps.images.outputs.default }}
-          MINIAPP_HASH: ${{ steps.images.outputs.miniapp }}
         run: python3 scripts/publish_agent_images.py
 
   dependency-images:

@@ -40,7 +40,7 @@ async def system_status() -> dict[str, Any]:
 
     Reports Temporal, broker/agents/workers, model gateway and MCP tools, workflow
     authoring, authentication and build/environment status. This is the app's own
-    backend health check, not hosting-provider infrastructure or a mini-app's status.
+    backend health check, not hosting-provider infrastructure.
     """
 
     async def safe(coro, name: str) -> dict[str, Any]:

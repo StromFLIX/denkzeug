@@ -1,6 +1,6 @@
 {
   "run_url": "https://github.com/StromFLIX/nautionette/actions/runs/43512596141",
-  "scope": "Observed CI images only; excludes deployments, other architectures and native artifact volumes",
+  "scope": "Observed CI images only; excludes deployments, other architectures and native artifact volumes; retained ledger covers currently supported images only (original run artifacts remain linked)",
   "artifacts": [
     {
       "artifact": "sbom-agentgateway.spdx.json",
@@ -26,11 +26,6 @@
       "artifact": "sbom-maxio.spdx.json",
       "file": "sbom-maxio.spdx.json",
       "sha256": "5d4397172978213fb90486ebc5159878d38ea0b766ad3f181c8e1a78dff06d1f"
-    },
-    {
-      "artifact": "sbom-miniapp-builder.spdx.json",
-      "file": "sbom-miniapp-builder.spdx.json",
-      "sha256": "32a68ed3b507c7212ab6d2ff947564d3a60a1710c232bb507de01de01cdb1e82"
     },
     {
       "artifact": "sbom-otel-collector.spdx.json",
@@ -101,11 +96,6 @@
       "artifact": "sbom-workflow-mcp.spdx.json",
       "file": "sbom-workflow-mcp.spdx.json",
       "sha256": "797bbdad0b4ad4bd01410abb5b868728e39ec7a148d656c5f758bc0472aa79e2"
-    },
-    {
-      "artifact": "vulnerabilities-agent-images",
-      "file": "vulnerabilities-miniapp-builder.json",
-      "sha256": "0d241077b86b0a52bcd3e51b5f339b19bc95a2443891e1b1b86e28964359268b"
     },
     {
       "artifact": "vulnerabilities-agent-images",
@@ -223,10 +213,6 @@
     "sbom-maxio.spdx.json": {
       "package_count": 92,
       "packages_sha256": "375e7725c0f7b2ea4bb9f80bf6267b2ca53fa274c425f8f2b2ea7107e8ca2c31"
-    },
-    "sbom-miniapp-builder.spdx.json": {
-      "package_count": 1153,
-      "packages_sha256": "c4a20d76cc89892f9e3e93049c9ef27dee3b1617dff674df526f85b995dc5de7"
     },
     "sbom-otel-collector.spdx.json": {
       "package_count": 1091,
@@ -1368,201 +1354,6 @@
       "reports": [
         "vulnerabilities-agent-images/vulnerabilities-pi-agent-default.json",
         "vulnerabilities-agent-images/vulnerabilities-pi-base.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2025-69644",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "unknown",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2025-69645",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2025-69646",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2025-69647",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2025-69648",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2025-69649",
-      "severity": "High",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2025-69650",
-      "severity": "High",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2025-69651",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2025-69652",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2026-3441",
-      "severity": "High",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2026-3442",
-      "severity": "High",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2026-4647",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2026-6844",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2026-6845",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "binutils",
-      "version": "2.44-r3",
-      "type": "apk",
-      "advisory": "CVE-2026-6846",
-      "severity": "High",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
       ]
     },
     {
@@ -3913,19 +3704,6 @@
     },
     {
       "package": "busybox",
-      "version": "1.37.0-r20",
-      "type": "apk",
-      "advisory": "CVE-2025-60876",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "busybox",
       "version": "1.37.0-r30",
       "type": "apk",
       "advisory": "CVE-2025-60876",
@@ -3996,19 +3774,6 @@
       "reports": [
         "vulnerabilities-agentgateway/vulnerabilities.json",
         "vulnerabilities-otel-collector/vulnerabilities.json"
-      ]
-    },
-    {
-      "package": "busybox-binsh",
-      "version": "1.37.0-r20",
-      "type": "apk",
-      "advisory": "CVE-2025-60876",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
       ]
     },
     {
@@ -26482,34 +26247,6 @@
       "fixed_versions": [],
       "reports": [
         "vulnerabilities-agentgateway/vulnerabilities.json"
-      ]
-    },
-    {
-      "package": "rand",
-      "version": "0.8.5",
-      "type": "rust-crate",
-      "advisory": "GHSA-cq8v-f236-94qc",
-      "severity": "Low",
-      "namespace": "github:language:rust",
-      "fix_state": "fixed",
-      "fixed_versions": [
-        "0.8.6"
-      ],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
-      ]
-    },
-    {
-      "package": "ssl_client",
-      "version": "1.37.0-r20",
-      "type": "apk",
-      "advisory": "CVE-2025-60876",
-      "severity": "Medium",
-      "namespace": "nvd:cpe",
-      "fix_state": "",
-      "fixed_versions": [],
-      "reports": [
-        "vulnerabilities-agent-images/vulnerabilities-miniapp-builder.json"
       ]
     },
     {

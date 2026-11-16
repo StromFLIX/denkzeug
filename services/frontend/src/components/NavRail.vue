@@ -57,11 +57,9 @@ const active = computed(() => route.meta.section || route.name)
 
 const items = computed(() => [
   { name: 'chats', label: 'Chats', icon: 'chat_bubble_outline', tone: 'var(--agent-color)', to: chatLocation() },
-  { name: 'workflows', label: 'Workflows', icon: 'account_tree', tone: 'var(--workflow-color)', to: '/workflows', badge: draftCount.value || 0 },
-  { name: 'apps', label: 'Apps', icon: 'apps', tone: 'var(--session-color)', to: { path: '/apps', query: route.query.agent ? { agent: route.query.agent } : {} } }
+  { name: 'workflows', label: 'Workflows', icon: 'account_tree', tone: 'var(--workflow-color)', to: '/workflows', badge: draftCount.value || 0 }
 ].filter(item => account.user?.role === 'admin' || item.name === 'chats' ||
-  (item.name === 'workflows' && (store.workflows.length || store.runs.length)) ||
-  (item.name === 'apps' && store.apps.length)))
+  (item.name === 'workflows' && (store.workflows.length || store.runs.length))))
 </script>
 
 <style scoped>

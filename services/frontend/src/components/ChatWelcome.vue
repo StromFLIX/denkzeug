@@ -21,7 +21,6 @@
       <nav class="welcome__paths" aria-label="Ways to work">
         <RouterLink v-if="account.user?.role === 'admin'" to="/settings/creative-apps"><i class="welcome__tile welcome__tile--create" aria-hidden="true" /><span>Create<small>Code, slides, drawings</small></span></RouterLink>
         <RouterLink v-if="account.user?.role === 'admin' || store.workflows.length" to="/workflows"><i class="welcome__tile welcome__tile--process" aria-hidden="true" /><span>Process<small>Repeatable workflows</small></span></RouterLink>
-        <RouterLink v-if="account.user?.role === 'admin' || store.apps.length" to="/apps"><i class="welcome__tile welcome__tile--show" aria-hidden="true" /><span>Show<small>Your own miniapps</small></span></RouterLink>
       </nav>
       <p v-if="draftError" class="caption" role="alert">{{ draftError }}</p>
       <p v-if="!store.catalogLoaded && store.catalogError" class="caption" role="alert">{{ store.catalogError }} <button class="btn btn--sm" @click="actions.loadCatalog(true)">Retry defaults</button></p>
@@ -114,13 +113,12 @@ function override (key, value) {
 .welcome__mark { width: 44px; height: 44px; }
 .welcome__title { margin: 0; font-size: clamp(1.3rem, 2vw, 1.75rem); font-weight: 500; line-height: 1.25; letter-spacing: -.05em; }
 .welcome__lead { margin: 14px 0 0; color: var(--text-muted); font-family: 'Source Serif', Georgia, serif; font-size: 1.125rem; line-height: 1.5; }
-.welcome__paths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 24px; }
+.welcome__paths { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 24px; }
 .welcome__paths a { display: flex; align-items: flex-start; gap: 9px; min-width: 0; min-height: 44px; padding: 8px 0; color: var(--text); text-decoration: none; font-size: .75rem; }
 .welcome__paths small { display: block; color: var(--text-muted); font-size: .625rem; margin-top: 3px; }
 .welcome__tile { display: block; flex: none; width: 9px; height: 9px; margin-top: 5px; border-radius: 3px; }
 .welcome__tile--create { background: var(--agent-color); }
 .welcome__tile--process { background: var(--workflow-color); }
-.welcome__tile--show { background: var(--session-color); }
 @media (hover: hover) and (pointer: fine) { .welcome__paths a:hover { color: var(--accent); } }
 @media (max-width: 600px) { .welcome__paths { gap: 10px; } .welcome__paths a { gap: 6px; font-size: .6875rem; } .welcome__paths small { font-size: .5625rem; } .welcome__wordmark { margin-bottom: 25px; } }
 @media (max-width: 370px) { .welcome__paths { grid-template-columns: 1fr; gap: 0; } .welcome__paths a { align-items: center; padding: 2px 0; } .welcome__paths a > span { display: flex; gap: 10px; align-items: baseline; } .welcome__paths small { margin: 0; } }

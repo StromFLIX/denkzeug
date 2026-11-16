@@ -2,7 +2,7 @@ import { test, expect } from './account-fixture.js'
 import { mockAgents } from './agent-fixture.js'
 
 for (const width of [1440, 390, 320]) {
-  for (const entry of ['/dashboards', '/dashboards/nautionette-git-release?agent=removed', '/unknown/retired-view']) {
+  for (const entry of ['/dashboards', '/dashboards/nautionette-git-release?agent=removed', '/apps', '/apps/retired?agent=removed', '/unknown/retired-view']) {
     test(`retired and unknown links recover to usable chats at ${width}px: ${entry}`, async ({ page, context }) => {
       const state = await mockAgents(context)
       await context.addInitScript(() => {
@@ -17,13 +17,14 @@ for (const width of [1440, 390, 320]) {
       const retiredRequests = []
       page.on('pageerror', error => errors.push(error.message))
       page.on('request', request => {
-        if (new URL(request.url()).pathname.startsWith('/api/dashboards')) retiredRequests.push(request.url())
+        if (/^\/api\/(dashboards|miniapps)(\/|$)/.test(new URL(request.url()).pathname)) retiredRequests.push(request.url())
       })
       await page.setViewportSize({ width, height: 900 })
       await page.goto(entry)
       await expect(page).toHaveURL(/\/chats$/)
       await expect(page.getByRole('heading', { name: 'Chats', exact: true })).toBeVisible()
       await expect(page.getByRole('link', { name: 'Dashboards', exact: true })).toHaveCount(0)
+      await expect(page.getByRole('link', { name: 'Apps', exact: true })).toHaveCount(0)
       await expect(page.locator('.chat-list-item')).toHaveCount(1)
       await page.getByRole('button', { name: 'Chats with Ada', exact: true }).click()
       await expect(page).toHaveURL(new RegExp(`/chats\\?agent=${ada.id}$`))

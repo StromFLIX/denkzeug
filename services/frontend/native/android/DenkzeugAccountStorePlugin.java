@@ -31,7 +31,7 @@ public class DenkzeugAccountStorePlugin extends Plugin {
     @Override public void load() {
         // Capacitor has a legacy addJavascriptInterface fallback exposed to subframes.
         // A document-start capability exists only in our bundled top-level document,
-        // so opaque generated mini-apps cannot call this vault even on that fallback.
+        // so untrusted subframes cannot call this vault even on that fallback.
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
             try {
                 String script = "if (window === window.top) Object.defineProperty(globalThis, 'denkzeugAccountCapability', {value:'" + capability + "'});";

@@ -4,7 +4,7 @@ Upstreams were queried anew on **2026-11-16 UTC**, not inferred from the Novembe
 13 decisions. Initial clean detached HEAD and `origin/main` were both
 `34fdcb56d6ad7ff7b5b35caf6f2a9e01eee6dc66`. No existing work was reset or rewritten.
 Scope: workspace/transitive Python lock; separate hash-locked speech appliance;
-web/mobile/Electron and transitive/optional npm lock; Rust/bundled SQLite;
+web/mobile/Electron and transitive/optional npm lock;
 gosu/Go compiler/modules; every Dockerfile, Compose/Bake image and copied binary;
 uv/npm/Pi/Playwright; all Actions; all 13 ArtCraft releases and 26 architecture
 hashes; pinned models; duplicate pins, fingerprints, upgrade/deployment tooling,
@@ -21,13 +21,11 @@ not upgraded or republished. No production release or data migration is performe
 | DOMPurify | 3.4.17 | 3.4.18 |
 | Playwright client, agent pin, CI browser image | 1.65.0 | 1.65.1 |
 | PostCSS, transitive npm lock | 8.5.32 | 8.5.33 |
-| rusqlite | 0.42.0 | 0.43.0 |
 | setup-python Action | v6 | v7 (current v7.1.0) |
 
 Python and speech graphs were re-resolved with uv; speech hashes were regenerated.
 `npm update` refreshed the compatible graph and `npm ci` verified the resulting
-integrities. Cargo resolved/verified registry checksums with Rust **1.100.0**;
-**libsqlite3-sys 0.40.0 / SQLite 3.54.1** remain current. Canonical source
+integrities. Canonical source
 fingerprints were regenerated with `image_context.py --write-lock`, not invented.
 The existing version-qualified Electron minimatch overrides are unchanged.
 
@@ -50,14 +48,6 @@ Reviewed upstream changes:
   fixes decorated-class transforms and Bun locations. Its browser cohort is
   Chromium **159.0.8154.6**, Firefox **159.0**, WebKit **27.2**. All three
   repository browser pins move together; Firefox is not a claimed test target.
-- [rusqlite 0.43](https://github.com/rusqlite/rusqlite/releases/tag/v0.43.0)
-  fixes use-after-free in changeset streaming, column metadata and filter values;
-  it deliberately rejects empty/comment-only prepared statements. Added a real
-  SQLite reopen/idempotent-health/persistence test and explicit rejection checks.
-  Documentation now names the actual compiler and SQL behavior. Existing apps
-  keep their existing binaries: upgrading the compiler **does not patch SQLite
-  or rusqlite inside already-published user apps**. Only an explicit supported
-  publication/restore rebuilds them; none were automatically republished.
 - [setup-python v7](https://github.com/actions/setup-python/releases/tag/v7.0.0)
   migrates to ESM and removes `pip-install`. Our sole consumer only supplies
   `python-version: '3.13'`, on the supported hosted runner/container; it does not
@@ -70,8 +60,8 @@ manifest changes. No UI redesign or vendor skill rewriting is part of this audit
 ## Fresh upstream inventory and intentional holds
 
 The [machine-readable upstream inventory](dependency-audit-2026-11-16-upstream.json)
-records all queried workspace Python versions, direct npm versions, all external
-Rust crates, upstream Action/runtime releases, ArtCraft digests and **257 installed
+records all queried workspace Python versions, direct npm versions,
+upstream Action/runtime releases, ArtCraft digests and **257 installed
 parent/dependency outdated observations** with their exact parent and next action.
 Absent optional-platform packages are not misrepresented as installed updates.
 This inventory is not an override list. In particular:
@@ -146,23 +136,20 @@ from successful [baseline CI 43729833456](https://github.com/StromFLIX/denkzeug/
 source **34fdcb56d6ad7ff7b5b35caf6f2a9e01eee6dc66**. Then downloaded and inspected
 all **40** JSON files from successful [implementation CI 43798227269](https://github.com/StromFLIX/denkzeug/actions/runs/43798227269),
 source **ab6feac8489c3d404378536a949d8a262fbb31ae**. The
-[full image finding ledger](dependency-audit-2026-11-16-images.json) now records
-that tested implementation's original file SHA-256 values, **20** full inventory
-counts/fingerprints and **1,916** distinct package/version/advisory/namespace/fix
-tuples. No new advisory tuple appeared relative to baseline. No severity or
+[retained image finding ledger](dependency-audit-2026-11-16-images.json) excludes
+retired image reports: **19** inventories and **1,897** distinct findings remain.
+The original run had **20** inventories and **1,916** findings; its complete
+artifacts remain available at the CI link above. No new advisory tuple appeared relative to baseline. No severity or
 unfixed/CPE match was filtered. Multiple images/binaries can duplicate a finding.
 This is actual CI image evidence, **not** a claim about every architecture or
 the live staging/production filesystem. The baseline ledger remains in commit
 ab6feac's original revision of this file; it was not rewritten in Git history.
 
 Actual inventories confirm Python **3.13.18**, Node **24.22.3**, npm **11.21.2**,
-uv **0.13.8**, PostgreSQL **17.12**, gosu embedded Go **1.27.4**, compiler's
-rusqlite **0.42.0** (before this update), libsqlite3-sys **0.40.0**, distro
-BusyBox **1.37.0-r31** (compiler **-r20**, legacy **-r30**), copied BusyBox
+uv **0.13.8**, PostgreSQL **17.12**, gosu embedded Go **1.27.4**, distro
+BusyBox **1.37.0-r31** (legacy **-r30**), copied BusyBox
 **1.38.0**, nginx **1.31.8-r1**, OpenSSL **3.0.22-1~deb12u2** /
-**3.5.7-1~deb13u3** and Alpine libssl3 **3.5.9-r0**. Cargo's directory cataloger
-and SDK-lock provenance assertion remain enabled; an unrelated vendored dev lock
-cannot stand in for the actual SDK graph.
+**3.5.7-1~deb13u3** and Alpine libssl3 **3.5.9-r0**.
 
 ### Advisory dispositions (exact tuples remain in the ledger)
 
@@ -197,11 +184,6 @@ cannot stand in for the actual SDK graph.
   the zero-finding frontend graph. Await npm11 patch or implement the explicit
   npm12 policy migration above; do not patch files inside npm or globally force
   a non-callable minimatch API into ASAR.
-- **Compiler dev-lock rand0.8.5:** **GHSA-cq8v-f236-94qc** advertises0.8.6,
-  from checksummed upstream foldhash/memchr dev locks, not the SDK lock or linked
-  app graph. Consume parent releases that refresh packaged development locks;
-  re-evaluate if those tests ever become build inputs. Never mutate vendor hashes
-  or exclude source files just to erase a scanner result.
 - **Distro packages:** all Debian/Alpine tuples remain visible. Debian vendor
   tracker data for curl/glibc/sqlite3/git/expat/OpenSSL was fetched anew. Most
   reports have no fixed supported-distribution revision; upstream version or
@@ -239,13 +221,10 @@ Local Linux x86_64 evidence:
   speech outdated list is empty. Workspace pip-audit: **92 external packages**,
   no known findings (five local workspace distributions are not on PyPI);
   speech pip-audit: **28 packages**, no known findings.
-- Rust1.100 locked tests: **4 passed**, exercising authenticated RPC, bundled
-  SQLite, persistent state across reopen/idempotent migration, and rejected empty
-  prepares. Rustup installer SHA-256 was verified against upstream metadata.
 - Exact pinned search-model download/offline semantic retrieval: **1 passed**.
 - Local Chromium159 ran real browser tests, not just resolution: initial subset
   **17 passed/2 timed out**; isolated account/compaction recheck **6 passed/1 timed
-  out**; miniapp/creative subset **33 passed/1 timed out**. These are **not a green
+  out**; additional browser subset **33 passed/1 timed out**. These are **not a green
   browser certification**. Five-second reload/navigation readiness assertions
   were intermittent in this constrained sandbox. Full normal CI Chromium/WebKit
   remains mandatory; no skips, retries or weakened assertions were added.
@@ -268,16 +247,13 @@ all **24 CI jobs** in [43798227269](https://github.com/StromFLIX/denkzeug/action
 including the full Chromium/WebKit suites, native ArtCraft, locked offline
 compiler/runtime isolation, PostgreSQL volume/privilege reuse, MaxIO, and real
 Temporal migration/history/replay/restore rehearsals. No browser skips, assertion
-loosening or automatic retries were introduced to get this result. The corrected
-compiler SPDX contains **1,153 packages** and explicitly attributes rusqlite
-**0.43.0** / libsqlite3-sys **0.40.0** to `/sdk/template/Cargo.lock`; PostgreSQL's
+loosening or automatic retries were introduced to get this result. PostgreSQL's
 actual inventory still records **17.12 / Go1.27.4**, and Pi's image records
 **Pi1.5.2 / Playwright1.65.1**. The 1,916 retained image findings are **not**
 claimed fixed by a clean application dependency audit.
 
 The same SHA passed the normal [staging Deploy 43800154294](https://github.com/StromFLIX/denkzeug/actions/runs/43800154294),
 including authenticated component/output-storage readiness, usage analytics,
-the complete isolated miniapp/SQLite/rollback/scoped-workflow lifecycle,
 workflow disable/result delivery, CLI/HTTPS MCP OAuth compatibility, real HTTPS/
 WebSocket streaming dictation and creative-app artifact readiness. Coolify staging
 application `tstmjujqyyl3zkvtwb0sx8nc` finished deployment

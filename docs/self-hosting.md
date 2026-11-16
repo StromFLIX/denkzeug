@@ -9,8 +9,6 @@ local instance, then put HTTPS in front of it for remote access.
 ## Requirements
 
 - **Docker Engine 28+**, with **Docker Compose v2** and permission to use Docker.
-  Native miniapp backends need Engine 28’s isolated network support; older engines
-  do not provide the full feature set. See [miniapp isolation](mini-apps.md).
 - **Git**, plus outbound internet for container builds, tool/model downloads and
   the model providers or tools you choose.
 - Enough host memory and disk for the services and concurrent agents. An agent’s
@@ -161,7 +159,7 @@ Back up these datasets consistently, including their permissions and private key
 | `postgres-data` | Temporal history, namespaces and schedules. |
 | `workflows` | Deployed workflow files, not only the checked-in seeds. |
 | `projects` and `chat-sessions` | Git caches/worktrees, unpushed work, native agent sessions and original attachments. |
-| `miniapps` and `artifacts` | Miniapp runtime state and workflow artifacts. |
+| `artifacts` | Workflow artifacts. |
 
 The actual volume names depend on the Compose project/deployment platform. Do not
 copy live SQLite/PostgreSQL files as if they were a consistent snapshot. Let active
@@ -177,6 +175,13 @@ legacy auto-setup image requires a maintenance window: follow the
 a tag substitution. Coolify deployments run migration hooks automatically;
 manual Compose updates do not. Migrate existing data before starting the maintained
 server default, and explicitly initialize genuinely empty installations.
+
+Upgrades remove retired executable-interface source, release/call state and grants
+from SQLite. The broker also removes their containers, networks, compiled images
+and old data volume, scoped to this deployment's labels; it never runs a global
+Docker prune. In-use volumes fail closed and cleanup retries after old containers
+stop. Keep a pre-upgrade backup if you need that retired data. Chats, workflows,
+outputs and unrelated Docker resources are preserved.
 
 In a normal branch checkout:
 

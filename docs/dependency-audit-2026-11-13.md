@@ -29,9 +29,6 @@ MCP services are not repository dependencies and were not changed.
 | Sass embedded | 1.108.1 | 1.108.2 |
 | Vite | 8.3.7 | 8.3.8 |
 | Copied uv (all six consumers) | 0.13.7 | 0.13.8 |
-| Rust builder | 1.99.1-alpine3.22 | 1.100.0-alpine3.22 |
-| rusqlite | 0.41.1 | 0.42.0 |
-| libsqlite3-sys / bundled SQLite | 0.39.1 / 3.54.0 | 0.40.0 / 3.54.1 |
 | cc | 1.11.1 | 1.11.2 |
 | gosu compiler and go.mod | Go 1.27.3 | Go 1.27.4 |
 
@@ -50,17 +47,10 @@ migration/history/replay tests remain a required CI gate. The former nexus-rpc
 hold is **removed**: SDK 1.36 permits 1.5.0. This is not a Temporal server/schema
 version change. Existing migration/backup/fence/rollback contracts are unchanged.
 
-[rusqlite 0.42](https://github.com/rusqlite/rusqlite/releases/tag/v0.42.0) includes
-SQLite 3.54.1 and registration/session safety fixes. The actual bundled header
-was checked, and real authenticated RPC/SQLite tests passed. Rust and Go downloads
-used upstream SHA-256 metadata; Cargo regenerated and verified registry checksums.
-The Docker Hub tags for both new compiler images exist. Gosu remains the same
+Go downloads used upstream SHA-256 metadata. Gosu remains the same
 checksum-pinned 1.20 source and the same privilege/entrypoint contract; its modules
 moby/sys/user 0.5.0 and x/sys 0.50.0 remain current. Go 1.27.4 addresses
 **GO-2026-6859**, observed in the old PostgreSQL image's actual gosu binary.
-Updating this compiler does **not** rewrite SQLite or other code embedded in
-already-published user miniapps. Only a deliberate supported publication/restore
-rebuilds one of those apps; none were automatically republished.
 
 ### Native creative apps
 
@@ -100,7 +90,8 @@ The baseline contained **1,720** distinct package/version/advisory/namespace/fix
 tuples. After implementing the updates, all **40** JSON files from successful
 [CI 43512596141](https://github.com/StromFLIX/nautionette/actions/runs/43512596141)
 for `0a0b02307fa1a1ea49b6042c3e49606bcf20e8fe` were downloaded and inspected too.
-The [complete finding ledger](dependency-audit-2026-11-13-images.json) now records
+The [retained finding ledger](dependency-audit-2026-11-13-images.json) excludes retired
+image reports; original counts below describe the linked historical CI artifacts. It records
 that tested candidate's original artifact/file SHA-256s, **20** full-inventory
 counts/fingerprints and **1,885** distinct tuples. The larger scope includes the
 four previously unscanned maintenance/recovery images; it is not evidence that
@@ -123,21 +114,9 @@ WebKit, native ArtCraft, offline compiler/runtime isolation, PostgreSQL volume
 reuse/privilege drop, MaxIO and Temporal migration/replay/restore tests. This is
 image/test evidence for that SHA, not a substitute for the final pushed SHA's gates.
 
-Inspection of initial implementation CI 43509214606 found a genuine scanner blind
-spot: the compiler SPDX listed only **31 OS/image entries**, not Cargo dependencies.
-Syft's image defaults omit its directory-oriented Cargo.lock cataloger. CI now adds
-`+rust-cargo-lock-cataloger` through `.github/syft-miniapp.yaml`, **preserving all
-normal image catalogers**, and fails if any external locked crate is missing from
-the actual image SPDX. The corrected CI 43512596141/compiler SPDX has **1,153
-entries**, including all **29** external crates from `/sdk/template/Cargo.lock`
-and upstream development locks in `/sdk/vendor`. The assertion requires the SDK
-lock as the provenance: an unrelated vendor dev lock must not satisfy it. The
-ledger now contains the corrected scan. This inventories optional/vendored source
-too, not proof every crate is linked into every miniapp.
-
 Observed baseline runtimes include Python **3.13.18**, Node **24.22.3**, npm
 **11.21.2**, uv **0.13.7**, BusyBox's copied static binary **1.38.0**, distro
-BusyBox **1.37.0-r31** (miniapp compiler **-r20**), nginx **1.31.8-r1**, OpenSSL
+BusyBox **1.37.0-r31**, nginx **1.31.8-r1**, OpenSSL
 **3.0.22-1~deb12u2** / **3.5.7-1~deb13u3**, and Alpine libssl3 **3.5.9-r0**.
 The actual Temporal image embeds Go **1.26.10**; Collector, PostgreSQL's gosu and
 Temporal UI embed **1.27.3**. apt/apk cannot patch an embedded Go module/stdlib.
@@ -190,16 +169,6 @@ are the reasons/next actions for its categories, not a vulnerability allowlist:
   using only private disposable migration/recovery networks meanwhile. Some
   embedded server pseudo-version CPE/advisory matches are not reliable evidence
   of the actual server release, so retain rather than silently dismiss them.
-- **Vendored development lock rand 0.8.5:** the corrected compiler scan exposes
-  two low-severity **GHSA-cq8v-f236-94qc / RUSTSEC-2026-0097** matches (fix 0.8.6).
-  SPDX provenance is `/sdk/vendor/foldhash/Cargo.lock` and
-  `/sdk/vendor/memchr/Cargo.lock`, not `/sdk/template/Cargo.lock`. Rand is absent
-  from the SDK's 29-crate resolved graph and is not built into its application
-  through these unused upstream dev/test lockfiles. Keep these observations
-  visible. Required follow-up: consume parent crate releases that refresh their
-  packaged dev locks, or revisit if those test graphs are ever executed. Do not
-  mutate checksummed vendor files, add an unused rand override, or exclude the
-  files from scanning merely to erase findings.
 - **npm's own nested glob/minimatch:** **GHSA-3g3m-2fjr-6pw4** (glob 13.0.6 →
   14.0.2) and **GHSA-g3hv-75wg-m249** (minimatch 10.2.5 → 11.0.1) occur in
   the globally installed npm 11.21.2 tool bundle. This is separate from the
@@ -229,8 +198,8 @@ are the reasons/next actions for its categories, not a vulnerability allowlist:
 Report-only image scanning remains visible; application `npm audit` still blocks
 CI. No authentication, networks, credentials, volume retention or security gate
 was weakened. The ledger identifies its exact tested image source SHA; use the
-final pushed candidate's new artifacts for final counts. The corrected Cargo
-inventory was already verified in the cited successful run. It is not a claim about live deployments or other architectures.
+final pushed candidate's new artifacts for final counts. This is not a claim
+about live deployments or other architectures.
 
 ## Current upstream pins and intentional holds
 
@@ -286,9 +255,8 @@ Local evidence (Linux x86_64):
 - Hash-verified speech install and all **11** streaming PCM/session tests passed;
   speech outdated list is empty; workspace and speech pip-audit found no known
   advisories. npm audit, including development/Electron tooling, found **zero**.
-- Rust 1.100.0 locked tests: **3 passed**, exercising actual authenticated HTTP
-  and bundled SQLite; all 26 native archive metadata digests verified; source
-  fingerprints regenerated with the canonical tool.
+- All 26 native archive metadata digests verified; source fingerprints regenerated
+  with the canonical tool.
 - Pinned model download and offline semantic retrieval: **1 passed**.
 - Gosu 1.20 source archive checksum verified; `go test`/build with Go 1.27.4
   succeeded (upstream has no Go unit test files), and embedded module/compiler
@@ -302,11 +270,11 @@ under its PID limit; repeated Chromium exits were left as zombies by PID 1.
 WebKit/native mobile signing and real Docker builds/isolation/migrations are not
 available in this sandbox. Those are **not** recorded as passing locally. GitHub
 CI's normal Chromium/WebKit, real images, offline agent, existing-volume PG17,
-MaxIO, miniapp isolation and Temporal migration/replay/restore jobs must all pass.
+MaxIO and Temporal migration/replay/restore jobs must all pass.
 Android/iOS/macOS signing and aarch64 execution remain platform coverage limits.
 
 Only the final pushed SHA's successful CI and normal staging Deploy (including
-component, miniapp/workflow, OAuth, dictation and creative-app smokes) authorize
+component, workflow, OAuth, dictation and creative-app smokes) authorize
 completion. Coolify must report that same SHA and be healthy; HTTP 200 or an old
 successful deployment is insufficient. Production remains release-gated and is
 not promoted by this maintenance task. Final run/deployment identifiers are

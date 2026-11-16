@@ -121,7 +121,6 @@ def test_http_access_resources_resolves_real_schema_names(private_db):
         database.execute(
             "INSERT INTO agent_profiles(id,name,created_at,updated_at) VALUES('agent','Assistant',0,0)"
         )
-        database.execute("INSERT INTO mini_apps(id,title,updated_at) VALUES('app','Dashboard',0)")
         for kind, key in (("workflow", "daily_job"), ("tool", "search"), ("project", "deleted")):
             database.execute("INSERT INTO access_resources VALUES(?,?,?)", (kind, key, "alice"))
     finally:
@@ -150,7 +149,6 @@ def test_http_access_resources_resolves_real_schema_names(private_db):
         )
         assert {(row["kind"], row["resource_id"]): row["name"] for row in resources} == {
             ("agent", "agent"): "Assistant",
-            ("app", "app"): "Dashboard",
             ("project", "project"): "StromFLIX/denkzeug",
             ("project", "deleted"): "deleted",
             ("workflow", "daily_job"): "daily_job",
@@ -175,8 +173,6 @@ async def test_member_routes_and_grants_fail_closed(private_db):
         "/api/system",
         "/api/model-integrations",
         "/api/mcp-servers",
-        "/api/miniapps/overview",
-        "/api/miniapps/contract",
         "/api/new-unreviewed-route",
     ):
         with pytest.raises(Exception) as caught:
@@ -186,7 +182,7 @@ async def test_member_routes_and_grants_fail_closed(private_db):
         await check("/api/agents/assistant")
     database.execute("INSERT INTO access_grants VALUES('agent','assistant','bob',0)")
     await check("/api/agents/assistant")
-    for path in ("/api/workflows/assistant/run", "/api/miniapps/assistant/invoke", "/api/agents/assistant"):
+    for path in ("/api/workflows/assistant/run", "/api/agents/assistant"):
         with pytest.raises(HTTPException):
             await check(path, "POST")
     with pytest.raises(HTTPException):

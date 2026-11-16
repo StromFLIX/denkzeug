@@ -50,7 +50,6 @@ _TABLES = (
     "mcp_oauth_setups",
     "agent_calls",
     "workflow_agent_tasks",
-    "mini_apps",
     "github_issue_chats",
     "github_mentions",
     "messages",

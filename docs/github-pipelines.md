@@ -71,7 +71,7 @@ credentials are passed through GitHub outputs.
 
 The operator must provision the QA account through supported administration and
 invitation/email verification, finish any mandatory password change, and grant
-the workflow/miniapp/MCP OAuth/dictation capabilities needed by these tests. The
+the workflow/MCP OAuth/dictation capabilities needed by these tests. The
 current instance-wide checks may require a dedicated **staging administrator**;
 never reuse a production administrator or password. Set the two QA secrets above
 in the GitHub **staging** environment, not production. Missing credentials fail
@@ -212,7 +212,7 @@ retry, backup, timeout and fresh-install requirements.
 
 Promotion now also requires the latest non-skipped staging **Deploy** run for
 that exact commit to have completed successfully, with successful component
-health, mini-app lifecycle/workflow smoke, and creative-app artifact steps. A
+health, workflow lifecycle smoke, and creative-app artifact steps. A
 finished Coolify deployment with a failed smoke test cannot authorize production.
 The job uses read-only `actions: read` permission to verify this evidence; no new
 secret is needed. Production still requires the same commit to be live in staging.
@@ -220,8 +220,6 @@ Deleting the disposable workflow requests one worker restart through the authori
 service. The final readiness check waits up to 180 seconds for asynchronous worker
 recovery, retrying authenticated GETs only. It still requires ready artifacts,
 ready agent sets and ready workers; persistent failures and auth errors stay red.
-For hosts using `MINIAPP_NETWORK_CIDR`, validate a separate production pool after
-staging approval; never reuse staging's reserved range across environments.
 
 The read-only **Prepare Denkzeug release** workflow checks the healthy staging
 commit, ancestry, unused/increasing stable version, and evidence-backed notes. Its
@@ -275,7 +273,6 @@ After the offline image tests pass, **main push/manual CI only** publishes:
 
 - `ghcr.io/stromflix/nautionette/pi-base:<base-context-hash>`
 - `ghcr.io/stromflix/nautionette/pi-agent-default:<agent-and-base-context-hash>`
-- `ghcr.io/stromflix/nautionette/miniapp-builder:<sdk-context-hash>`
 
 The upstream GHCR namespace is intentionally stable across a GitHub repository
 rename. CI identifies upstream by numeric repository ID `1353247647`, not by name.

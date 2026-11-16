@@ -24,7 +24,6 @@ DOMAINS = {
     "chats": ("read", "write", "delete"),
     "agents": ("read", "write"),
     "projects": ("read", "write"),
-    "miniapps": ("read", "write", "invoke"),
     "outputs": ("read", "write"),
     "settings": ("read", "write"),
     "tokens": ("read", "manage"),
@@ -42,7 +41,6 @@ RESOURCE_KINDS = {
     "chats": "chat",
     "agents": "agent",
     "projects": "project",
-    "miniapps": "app",
     "outputs": "output",
     "mcp": "tool",
 }
@@ -76,7 +74,6 @@ SCOPES["runs:read"]["description"] = "Read your run inputs, results and activity
 SCOPES["runs:terminate"]["description"] = (
     "Force-terminate your runs when graceful cancellation is unavailable"
 )
-SCOPES["miniapps:write"]["description"] = "Publish executable app code, manage releases and delete apps"
 SCOPES["mcp:manage"]["description"] = "Configure MCP connections and their credentials (administrator)"
 SCOPES["system:control"]["description"] = "Restart workers and perform operational maintenance"
 SCOPES["tokens:read"]["description"] = "Inspect your key metadata and request history; never reveal secrets"

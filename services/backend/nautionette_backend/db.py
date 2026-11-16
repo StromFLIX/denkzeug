@@ -23,6 +23,7 @@ from .migrations import (
     add_delegated_chat_tree,
     remove_dashboards,
     remove_internet_approval,
+    remove_miniapps,
 )
 from .output_ids import publication_request_id
 from .search_index import install as install_search_index
@@ -63,49 +64,6 @@ CREATE TABLE IF NOT EXISTS mcp_oauth_waits (
     state TEXT NOT NULL,
     UNIQUE(turn_id, tool_call_id)
 );
-CREATE TABLE IF NOT EXISTS mini_apps (
-    id TEXT PRIMARY KEY,
-    revision INTEGER NOT NULL DEFAULT 0,
-    active_revision INTEGER,
-    agent_id TEXT REFERENCES agent_profiles(id) ON DELETE SET NULL,
-    title TEXT NOT NULL,
-    pinned INTEGER NOT NULL DEFAULT 0,
-    archived INTEGER NOT NULL DEFAULT 0,
-    updated_at REAL NOT NULL
-);
-CREATE TABLE IF NOT EXISTS mini_app_releases (
-    app_id TEXT NOT NULL REFERENCES mini_apps(id) ON DELETE CASCADE,
-    revision INTEGER NOT NULL,
-    manifest TEXT NOT NULL,
-    state TEXT NOT NULL,
-    error TEXT NOT NULL DEFAULT '',
-    created_at REAL NOT NULL,
-    PRIMARY KEY (app_id, revision)
-);
-CREATE TABLE IF NOT EXISTS mini_app_calls (
-    app_id TEXT NOT NULL REFERENCES mini_apps(id) ON DELETE CASCADE,
-    channel TEXT NOT NULL,
-    request_id TEXT NOT NULL,
-    request_hash TEXT NOT NULL,
-    revision INTEGER NOT NULL,
-    state TEXT NOT NULL,
-    response TEXT,
-    created_at REAL NOT NULL,
-    PRIMARY KEY (app_id, channel, request_id)
-);
-CREATE INDEX IF NOT EXISTS mini_app_calls_age ON mini_app_calls(created_at);
-CREATE TABLE IF NOT EXISTS mini_app_events (
-    id INTEGER PRIMARY KEY,
-    app_id TEXT NOT NULL REFERENCES mini_apps(id) ON DELETE CASCADE,
-    revision INTEGER NOT NULL,
-    channel TEXT NOT NULL,
-    operation TEXT NOT NULL,
-    request_id TEXT NOT NULL,
-    outcome TEXT NOT NULL,
-    duration_ms INTEGER NOT NULL,
-    created_at REAL NOT NULL
-);
-CREATE INDEX IF NOT EXISTS mini_app_events_app ON mini_app_events(app_id, id DESC);
 CREATE TABLE IF NOT EXISTS chats (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
@@ -396,10 +354,6 @@ CREATE TABLE IF NOT EXISTS github_webhook_deliveries (
 
 # Applied on every start; each one fails harmlessly once it is already in place.
 _MIGRATIONS = (
-    "ALTER TABLE mini_apps ADD COLUMN icon TEXT NOT NULL DEFAULT 'apps'",
-    "ALTER TABLE mini_apps ADD COLUMN image TEXT NOT NULL DEFAULT ''",
-    "ALTER TABLE mini_apps ADD COLUMN pinned_revision INTEGER",
-    "ALTER TABLE mini_apps ADD COLUMN pinned_at REAL NOT NULL DEFAULT 0",
     "ALTER TABLE runs ADD COLUMN statistics_version INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE projects ADD COLUMN connection_id TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE pi_package_installations ADD COLUMN default_revision_id TEXT",
@@ -487,10 +441,6 @@ class Database:
                 except sqlite3.OperationalError:
                     pass  # already applied
             self._conn.execute(
-                "UPDATE mini_apps SET pinned_revision=active_revision, pinned_at=updated_at "
-                "WHERE pinned=1 AND pinned_revision IS NULL AND active_revision IS NOT NULL"
-            )
-            self._conn.execute(
                 "UPDATE chat_outputs SET next_revision = MAX(next_revision, "
                 "COALESCE((SELECT MAX(revision) + 1 FROM chat_output_revisions "
                 "WHERE output_id = chat_outputs.id), 1))"
@@ -519,6 +469,7 @@ class Database:
                 "UPDATE output_storage_objects SET state = 'delete', delete_after = 0 "
                 "WHERE key IN (OLD.object_key, OLD.preview_key); END;"
             )
+            remove_miniapps(self._conn)
             remove_dashboards(self._conn)
             remove_internet_approval(self._conn)
             add_agent_grouping(self._conn, settings.agent_model, settings.default_agent_set)

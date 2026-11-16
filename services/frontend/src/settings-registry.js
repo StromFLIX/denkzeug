@@ -25,7 +25,7 @@ export const SETTINGS_SECTIONS = [
     ['users', 'Users', 'group', 'account-users', 'Manage accounts and issue one-time password reset codes.'],
     ['invitations', 'Invitations', 'vpn_key', 'account-invitations', 'Create copy/paste invitation codes. No email required.'],
     ['access', 'Access policies', 'admin_panel_settings', 'account-policy', 'Pause registrations or allow invited people to join.']
-  ].map(([key, label, icon, id, description]) => ({ key, label, icon, group: 'Account & workspace', scope: 'Workspace administrators', load: () => import('./components/settings/AccountPane.vue'), entries: [entry(id, label, description, 'account security access admin copy paste code optional email'), ...(key === 'access' ? [entry('account-sharing', 'Shared resources', 'Share saved agents, projects, tools, workflows and apps explicitly.', 'grants permissions members resources')] : [])] })),
+  ].map(([key, label, icon, id, description]) => ({ key, label, icon, group: 'Account & workspace', scope: 'Workspace administrators', load: () => import('./components/settings/AccountPane.vue'), entries: [entry(id, label, description, 'account security access admin copy paste code optional email'), ...(key === 'access' ? [entry('account-sharing', 'Shared resources', 'Share saved agents, projects, tools and workflows explicitly.', 'grants permissions members resources')] : [])] })),
   {
     key: 'general', label: 'General', icon: 'tune', group: 'Your experience', scope: 'Instance',
     scopeNote: 'Chat defaults are shared across this instance.',
@@ -130,11 +130,6 @@ export const SETTINGS_SECTIONS = [
       entry('usage-overview', 'Token consumption', 'Reported tokens, model responses and agent executions over time.', 'usage consumption input output cache tokens analytics'),
       entry('usage-breakdown', 'Usage breakdown', 'Explore consumption by model, agent, workflow or account, and export CSV.', 'users overall statistics daily trends export')
     ]
-  },
-  {
-    key: 'app-runtimes', label: 'App runtimes', icon: 'apps', group: 'Run & manage', scope: 'Instance',
-    load: () => import('./components/settings/MiniAppsPane.vue'),
-    entries: [entry('app-runtimes', 'App runtimes & resources', 'Running, sleeping and archived apps with memory, CPU, SQLite storage and image usage.', 'mini apps agents containers diagnostics debug limits RAM OOM processes')]
   },
   {
     key: 'storage', label: 'Storage', icon: 'storage', group: 'Run & manage', scope: 'Instance',

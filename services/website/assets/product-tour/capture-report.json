@@ -377,10 +377,6 @@
       "method": "GET"
     },
     {
-      "path": "/api/miniapps",
-      "method": "GET"
-    },
-    {
       "path": "/api/mcp-oauth/status",
       "method": "GET"
     },

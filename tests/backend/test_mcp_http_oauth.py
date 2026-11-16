@@ -21,6 +21,41 @@ URL = "https://mcp.example.test/mcp"
 ISSUER = "https://login.example.test"
 
 
+@pytest.mark.parametrize(
+    "addresses",
+    [
+        [],
+        ["127.0.0.1"],
+        ["169.254.169.254"],
+        ["10.0.0.1"],
+        ["::1"],
+        ["224.0.0.1"],
+        ["93.184.216.34", "192.168.1.1"],
+    ],
+)
+def test_oauth_dns_rejects_empty_private_special_and_mixed_answers(monkeypatch, addresses):
+    monkeypatch.setattr(
+        oauth.socket,
+        "getaddrinfo",
+        lambda *a, **k: [(None, None, None, None, (address, 443)) for address in addresses],
+    )
+    with pytest.raises(HTTPException) as caught:
+        oauth.public_addresses("provider.test")
+    assert caught.value.status_code == 403
+
+
+def test_oauth_dns_deduplicates_public_answers(monkeypatch):
+    monkeypatch.setattr(
+        oauth.socket,
+        "getaddrinfo",
+        lambda *a, **k: [
+            (None, None, None, None, (address, 443))
+            for address in ["93.184.216.34", "2606:4700:4700::1111", "93.184.216.34"]
+        ],
+    )
+    assert oauth.public_addresses("provider.test") == ["2606:4700:4700::1111", "93.184.216.34"]
+
+
 @pytest.fixture
 def hosted(backend, live, monkeypatch):
     monkeypatch.setattr(oauth, "_sessions", {})

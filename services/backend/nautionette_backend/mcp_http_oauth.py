@@ -16,6 +16,7 @@ import logging
 import math
 import re
 import secrets
+import socket
 import time
 from dataclasses import dataclass, field
 from urllib.parse import parse_qs, urlencode, urlsplit
@@ -37,7 +38,6 @@ from .clients import gateway
 from .db import db
 from .events import bus
 from .gateway_config import require_writable, resource_map
-from .miniapp_capabilities import public_addresses
 from .pi_package_secrets import _cipher, seal, unseal
 from .runtime import forget_catalog
 
@@ -119,6 +119,18 @@ def microsoft_issuer(issuer: str) -> bool:
     return parsed.hostname == "login.microsoftonline.com" and bool(
         re.fullmatch(r"/[A-Za-z0-9.-]+/v2\.0", parsed.path)
     )
+
+
+def public_addresses(host: str) -> list[str]:
+    addresses = sorted({item[4][0] for item in socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)})
+    if not addresses or any(
+        not ipaddress.ip_address(ip).is_global
+        or ipaddress.ip_address(ip).is_multicast
+        or ipaddress.ip_address(ip).is_reserved
+        for ip in addresses
+    ):
+        raise HTTPException(403, "Private, loopback, metadata and special-purpose addresses are denied")
+    return addresses
 
 
 async def public_url(url):

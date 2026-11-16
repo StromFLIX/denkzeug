@@ -1,7 +1,7 @@
 {
   "name": "Denkzeug",
   "tagline": "A tool for thought. Yours to shape.",
-  "description": "Your agents, workflows and miniapps. A self-hosted tool for thought.",
+  "description": "Your agents and workflows. A self-hosted tool for thought.",
   "defaultTheme": "denkzeug",
   "repository": "https://github.com/StromFLIX/denkzeug",
   "website": "https://denkzeug.ai",

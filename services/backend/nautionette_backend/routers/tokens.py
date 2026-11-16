@@ -82,12 +82,11 @@ async def catalog(request: Request):
                     )
     except (TimeoutError, HTTPException, httpx.HTTPError):
         warnings.append("Workflow resource lookup is unavailable. Existing keys can still be managed.")
-    for row in store().query("SELECT * FROM access_resources WHERE kind IN ('agent','project','app')"):
+    for row in store().query("SELECT * FROM access_resources WHERE kind IN ('agent','project')"):
         if access.allowed(row["kind"], row["resource_id"], principal):
             table, label = {
                 "agent": ("agent_profiles", "name"),
                 "project": ("projects", "full_name"),
-                "app": ("mini_apps", "title"),
             }[row["kind"]]
             named = store().one(f"SELECT {label} AS name FROM {table} WHERE id=?", (row["resource_id"],))  # noqa: S608
             resources.append(

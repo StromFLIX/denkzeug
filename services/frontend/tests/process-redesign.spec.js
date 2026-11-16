@@ -6,16 +6,9 @@ import { mockDesign } from './design-fixture.js'
 async function mockProcesses (context) {
   const state = await mockDesign(context)
   const run = { workflow_id: 'digest-record', workflow: 'digest', status: 'completed', input: { topic: 'Product updates' }, result: { delivered: true }, created_at: 1700000000, trigger: 'manual' }
-  const app = { id: 'digest-reader', title: 'Digest reader', icon: 'article', revision: 1, active_revision: 1, pinned: false, archived: false,
-    active: { revision: 1, manifest: { description: 'Read the latest workflow results.', frontend: { html: '<h1>Digest reader</h1>' } } },
-    releases: [{ revision: 1, state: 'ready', created_at: 1700000000 }] }
   await context.route('**/api/runs**', route => {
     const path = new URL(route.request().url()).pathname
     return route.fulfill({ json: path === '/api/runs' ? { runs: [run] } : path.endsWith('/graph') ? { ...state.workflow.graph, mode: 'execution', status: 'completed' } : { run, temporal: { status: 'COMPLETED', close_time: '2023-11-14T22:14:00Z' } } })
-  })
-  await context.route('**/api/miniapps**', route => {
-    const path = new URL(route.request().url()).pathname
-    return route.fulfill({ json: path === '/api/miniapps' ? { apps: [app] } : path.endsWith('/status') ? { runtime: { status: 'frontend-only', data_bytes: 0 } } : app })
   })
   return state
 }
@@ -26,11 +19,10 @@ async function noOverflow (page) {
   expect(await pane.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
 }
 
-test('empty process views explain workflows, runs, and apps with real next steps', async ({ page, context }) => {
+test('empty process views explain workflows with real next steps', async ({ page, context }) => {
   await mockProcesses(context)
   for (const [path, title, action] of [
-    ['/workflows', 'Choose a workflow', 'Open chats'],
-    ['/apps', 'An interface for your task', 'Open chats']
+    ['/workflows', 'Choose a workflow', 'Open chats']
   ]) {
     await page.goto(path)
     const empty = page.locator('.workspace-empty')
@@ -39,8 +31,6 @@ test('empty process views explain workflows, runs, and apps with real next steps
     await expect(empty.locator('.workspace-empty__glyph')).toHaveCSS('clip-path', 'none')
     await noOverflow(page)
   }
-  await page.getByRole('link', { name: 'Manage app runtimes', exact: true }).click()
-  await expect(page).toHaveURL(/\/settings\/app-runtimes$/)
 })
 
 test('workflow disable shows saved intent and retries schedule synchronization without toggling it back', async ({ page, context }) => {
@@ -122,13 +112,6 @@ for (const theme of THEMES) {
       await noOverflow(page)
       await page.screenshot({ path: test.info().outputPath('run-details.png') })
 
-      await page.goto('/apps/digest-reader#info')
-      await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible()
-      await expect(page.getByRole('heading', { name: 'Resources', exact: true })).toBeVisible()
-      await expect(page.getByRole('heading', { name: 'Releases', exact: true })).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Open app', exact: true })).toBeVisible()
-      await noOverflow(page)
-      await page.screenshot({ path: test.info().outputPath('app-details.png') })
       expect(errors).toEqual([])
     })
   }

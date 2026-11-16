@@ -10,13 +10,14 @@ import { mockWebsiteProduct, captureTime, chatPath } from '../tests/website-prod
 const frontendRoot = fileURLToPath(new URL('../', import.meta.url))
 const destination = fileURLToPath(new URL('../../website/assets/product-tour/', import.meta.url))
 const dataPath = fileURLToPath(new URL('../../website/product-tour-data.mjs', import.meta.url))
+const staticDestination = fileURLToPath(new URL('../../website/assets/product/', import.meta.url))
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: frontendRoot, encoding: 'utf8' }).trim()
 await mkdir(destination, { recursive: true })
 const server = await createServer({ root: frontendRoot, server: { host: '127.0.0.1', port: 0 } })
 await server.listen()
 const origin = server.resolvedUrls.local[0].replace(/\/$/, '')
 let browser
-const scenes = [], captures = [], errors = [], forbidden = []
+const scenes = [], captures = [], staticCaptures = [], errors = [], forbidden = []
 try {
   browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: { width: 1280, height: 840 }, deviceScaleFactor: 1.5, locale: 'en-US', timezoneId: 'UTC', colorScheme: 'light', reducedMotion: 'reduce', serviceWorkers: 'block' })
@@ -86,7 +87,7 @@ try {
   await expect(page.locator('.flow__toolbar')).toBeVisible()
   await page.getByRole('button', { name: 'Fit all steps', exact: true }).click()
   await capture('workflows', 'Workflows')
-  await nav('Runs').click()
+  await page.getByRole('link', { name: 'All runs', exact: true }).click()
   await page.locator('a[href="/runs/digest-record"]').click()
   await page.getByRole('button', { name: 'Details', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Output', exact: true })).toBeVisible()
@@ -95,28 +96,64 @@ try {
   await expect(page.getByRole('region', { name: 'Run statistics' })).toBeVisible()
   await capture('statistics', 'Run statistics', [{ id: 'statistics-details', label: 'Show Runs screenshot', target: 'runs', locator: page.getByRole('button', { name: 'Details', exact: true }), selector: 'button[name=Details]' }])
   await nav('Settings').click()
+  await page.getByRole('link', { name: 'General', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'General', exact: true })).toBeVisible()
   await capture('settings', 'Settings', [{ id: 'back-workspace', label: 'Show Statistics screenshot', target: 'statistics', locator: page.getByRole('button', { name: 'Back to workspace', exact: true }), selector: 'button[name="Back to workspace"]' }])
   for (const scene of scenes) for (const hotspot of scene.hotspots) expect(scenes.some(target => target.id === hotspot.target)).toBe(true)
+  // Refresh fallback and phone screenshots too: they must not advertise removed UI.
+  for (const [id, width, height, dpr] of [['desktop', 1280, 840, 1.5], ['desktop-small', 1280, 840, 1], ['phone', 390, 844, 2]]) {
+    const device = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, locale: 'en-US', timezoneId: 'UTC', colorScheme: 'light', reducedMotion: 'reduce', serviceWorkers: 'block' })
+    const shot = await device.newPage()
+    await shot.clock.setFixedTime(captureTime)
+    shot.on('pageerror', error => errors.push(error.message))
+    const sample = await mockWebsiteProduct(device)
+    await device.route('**/*', route => {
+      const request = route.request(), url = new URL(request.url())
+      if (!['127.0.0.1', 'localhost'].includes(url.hostname)) { forbidden.push(request.url()); return route.abort() }
+      return route.fallback()
+    })
+    await shot.goto(`${origin}${chatPath}`)
+    await expect(shot.getByRole('textbox', { name: 'Message', exact: true })).toBeVisible()
+    if (id === 'phone') await shot.getByRole('tab', { name: /Outputs/ }).click()
+    await shot.evaluate(() => document.fonts.ready)
+    await shot.waitForTimeout(700)
+    await expect(shot.getByRole('link', { name: 'Apps', exact: true })).toHaveCount(0)
+    expect(await shot.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    let previous, png
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const frame = await shot.screenshot({ animations: 'disabled', caret: 'hide' })
+      if (previous?.equals(frame)) { png = frame; break }
+      previous = frame
+      await shot.waitForTimeout(100)
+    }
+    expect(png, `Consecutive identical ${id} browser frames`).toBeTruthy()
+    expect(sample.state.sent).toEqual([]); expect(sample.state.writes).toEqual([])
+    await writeFile(`${staticDestination}${id}.png`, png)
+    staticCaptures.push({ id, viewport: { width, height }, deviceScaleFactor: dpr, pngBytes: png.length, requests: sample.requests })
+    await device.close()
+  }
+  expect(errors).toEqual([]); expect(forbidden).toEqual([])
   const conversions = JSON.parse(execFileSync(process.env.PYTHON || 'python3', ['-c', `
 import sys, json, hashlib
 from pathlib import Path
 from PIL import Image, features
 results = []
-for path in sorted(Path(sys.argv[1]).glob('*.png')):
+for path in sorted(path for folder in sys.argv[1:] for path in Path(folder).glob('*.png')):
     original = Image.open(path).convert('RGB')
     target = path.with_suffix('.webp')
     original.save(target, 'WEBP', lossless=True, quality=100, method=6, exact=True)
     decoded = Image.open(target).convert('RGB')
-    assert original.size == (1920, 1260)
+    expected = {'phone': (780, 1688), 'desktop-small': (1280, 840)}.get(path.stem, (1920, 1260))
+    assert original.size == expected
     assert decoded.tobytes() == original.tobytes(), path
     results.append(dict(id=path.stem, webpBytes=target.stat().st_size, pngSha256=hashlib.sha256(path.read_bytes()).hexdigest(), webpSha256=hashlib.sha256(target.read_bytes()).hexdigest(), pixelIdentical=True))
-assert sum(item['webpBytes'] for item in results) < 900000
+assert sum(item['webpBytes'] for item in results) < 1200000
 print(json.dumps(dict(libwebp=features.version('webp'), files=results)))
-`, destination], { encoding: 'utf8' }))
+`, destination, staticDestination], { encoding: 'utf8' }))
   await writeFile(dataPath, `// Generated by services/frontend/scripts/capture-website.mjs; actual UI, fictional data.\nexport const productTour = Object.freeze(${JSON.stringify({ initial: 'chat', viewport: { width: 1280, height: 840 }, scenes }, null, 2)});\n`)
   await writeFile(`${destination}capture-report.json`, JSON.stringify({ commit, clock: captureTime.toISOString(), viewport: { width: 1280, height: 840 }, deviceScaleFactor: 1.5, pixels: { width: 1920, height: 1260 }, errors, forbidden, captures, conversions, requests: fixture.requests }, null, 2) + '\n')
-  console.log(`Captured ${scenes.length} actual Vue scenes in ${destination}`)
+  await writeFile(`${staticDestination}capture-report.json`, JSON.stringify({ commit, clock: captureTime.toISOString(), errors, forbidden, captures: staticCaptures, conversions }, null, 2) + '\n')
+  console.log(`Captured ${scenes.length} actual Vue scenes and ${staticCaptures.length} device views`)
   await context.close()
 } finally {
   await browser?.close()

@@ -183,7 +183,6 @@ def test_ci_outputs_exactly_the_brokers_source_fingerprints(repo_root, monkeypat
     assert outputs == {
         "base": images.base_hash(),
         "default": images._agent_set_hash("default"),
-        "miniapp": images.image_context.context_hash(repo_root / "services/miniapp-sdk"),
     }
 
 
@@ -419,6 +418,14 @@ def test_a_docker_that_is_not_there_degrades_rather_than_crashes(client, docker)
 def test_every_verb_needs_the_internal_token(client, method, path):
     assert getattr(client, method)(path).status_code == 401
     assert getattr(client, method)(path, headers={"X-Internal-Token": "wrong"}).status_code == 401
+
+
+def test_retired_runtime_routes_are_absent_and_have_no_authentication_exception(client):
+    paths = {route.path for route in main.app.routes}
+    assert not any("miniapp" in path for path in paths)
+    for path in ("/miniapps/capability", "/miniapps/old/deploy", "/miniapps/old/request"):
+        assert client.post(path, json={}).status_code == 401
+        assert client.post(path, json={}, headers=HEADERS).status_code == 404
 
 
 def test_health_is_the_one_thing_that_is_open(client, docker):

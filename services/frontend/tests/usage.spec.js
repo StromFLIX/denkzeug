@@ -16,7 +16,7 @@ async function mock (page, handler) {
     if (url.pathname === '/api/settings/usage/export') return route.fulfill({ contentType: 'text/csv', body: 'model,total\ncopilot/gpt-6.1-sol,24800000', headers: { 'Content-Disposition': 'attachment; filename="denkzeug-usage.csv"' } })
     if (url.pathname === '/api/settings/usage') return handler ? handler(route, url) : route.fulfill({ json: payload(url.searchParams) })
     if (url.pathname === '/api/events') return route.fulfill({ contentType: 'text/event-stream', body: ': connected\n\n' })
-    return route.fulfill({ json: url.pathname === '/api/catalog' ? { models: [], tools: [], agents: [] } : { chats: [], drafts: [], workflows: [], runs: [], apps: [] } })
+    return route.fulfill({ json: url.pathname === '/api/catalog' ? { models: [], tools: [], agents: [] } : { chats: [], drafts: [], workflows: [], runs: [] } })
   })
 }
 const path = '/settings/usage?period=custom&start=2026-11-01&end=2026-11-30'

@@ -15,7 +15,7 @@ test('new workspaces use the shared Denkzeug identity and a quiet, readable canv
   await expect(page.locator('.welcome__wordmark')).toContainText(brand.name)
   await expect(page.getByRole('navigation', { name: 'Ways to work' })).toContainText('Create')
   await expect(page.getByRole('navigation', { name: 'Ways to work' })).toContainText('Process')
-  await expect(page.getByRole('navigation', { name: 'Ways to work' })).toContainText('Show')
+  await expect(page.getByRole('navigation', { name: 'Ways to work' })).not.toContainText('Show')
   const logo = await page.request.get(brand.logo)
   expect(logo.ok()).toBe(true)
   const svg = await logo.text()

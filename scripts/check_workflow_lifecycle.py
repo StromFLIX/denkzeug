@@ -5,7 +5,7 @@ import time
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from scripts.check_miniapps import API
+from scripts.smoke_api import API
 
 
 def check(api):

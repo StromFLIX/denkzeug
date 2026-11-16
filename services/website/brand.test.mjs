@@ -132,7 +132,7 @@ test('only safe deployment URLs become app links', () => {
 
 test('website keeps working deployment and release contracts with reusable vector branding', () => {
   assert.match(html, /<h1 id="brand-title">Denkzeug<\/h1>/)
-  for (const heading of ['Free', 'Remote', 'Extensible', 'Create', 'Process', 'Show']) assert.ok(html.includes(`>${heading}</h3>`))
+  for (const heading of ['Free', 'Remote', 'Extensible', 'Create', 'Process']) assert.ok(html.includes(`>${heading}</h3>`))
   for (const id of ['app-link', 'release-status', 'release-downloads', 'ios-status']) assert.ok(html.includes(`id="${id}"`))
   assert.ok(html.includes('https://getartcraft.com/'))
   assert.ok(html.includes(`${brand.repository}#run-it`))

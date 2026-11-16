@@ -29,8 +29,6 @@ const state = reactive({
   chats: [],
   chatActivity: null,
   projects: [],
-  apps: [],
-  appsError: '',
   workflows: [],
   workflowInputDraft: null,
   drafts: [],
@@ -159,14 +157,6 @@ export const actions = {
     if (data && scope === chatCacheScope() && request === runsRequest) state.runs = data.runs
   },
 
-  async loadMiniapps () {
-    const scope = chatCacheScope()
-    try {
-      const data = await guard(() => api.miniapps())
-      if (data && scope === chatCacheScope()) { state.apps = Array.isArray(data.apps) ? data.apps : []; state.appsError = '' }
-    } catch (error) { if (scope === chatCacheScope()) state.appsError = error.message }
-  },
-
   async loadMcpAuth () {
     if (!account.user || account.user.role !== 'admin') return
     try { await mcpAuth.refresh(); state.mcpAuth.error = '' } catch (error) { state.mcpAuth.error = error.message }
@@ -188,7 +178,7 @@ export const actions = {
   async refreshAll () {
     if (!account.user) return
     const common = [actions.loadCatalog(), actions.loadChats()]
-    if (account.user.role !== 'admin') { await Promise.all([...common, actions.loadAgents(), actions.loadProjects(), actions.loadMiniapps(), actions.loadWorkflows(), actions.loadRuns()]); state.ready = true; return }
+    if (account.user.role !== 'admin') { await Promise.all([...common, actions.loadAgents(), actions.loadProjects(), actions.loadWorkflows(), actions.loadRuns()]); state.ready = true; return }
     await Promise.all([
       ...common,
       actions.loadSystem(),
@@ -196,7 +186,6 @@ export const actions = {
       actions.loadCatalog(),
       actions.loadChats(),
       actions.loadProjects(),
-      actions.loadMiniapps(),
       actions.loadMcpAuth(),
       actions.loadWorkflows(),
       actions.loadRuns()
@@ -215,10 +204,10 @@ export const actions = {
     workflowsRequest++
     runsRequest++
     state.ready = state.catalogLoaded = false
-    state.catalogError = state.appsError = ''
+    state.catalogError = ''
     state.catalog = emptyCatalog()
     state.system = { components: [], agent_sets: [] }
-    state.chats = []; state.chatActivity = null; state.projects = []; state.apps = []
+    state.chats = []; state.chatActivity = null; state.projects = []
     state.workflows = []; state.workflowInputDraft = null; state.drafts = []; state.runs = []; state.events = []
     agentNavigation.reset({ restoreCached: Boolean(account.user) })
     mcpAuth.clear()
@@ -233,8 +222,6 @@ export const actions = {
     chatsRequest++
     state.chats = []
     state.chatActivity = null
-    state.apps = []
-    state.appsError = ''
     chatCache.list(scope).then((chats) => {
       if (scope === chatCacheScope() && !state.chats.length) state.chats = chats || []
     })
@@ -246,12 +233,11 @@ export const actions = {
       state.events = state.events.slice(0, 200)
       const kind = event.kind || ''
       if (kind === 'connected') actions.refreshAll().catch(() => {})
-      if (account.user?.role !== 'admin' && !/^(chat|run|workflow|miniapp)\./.test(kind)) return
+      if (account.user?.role !== 'admin' && !/^(chat|run|workflow)\./.test(kind)) return
       if (kind.startsWith('run.')) actions.loadRuns().catch(() => {})
       if (kind.startsWith('workflow.') || kind.startsWith('promote.')) actions.loadWorkflows().catch(() => {})
       if (kind.startsWith('chat.')) actions.loadChats().catch(() => {})
       if (kind.startsWith('project.')) actions.loadProjects().catch(() => {})
-      if (kind === 'miniapp.changed') actions.loadMiniapps().catch(() => {})
       if (kind === 'agent.profile.changed') actions.loadAgents()
       if (['model.integration.changed', 'mcp.server.changed', 'settings.changed', 'agent.profile.changed'].includes(kind)) actions.loadCatalog(true).catch(() => {})
       if (kind.startsWith('mcp.oauth.') || kind === 'mcp.server.changed') actions.loadMcpAuth().catch(() => {})

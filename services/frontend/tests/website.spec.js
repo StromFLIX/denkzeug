@@ -46,7 +46,7 @@ for (const width of [1440, 390, 320]) {
     await page.reload()
     await expect(language).toHaveValue('de')
     await language.selectOption('en')
-    for (const name of ['Free', 'Remote', 'Extensible', 'Create', 'Process', 'Show']) {
+    for (const name of ['Free', 'Remote', 'Extensible', 'Create', 'Process']) {
       await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(1)
     }
     await page.getByRole('link', { name: 'Make it yours' }).click()

@@ -51,8 +51,6 @@ def visible(event: dict, who) -> bool:
         )
     if event.get("user_id"):
         return event["user_id"] == who.user_id
-    if event.get("app_id"):
-        return access.allowed("app", event["app_id"], who)
     if event.get("workflow"):
         return access.allowed("workflow", event["workflow"], who)
     kind = event.get("kind", "")

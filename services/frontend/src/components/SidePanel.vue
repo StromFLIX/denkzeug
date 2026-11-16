@@ -51,7 +51,6 @@
           <span class="material-icons" style="font-size: 1rem">close</span>
         </button>
       </div>
-      <PinnedApps v-if="showPinnedApps && ['chats', 'apps'].includes(section)" compact />
       <div v-if="section === 'chats'" v-show="showGroupControls" id="chat-group-controls" class="side__controls">
         <div class="side__control">
           <span class="side__control-label">Group</span>
@@ -106,16 +105,6 @@
           Nothing active in the last {{ activeLabel }}.
           <button type="button" class="side__empty-link" @click="showOlder = true">Show older chats</button>
         </p>
-      </template>
-
-      <template v-else-if="section === 'apps'">
-        <RouterLink v-for="app in filteredApps" :key="app.id" :to="{ path: `/apps/${app.id}`, query: route.query }" class="row-item" :class="{ 'row-item--active': route.params.id === app.id }">
-          <AppAvatar :app="app" />
-          <div class="grow"><div class="row-item__title truncate">{{ app.title }}</div><div class="row-item__sub truncate">{{ appOwner(app, store.agentNavigation.agents) }} · {{ app.archived ? 'Archived' : `v${app.active_revision || 'pending'}` }}</div></div>
-          <span v-if="app.pinned" class="material-icons row-item__pin" aria-label="Pinned">push_pin</span>
-        </RouterLink>
-        <p v-if="store.appsError" class="side__error caption" role="alert">{{ store.appsError }}</p>
-        <p v-else-if="!filteredApps.length" class="side__empty caption">{{ query ? 'Nothing matches that.' : 'No apps yet. Ask an agent to build one.' }}</p>
       </template>
 
       <!-- workflows -->
@@ -180,9 +169,6 @@ import { actions, health, store } from '../store'
 import { account } from '../auth-session.js'
 import { api } from '../api'
 import ChatTree from './ChatTree.vue'
-import AppAvatar from './AppAvatar.vue'
-import PinnedApps from './PinnedApps.vue'
-import { appOwner } from '../miniapps'
 import { preferences } from '../preferences'
 import { CHAT_GROUP_OPTIONS, groupChats } from '../chat-groups'
 import { chatAncestors, chatForest, filterChatForest, chatTreeRows } from '../chat-tree'
@@ -191,7 +177,6 @@ import { chatLocation } from '../router'
 
 const props = defineProps({
   showCollapseButton: { type: Boolean, default: false },
-  showPinnedApps: { type: Boolean, default: true },
   isChatActive: { type: Function, required: true }
 })
 defineEmits(['collapse-sidebar', 'open-search'])
@@ -269,8 +254,8 @@ async function setUnread (chat, unread) {
 }
 
 const section = computed(() => route.meta.section || route.name || 'chats')
-const selectedAgent = computed(() => ['chats', 'apps'].includes(section.value) ? store.agentNavigation.agents.find(agent => agent.id === route.query.agent) : null)
-const heading = computed(() => selectedAgent.value?.name || ({ chats: 'Chats', workflows: 'Workflows', runs: 'Runs', apps: 'Apps' }[section.value]))
+const selectedAgent = computed(() => section.value === 'chats' ? store.agentNavigation.agents.find(agent => agent.id === route.query.agent) : null)
+const heading = computed(() => selectedAgent.value?.name || ({ chats: 'Chats', workflows: 'Workflows', runs: 'Runs' }[section.value]))
 
 const matches = (haystack) => haystack.toLowerCase().includes(query.value.trim().toLowerCase())
 
@@ -293,8 +278,6 @@ const filteredWorkflows = computed(() =>
 const filteredDrafts = computed(() =>
   store.drafts.filter((draft) => matches(`${draft.name} ${draft.description || ''}`)))
 
-const filteredApps = computed(() => store.apps.filter(app => belongsToAgent(app, route.query.agent) && matches(`${app.title} ${app.id}`)))
-
 async function startChat () {
   // Keep the list beneath the draft even if clicked during initial lazy routing.
   await router.isReady()
@@ -302,8 +285,7 @@ async function startChat () {
 }
 
 function refresh () {
-  if (section.value === 'apps') actions.loadMiniapps()
-  else if (section.value === 'workflows') actions.loadWorkflows()
+  if (section.value === 'workflows') actions.loadWorkflows()
   else actions.loadRuns()
 }
 </script>

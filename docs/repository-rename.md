@@ -123,7 +123,7 @@ of preparation. The actual cutover is a separate operation.
 Do **not** globally replace `nautionette`. Preserve Python imports/package names,
 `NAUTIONETTE_*` configuration, Docker labels/networks/volumes, `STACK_NAMESPACE`,
 Compose project identity, `/var/lib/nautionette-*` paths, Temporal task queues and
-workflow names, browser storage keys, mini-app SDK/bridge names, mobile/desktop
+workflow names, browser storage keys, mobile/desktop
 `dev.nautionette.app`, `nautionette://` OAuth links, artifact filenames, public
 instance domains and OAuth callback URLs.
 
@@ -145,9 +145,9 @@ release workflow together. Do not assume GitHub redirects repair credentials.
 
 A future GHCR move is separate: set Actions `AGENT_IMAGE_REPOSITORY` to the new
 `owner/repository`, run CI and verify all three fingerprint-tagged packages
-(`pi-base`, `pi-agent-default`, `miniapp-builder`) and their pull permissions.
+(`pi-base`, `pi-agent-default`) and their pull permissions.
 Only then switch staging's `AGENT_IMAGE_REGISTRY_PREFIX` to the matching
-`ghcr.io/<owner>/<repository>/pi-`, cold-pull and test agent/mini-app operations,
+`ghcr.io/<owner>/<repository>/pi-`, cold-pull and test agent operations,
 and promote the setting to production. Keep old packages and recorded settings
 for rollback. Also confirm rollback commits' image fingerprints exist in the
 selected namespace; a source repo rename is not a reason to prune old packages.

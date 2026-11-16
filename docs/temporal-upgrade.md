@@ -50,7 +50,7 @@ application. It has no published port, no HTTP execution API and no SSH key. Thi
 is a temporary deployment-only Docker administrator, not an agent container or a
 new generic broker API. Its Docker socket and the two dedicated host maintenance
 directories are mounted explicitly; it does not mount the host root filesystem.
-Normal agent/mini-app isolation and authentication are unchanged.
+Normal agent isolation and authentication are unchanged.
 
 The installed Coolify **4.7.5** implementation was checked for these behaviors:
 

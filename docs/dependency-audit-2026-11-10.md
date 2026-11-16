@@ -13,7 +13,6 @@ refresh, not a claim that every ecosystem's newest major can safely be deployed.
 | Python services and developer tools | Root/member `pyproject.toml` files and `uv.lock` (99 workspace/external entries) |
 | Separate CPU speech appliance | `services/stt/requirements.in` and hash-locked `requirements.txt` |
 | Web, Electron, Android and iOS clients | `services/frontend/package.json` and `package-lock.json`, including optional/peer/transitive packages |
-| Rust compiler and statically bundled SQLite | `services/miniapp-sdk/Cargo.toml` and `Cargo.lock` |
 | PostgreSQL privilege helper's Go modules | `infra/postgres/go.mod` and `go.sum`; checksum-pinned gosu source archive |
 | Container runtimes and external executables | All 15 Dockerfiles, `docker-compose.yaml`, `images/agent-images.hcl` |
 | Creative applications | `images/pi-base/artcraft/catalog.json`: exact versions and Linux x86_64/aarch64 SHA-256 digests |
@@ -22,7 +21,7 @@ refresh, not a claim that every ecosystem's newest major can safely be deployed.
 | Model artifacts | Search model revision in `search_index.py`; Moonshine model selection/cache in `services/stt/server.py` |
 
 CI now publishes **SPDX JSON SBOM artifacts for every built service image, both
-agent images, the mini-app compiler, PostgreSQL, MaxIO and Temporal UI**. These
+agent images, PostgreSQL, MaxIO and Temporal UI**. These
 record the packages actually present in images, including distribution packages
 and nested Python/npm/Rust dependencies, rather than pretending a Dockerfile's
 explicit install list is a complete OS inventory. Grype JSON reports accompany
@@ -114,9 +113,6 @@ package/model/transport/session RPC contracts are tested against Pi 1.5.2.
 | Copied static BusyBox (gateway and collector health checks) | 1.37.0-musl | 1.38.0-musl |
 | OpenTelemetry Collector contrib | 0.164.0 | 0.165.0 |
 | Temporal UI (debug profile) | 2.57.0 | 2.58.1 |
-| Rust builder | 1.91.1-alpine3.22 | 1.99.1-alpine3.22 |
-| rusqlite | 0.37.0 | 0.41.1 |
-| Bundled libsqlite3-sys | 0.35.0 | 0.39.1 (SQLite 3.54.0) |
 | Node | 24 | Retain supported LTS line; refresh floating image (24.22.2 observed) |
 | Python | 3.13 (3.13.11 in the old uv image) | Explicitly use 3.13.18-slim-bookworm plus copied uv 0.13.7 |
 | nginx | 1.31.8-alpine | Already current; refresh distribution packages |
@@ -126,12 +122,6 @@ package/model/transport/session RPC contracts are tested against Pi 1.5.2.
 | Container npm | 11.19.1 | 11.21.2 (supported npm 11 line, not npm 12) |
 | PostgreSQL gosu | 1.19, built with Go 1.24.6 | Checksum-pinned 1.20 source rebuilt with Go 1.27.3 |
 | gosu modules | moby/sys/user 0.1.0; x/sys 0.1.0 | Locked 0.5.0 and 0.50.0 respectively |
-
-Cargo's entire graph was updated, including cc, foldhash, hashbrown, hashlink,
-itoa, smallvec and syn. The builder still vendors and tests the lock **offline**;
-compiler/runtime isolation is unchanged. Rebuilding the compiler does not rewrite
-already-published mini-app executables: existing apps retain their embedded
-SQLite until republished/restored as a new release through the supported API.
 
 Every repository-controlled Debian-based build stage now upgrades installed distribution packages
 before installation; Alpine application/compiler stages run `apk upgrade`.
@@ -252,5 +242,5 @@ unit tests, Vite production build, real Pi RPC tests, hash-locked CPU speech tes
 Rust tests, real offline semantic retrieval and native ArtCraft tests. `pip-audit`
 on the resolved Python workspace found no known vulnerabilities. CI additionally
 builds actual images, checks Compose, exercises MaxIO, validates gateway OAuth,
-mini-app isolation and browser contracts, and verifies staging components plus
-mini-app/OAuth/dictation/creative-app readiness before production eligibility.
+browser contracts, and verifies staging components plus
+OAuth/dictation/creative-app readiness before production eligibility.

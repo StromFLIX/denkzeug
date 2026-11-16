@@ -19,7 +19,7 @@ No usage statistics or customer results are fabricated.
 - **Definition:** Source Serif 4, for the dictionary-entry association rather than
   a decorative headline. Other writing systems fall back to installed fonts.
 - **Layout:** centred name and definition; left-aligned text below; shared content
-  edges; three principles, then three capabilities. No automatic scroll reveals.
+  edges; three principles, then two capabilities. No automatic scroll reveals.
 - **Motion:** one cellular field; quiet crossfades at a capped 24fps, one generation
   per 420ms. Eight Life motifs have varied orientations, locations and lifetimes;
   short trains take newly generated routes, with occasional forks that rejoin.
@@ -46,7 +46,7 @@ real DOM controls. Clicking changes the image; no interface is recreated in HTML
 no simulation runs, and no pictured control acts as a live app. A screen picker
 below the image provides usable touch/keyboard targets. Capture provenance and
 measured rectangles live beside the images under `assets/product-tour/`.
-The three later illustrations explain artifact types, workflows and miniapps.
+The later illustrations explain artifact types and workflows.
 
 ## Brand assets
 

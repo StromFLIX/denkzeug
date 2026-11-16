@@ -47,10 +47,6 @@
         "method": "GET"
       },
       {
-        "path": "/api/miniapps",
-        "method": "GET"
-      },
-      {
         "path": "/api/mcp-oauth/status",
         "method": "GET"
       },
@@ -160,10 +156,6 @@
         "method": "GET"
       },
       {
-        "path": "/api/miniapps",
-        "method": "GET"
-      },
-      {
         "path": "/api/mcp-oauth/status",
         "method": "GET"
       },
@@ -270,10 +262,6 @@
       },
       {
         "path": "/api/projects",
-        "method": "GET"
-      },
-      {
-        "path": "/api/miniapps",
         "method": "GET"
       },
       {

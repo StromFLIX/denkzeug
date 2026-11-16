@@ -21,7 +21,6 @@
 | [MCP servers](mcp-servers.md) | HTTP/stdio tools, hosted OAuth and CLI sign-in. |
 | [Native creative apps](creative-apps.md) | ArtCraft tools, versions, updates and sandbox boundaries. |
 | [Chat outputs](chat-outputs.md) | Published files, editable sources, immutable revisions and storage quotas. |
-| [Miniapps](mini-apps.md) | Publishing, isolated runtimes, capabilities, limits and persistent state. |
 | [Workflow authoring](reference.md#workflows-are-python-files) | Python manifests, validation, deployment, flow views and execution statistics. |
 | [Saved workflow agents](workflow-agents.md) | Saved profiles, isolated project worktrees, durable retries and cancellation. |
 | [GitHub projects](reference.md#github-projects) | App registration, repository access, worktrees, retention and Git attribution. |

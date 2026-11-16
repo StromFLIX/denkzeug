@@ -339,7 +339,7 @@ def staging_verified(repository: str, commit: str) -> bool:
     ).get("workflow_runs", [])
     required_steps = {
         "Pin, deploy, and verify",
-        "Verify isolated mini-app lifecycle (staging only)",
+        "Verify workflow disable and result delivery (staging only)",
         "Creative-app artifact readiness diagnostics (staging only)",
     }
     for run in runs:
@@ -447,7 +447,7 @@ def deploy(target: str, commit: str, release_tag: str = "") -> str | None:
             raise RuntimeError("Release must be the exact commit currently deployed successfully in staging")
         if not staging_verified(required("GITHUB_REPOSITORY"), commit):
             raise RuntimeError(
-                "Production promotion requires successful staging health, mini-app smoke "
+                "Production promotion requires successful staging health "
                 "and creative-app checks for this exact commit"
             )
     if any(row.get("status") in {"queued", "in_progress"} for row in api.history(app)):

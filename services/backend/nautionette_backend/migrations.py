@@ -79,6 +79,26 @@ def add_agent_grouping(conn: sqlite3.Connection, model: str, agent_set: str) -> 
         conn.execute("UPDATE chats SET agent_customized = ? WHERE id = ?", (custom, row["id"]))
 
 
+def remove_miniapps(conn: sqlite3.Connection) -> None:
+    """Remove retired executable UI state on upgrades, children before parents.
+
+    Keep request/audit history and conversations; remove only obsolete grants.
+    Fresh installations never create these tables. Cleanup failures fail startup.
+    """
+    for table in ("mini_app_events", "mini_app_calls", "mini_app_releases", "mini_apps"):
+        conn.execute(f"DROP TABLE IF EXISTS {table}")  # noqa: S608 - fixed table allowlist
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    for table in ("access_grants", "access_resources", "api_resource_ids"):
+        if table in tables:
+            conn.execute(f"DELETE FROM {table} WHERE kind='app'")  # noqa: S608 - fixed table allowlist
+    if "api_keys" in tables:
+        for row in conn.execute("SELECT id, grants FROM api_keys"):
+            grants = json.loads(row["grants"])
+            active = [grant for grant in grants if not grant.get("scope", "").startswith("miniapps:")]
+            if active != grants:
+                conn.execute("UPDATE api_keys SET grants=? WHERE id=?", (json.dumps(active), row["id"]))
+
+
 def remove_dashboards(conn: sqlite3.Connection) -> None:
     """Retire the declarative UI state without touching chats or workflow history.
 

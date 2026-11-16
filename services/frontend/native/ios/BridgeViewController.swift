@@ -7,7 +7,7 @@ class BridgeViewController: CAPBridgeViewController {
     private let accountCapability = UUID().uuidString + UUID().uuidString
     override func webView(with frame: CGRect, configuration: WKWebViewConfiguration) -> WKWebView {
         // WK script message handlers are visible to subframes. Keep a vault capability
-        // only in the bundled main frame, never in generated/opaque mini-app frames.
+        // only in the bundled main frame, never in untrusted subframes.
         let source = "if (location.protocol === 'capacitor:' && location.hostname === 'localhost') Object.defineProperty(globalThis, 'denkzeugAccountCapability', {value:'\(accountCapability)'});"
         configuration.userContentController.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         return super.webView(with: frame, configuration: configuration)

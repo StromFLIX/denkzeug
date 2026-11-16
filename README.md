@@ -5,7 +5,7 @@
 <h1 align="center">Denkzeug</h1>
 
 <p align="center"><strong>A tool for thought. Yours to shape.</strong><br />
-Your agents, workflows and miniapps. A self-hosted home for the work that comes next.</p>
+Your agents and workflows. A self-hosted home for the work that comes next.</p>
 
 <p align="center">
   <a href="https://github.com/StromFLIX/denkzeug/actions/workflows/ci.yml"><img src="https://github.com/StromFLIX/denkzeug/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
@@ -40,7 +40,7 @@ computer or phone.
 | **Remote** | Work happens on your server. Switch devices or close the client without stopping an accepted agent turn. |
 | **Extensible** | Bring your models, MCP tools, agent instructions, skills and GitHub projects. Workflows are readable Python, not a proprietary diagram format. |
 
-## Create. Process. Show.
+## Create. Process.
 
 ### Create
 
@@ -59,16 +59,6 @@ trigger, then inspect its runs, results and statistics. [Temporal](https://tempo
 handles durable execution; workflow code remains plain Python you can read and edit.
 
 [Workflow authoring and execution](docs/reference.md#workflows-are-python-files)
-
-<a id="mini-apps"></a>
-
-### Show
-
-Put a small interface on top. Agents can publish miniapps with HTML, CSS and
-JavaScript, plus an optional isolated Rust backend and SQLite. Buttons call the
-app directly; ordinary interaction does not require another agent turn.
-
-[Miniapp guide](docs/mini-apps.md)
 
 ## Run it
 
@@ -158,7 +148,6 @@ a desktop or phone client does not install the backend.
 | Agents, models and delegation | [Agent configuration](docs/agent-configuration.md) |
 | Tools and connections | [MCP servers](docs/mcp-servers.md) |
 | Creative work and files | [Native creative apps](docs/creative-apps.md) · [Outputs](docs/chat-outputs.md) |
-| Miniapps | [Publishing and runtime guide](docs/mini-apps.md) |
 | GitHub projects | [Project setup and worktrees](docs/reference.md#github-projects) · [Issue mentions](docs/github-mentions.md) |
 | Architecture, APIs and development | [Technical reference](docs/reference.md) |
 

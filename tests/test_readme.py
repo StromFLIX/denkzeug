@@ -98,7 +98,6 @@ def test_readme_and_setup_use_the_real_compose_entrypoint_and_required_secrets()
         assert "28+" in text
         assert "openssl rand -hex 32" in text
     assert "BACKEND_PORT:-8080" in compose
-    assert "Docker Engine 28+" in (ROOT / "docs/mini-apps.md").read_text()
 
 
 def test_documentation_paths_and_local_section_links_resolve():
@@ -124,7 +123,7 @@ def test_existing_website_readme_deep_links_keep_working():
     html = (ROOT / "services/website/index.html").read_text()
     repository = json.loads((ROOT / "branding/brand.json").read_text())["repository"]
     fragments = re.findall(re.escape(repository) + r"#([a-z0-9-]+)", html)
-    assert {"run-it", "mini-apps", "workflows-are-python-files"}.issubset(fragments)
+    assert {"run-it", "workflows-are-python-files"}.issubset(fragments)
     assert set(fragments).issubset(anchors(README.read_text()))
 
 

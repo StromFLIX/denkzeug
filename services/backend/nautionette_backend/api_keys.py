@@ -36,8 +36,6 @@ MEMBER_SCOPES = frozenset(
         "chats:delete",
         "agents:read",
         "projects:read",
-        "miniapps:read",
-        "miniapps:invoke",
         "outputs:read",
         "mcp:read",
         "tokens:read",
@@ -181,7 +179,7 @@ def validate_grants(grants: list, who) -> list:
                     access.require_chat(value, who)
                 elif kind == "run":
                     access.require_run(value, who)
-                elif kind in {"agent", "project", "app", "tool"}:
+                elif kind in {"agent", "project", "tool"}:
                     access.require_resource(kind, value, who)
                 elif kind == "output":
                     if not store().one(

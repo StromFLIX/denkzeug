@@ -49,11 +49,6 @@
     "authentication": "account",
     "resource": null
   },
-  "DELETE /api/miniapps/{app_id}": {
-    "scope": "miniapps:write",
-    "authentication": "account",
-    "resource": "app:app_id"
-  },
   "DELETE /api/model-integrations/copilot/login/{identifier}": {
     "scope": "integrations:manage",
     "authentication": "account",
@@ -326,41 +321,6 @@
     "authentication": "account",
     "resource": null
   },
-  "GET /api/miniapps": {
-    "scope": "miniapps:read",
-    "authentication": "account",
-    "resource": null
-  },
-  "GET /api/miniapps/contract": {
-    "scope": "miniapps:read",
-    "authentication": "account",
-    "resource": null
-  },
-  "GET /api/miniapps/overview": {
-    "scope": "miniapps:read",
-    "authentication": "account",
-    "resource": null
-  },
-  "GET /api/miniapps/{app_id}": {
-    "scope": "miniapps:read",
-    "authentication": "account",
-    "resource": "app:app_id"
-  },
-  "GET /api/miniapps/{app_id}/diagnostics": {
-    "scope": "miniapps:read",
-    "authentication": "account",
-    "resource": "app:app_id"
-  },
-  "GET /api/miniapps/{app_id}/releases/{revision}": {
-    "scope": "miniapps:read",
-    "authentication": "account",
-    "resource": "app:app_id"
-  },
-  "GET /api/miniapps/{app_id}/status": {
-    "scope": "miniapps:read",
-    "authentication": "account",
-    "resource": "app:app_id"
-  },
   "GET /api/model-integrations": {
     "scope": "integrations:read",
     "authentication": "account",
@@ -631,11 +591,6 @@
     "authentication": "account",
     "resource": "chat:chat_id"
   },
-  "PATCH /api/miniapps/{app_id}": {
-    "scope": "miniapps:write",
-    "authentication": "account",
-    "resource": "app:app_id"
-  },
   "PATCH /api/pi-packages/installations/{installation_id}/configuration": {
     "scope": "packages:manage",
     "authentication": "account",
@@ -851,31 +806,6 @@
     "authentication": "account",
     "resource": null
   },
-  "POST /api/miniapps/validate": {
-    "scope": "miniapps:write",
-    "authentication": "account",
-    "resource": null
-  },
-  "POST /api/miniapps/{app_id}/control": {
-    "scope": "miniapps:write",
-    "authentication": "account",
-    "resource": "app:app_id"
-  },
-  "POST /api/miniapps/{app_id}/invoke": {
-    "scope": "miniapps:invoke",
-    "authentication": "account",
-    "resource": "app:app_id"
-  },
-  "POST /api/miniapps/{app_id}/request": {
-    "scope": "miniapps:invoke",
-    "authentication": "account",
-    "resource": "app:app_id"
-  },
-  "POST /api/miniapps/{app_id}/restore": {
-    "scope": "miniapps:write",
-    "authentication": "account",
-    "resource": "app:app_id"
-  },
   "POST /api/model-integrations/copilot/login": {
     "scope": "integrations:manage",
     "authentication": "account",
@@ -1046,11 +976,6 @@
     "authentication": "internal",
     "resource": null
   },
-  "POST /internal/miniapps/{app_id}/capability": {
-    "scope": "miniapps:invoke",
-    "authentication": "internal",
-    "resource": "app:app_id"
-  },
   "POST /internal/runs/{workflow_id}/mcp-calls": {
     "scope": "mcp:execute",
     "authentication": "internal",
@@ -1105,11 +1030,6 @@
     "scope": "mcp:manage",
     "authentication": "account",
     "resource": null
-  },
-  "PUT /api/miniapps/{app_id}": {
-    "scope": "miniapps:write",
-    "authentication": "account",
-    "resource": "app:app_id"
   },
   "PUT /api/model-integrations/{target}": {
     "scope": "integrations:manage",

@@ -765,7 +765,7 @@ def test_only_complete_successful_staging_verification_can_authorize_production(
         {"name": name, "conclusion": "success"}
         for name in (
             "Pin, deploy, and verify",
-            "Verify isolated mini-app lifecycle (staging only)",
+            "Verify workflow disable and result delivery (staging only)",
             "Creative-app artifact readiness diagnostics (staging only)",
         )
     ]

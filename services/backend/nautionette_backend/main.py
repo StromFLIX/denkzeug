@@ -28,7 +28,6 @@ from . import (
     github_mentions,
     mcp_oauth,
     mcp_servers,
-    miniapps,
     output_maintenance,
     pi_packages,
     runs,
@@ -90,7 +89,6 @@ async def lifespan(_: FastAPI):
     spawn(output_maintenance.run(), name="output-storage-maintenance")
     spawn(worktree_maintenance.run(), name="worktree-retention")
     spawn(mcp_oauth.maintenance(), name="mcp-oauth-maintenance")
-    spawn(miniapps.maintenance(), name="miniapp-maintenance")
     spawn(search.run(), name="conversation-search-indexer")
     # agentgateway may still be starting, so this retries in the background
     # rather than holding the port closed.

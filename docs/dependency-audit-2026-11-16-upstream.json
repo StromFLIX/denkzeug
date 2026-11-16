@@ -2742,10 +2742,6 @@
       "tag": "v0.165.1",
       "url": "https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.165.1"
     },
-    "rust-lang/rust": {
-      "tag": "1.100.0",
-      "url": "https://github.com/rust-lang/rust/releases/tag/1.100.0"
-    },
     "softprops/action-gh-release": {
       "tag": "v3.0.4",
       "url": "https://github.com/softprops/action-gh-release/releases/tag/v3.0.4"
@@ -2762,37 +2758,6 @@
       "tag": "1.20",
       "url": "https://github.com/tianon/gosu/releases/tag/1.20"
     }
-  },
-  "rust_crates": {
-    "bitflags": "2.13.2",
-    "cc": "1.11.2",
-    "fallible-iterator": "0.3.0",
-    "fallible-streaming-iterator": "0.1.9",
-    "find-msvc-tools": "0.1.15",
-    "foldhash": "0.2.0",
-    "hashbrown": "0.17.1",
-    "hashlink": "0.12.2",
-    "itoa": "1.0.19",
-    "libsqlite3-sys": "0.40.0",
-    "memchr": "2.8.3",
-    "pkg-config": "0.3.34",
-    "proc-macro2": "1.0.107",
-    "quote": "1.0.47",
-    "rsqlite-vfs": "0.2.0",
-    "rusqlite": "0.43.0",
-    "serde": "1.0.229",
-    "serde_core": "1.0.229",
-    "serde_derive": "1.0.229",
-    "serde_json": "1.0.154",
-    "shlex": "2.0.1",
-    "smallvec": "1.16.5",
-    "sqlite-wasm-rs": "0.6.3",
-    "syn": "3.0.10",
-    "thiserror": "2.0.21",
-    "thiserror-impl": "2.0.21",
-    "unicode-ident": "1.0.27",
-    "vcpkg": "0.2.15",
-    "zmij": "1.0.23"
   },
   "artcraft": {
     "photocraft": {
@@ -2904,7 +2869,6 @@
     "node24": "24.22.3",
     "python313": "3.13.18",
     "go": "1.27.4",
-    "rust": "1.100.0",
     "npm11": "11.21.2",
     "gosu": "1.20",
     "moby-user": "v0.5.0",
