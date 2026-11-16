@@ -1,0 +1,2922 @@
+{
+  "checked_at_utc": "2026-11-16",
+  "baseline_commit": "34fdcb56d6ad7ff7b5b35caf6f2a9e01eee6dc66",
+  "scope": "Repository-controlled dependencies only. Optional platform packages are locked but not all installed/executed on Linux x86_64. Experimental pins and vendored skills are evidence/guidance, not runtime feeds.",
+  "python": [
+    {
+      "package": "annotated-doc",
+      "resolved": "0.0.6",
+      "pypi_latest": "0.0.6"
+    },
+    {
+      "package": "annotated-types",
+      "resolved": "0.8.0",
+      "pypi_latest": "0.8.0"
+    },
+    {
+      "package": "anyio",
+      "resolved": "4.16.0",
+      "pypi_latest": "4.16.0"
+    },
+    {
+      "package": "argon2-cffi",
+      "resolved": "25.1.0",
+      "pypi_latest": "25.1.0"
+    },
+    {
+      "package": "argon2-cffi-bindings",
+      "resolved": "26.2.0",
+      "pypi_latest": "26.2.0"
+    },
+    {
+      "package": "asgiref",
+      "resolved": "3.13.0",
+      "pypi_latest": "3.13.0"
+    },
+    {
+      "package": "attrs",
+      "resolved": "26.1.0",
+      "pypi_latest": "26.1.0"
+    },
+    {
+      "package": "boto3",
+      "resolved": "1.44.3",
+      "pypi_latest": "1.44.3"
+    },
+    {
+      "package": "botocore",
+      "resolved": "1.44.3",
+      "pypi_latest": "1.44.3"
+    },
+    {
+      "package": "certifi",
+      "resolved": "2026.10.23",
+      "pypi_latest": "2026.10.23"
+    },
+    {
+      "package": "cffi",
+      "resolved": "2.1.1",
+      "pypi_latest": "2.1.1"
+    },
+    {
+      "package": "charset-normalizer",
+      "resolved": "3.5.2",
+      "pypi_latest": "3.5.2"
+    },
+    {
+      "package": "click",
+      "resolved": "8.5.1",
+      "pypi_latest": "8.5.1"
+    },
+    {
+      "package": "colorama",
+      "resolved": "0.4.6",
+      "pypi_latest": "0.4.6"
+    },
+    {
+      "package": "cryptography",
+      "resolved": "50.0.2",
+      "pypi_latest": "50.0.2"
+    },
+    {
+      "package": "docker",
+      "resolved": "7.2.0",
+      "pypi_latest": "7.2.0"
+    },
+    {
+      "package": "fastapi",
+      "resolved": "0.163.1",
+      "pypi_latest": "0.163.1"
+    },
+    {
+      "package": "fastembed",
+      "resolved": "0.9.1",
+      "pypi_latest": "0.9.1"
+    },
+    {
+      "package": "filelock",
+      "resolved": "4.2.10",
+      "pypi_latest": "4.2.10"
+    },
+    {
+      "package": "flatbuffers",
+      "resolved": "25.12.19",
+      "pypi_latest": "25.12.19"
+    },
+    {
+      "package": "fsspec",
+      "resolved": "2026.9.0",
+      "pypi_latest": "2026.9.0"
+    },
+    {
+      "package": "googleapis-common-protos",
+      "resolved": "1.76.0",
+      "pypi_latest": "1.76.0"
+    },
+    {
+      "package": "h11",
+      "resolved": "0.16.0",
+      "pypi_latest": "0.16.0"
+    },
+    {
+      "package": "hf-xet",
+      "resolved": "1.8.0",
+      "pypi_latest": "1.8.0"
+    },
+    {
+      "package": "httpcore",
+      "resolved": "1.0.9",
+      "pypi_latest": "1.0.9"
+    },
+    {
+      "package": "httpcore2",
+      "resolved": "2.16.0",
+      "pypi_latest": "2.16.0"
+    },
+    {
+      "package": "httptools",
+      "resolved": "0.9.0",
+      "pypi_latest": "0.9.0"
+    },
+    {
+      "package": "httpx",
+      "resolved": "0.28.1",
+      "pypi_latest": "0.28.1"
+    },
+    {
+      "package": "httpx2",
+      "resolved": "2.16.0",
+      "pypi_latest": "2.16.0"
+    },
+    {
+      "package": "httpx2-jsfetch",
+      "resolved": "1.0",
+      "pypi_latest": "1.0"
+    },
+    {
+      "package": "huggingface-hub",
+      "resolved": "1.33.0",
+      "pypi_latest": "2.4.0"
+    },
+    {
+      "package": "idna",
+      "resolved": "3.20",
+      "pypi_latest": "3.20"
+    },
+    {
+      "package": "iniconfig",
+      "resolved": "2.3.1",
+      "pypi_latest": "2.3.1"
+    },
+    {
+      "package": "jmespath",
+      "resolved": "1.1.0",
+      "pypi_latest": "1.1.0"
+    },
+    {
+      "package": "jsonschema",
+      "resolved": "4.26.0",
+      "pypi_latest": "4.26.0"
+    },
+    {
+      "package": "jsonschema-specifications",
+      "resolved": "2025.9.1",
+      "pypi_latest": "2025.9.1"
+    },
+    {
+      "package": "loguru",
+      "resolved": "0.7.3",
+      "pypi_latest": "0.8.0"
+    },
+    {
+      "package": "mcp",
+      "resolved": "2.3.0",
+      "pypi_latest": "2.3.0"
+    },
+    {
+      "package": "mcp-types",
+      "resolved": "2.3.0",
+      "pypi_latest": "2.3.0"
+    },
+    {
+      "package": "mmh3",
+      "resolved": "5.3.1",
+      "pypi_latest": "5.3.1"
+    },
+    {
+      "package": "nexus-rpc",
+      "resolved": "1.5.0",
+      "pypi_latest": "1.5.0"
+    },
+    {
+      "package": "numpy",
+      "resolved": "2.5.5",
+      "pypi_latest": "2.5.5"
+    },
+    {
+      "package": "onnxruntime",
+      "resolved": "1.32.0",
+      "pypi_latest": "1.32.0"
+    },
+    {
+      "package": "opentelemetry-api",
+      "resolved": "1.45.2",
+      "pypi_latest": "1.45.2"
+    },
+    {
+      "package": "opentelemetry-exporter-http-transport",
+      "resolved": "0.66b2",
+      "pypi_latest": "0.66b2"
+    },
+    {
+      "package": "opentelemetry-exporter-otlp-common",
+      "resolved": "0.66b2",
+      "pypi_latest": "0.66b2"
+    },
+    {
+      "package": "opentelemetry-exporter-otlp-proto-common",
+      "resolved": "1.45.2",
+      "pypi_latest": "1.45.2"
+    },
+    {
+      "package": "opentelemetry-exporter-otlp-proto-http",
+      "resolved": "1.45.2",
+      "pypi_latest": "1.45.2"
+    },
+    {
+      "package": "opentelemetry-instrumentation",
+      "resolved": "0.66b2",
+      "pypi_latest": "0.66b2"
+    },
+    {
+      "package": "opentelemetry-instrumentation-asgi",
+      "resolved": "0.66b2",
+      "pypi_latest": "0.66b2"
+    },
+    {
+      "package": "opentelemetry-instrumentation-fastapi",
+      "resolved": "0.66b2",
+      "pypi_latest": "0.66b2"
+    },
+    {
+      "package": "opentelemetry-instrumentation-httpx",
+      "resolved": "0.66b2",
+      "pypi_latest": "0.66b2"
+    },
+    {
+      "package": "opentelemetry-proto",
+      "resolved": "1.45.2",
+      "pypi_latest": "1.45.2"
+    },
+    {
+      "package": "opentelemetry-sdk",
+      "resolved": "1.45.2",
+      "pypi_latest": "1.45.2"
+    },
+    {
+      "package": "opentelemetry-semantic-conventions",
+      "resolved": "0.66b2",
+      "pypi_latest": "0.66b2"
+    },
+    {
+      "package": "opentelemetry-util-http",
+      "resolved": "0.66b2",
+      "pypi_latest": "0.66b2"
+    },
+    {
+      "package": "packaging",
+      "resolved": "26.3",
+      "pypi_latest": "26.3"
+    },
+    {
+      "package": "pillow",
+      "resolved": "13.0.0",
+      "pypi_latest": "13.0.0"
+    },
+    {
+      "package": "pluggy",
+      "resolved": "1.7.0",
+      "pypi_latest": "1.7.0"
+    },
+    {
+      "package": "protobuf",
+      "resolved": "7.36.2",
+      "pypi_latest": "7.36.2"
+    },
+    {
+      "package": "py-rust-stemmers",
+      "resolved": "0.1.8",
+      "pypi_latest": "0.1.8"
+    },
+    {
+      "package": "pycparser",
+      "resolved": "3.12",
+      "pypi_latest": "3.12"
+    },
+    {
+      "package": "pydantic",
+      "resolved": "2.14.3",
+      "pypi_latest": "2.14.3"
+    },
+    {
+      "package": "pydantic-core",
+      "resolved": "2.50.4",
+      "pypi_latest": "2.50.4"
+    },
+    {
+      "package": "pygments",
+      "resolved": "2.21.0",
+      "pypi_latest": "2.21.0"
+    },
+    {
+      "package": "pyjwt",
+      "resolved": "2.15.1",
+      "pypi_latest": "2.15.1"
+    },
+    {
+      "package": "pytest",
+      "resolved": "9.2.0",
+      "pypi_latest": "9.2.0"
+    },
+    {
+      "package": "pytest-asyncio",
+      "resolved": "1.5.0",
+      "pypi_latest": "1.5.0"
+    },
+    {
+      "package": "python-dateutil",
+      "resolved": "2.9.0.post0",
+      "pypi_latest": "4.0.0"
+    },
+    {
+      "package": "python-dotenv",
+      "resolved": "1.2.4",
+      "pypi_latest": "1.2.4"
+    },
+    {
+      "package": "python-multipart",
+      "resolved": "0.0.33",
+      "pypi_latest": "0.0.33"
+    },
+    {
+      "package": "pywin32",
+      "resolved": "312",
+      "pypi_latest": "312"
+    },
+    {
+      "package": "pyyaml",
+      "resolved": "6.0.3",
+      "pypi_latest": "6.0.3"
+    },
+    {
+      "package": "referencing",
+      "resolved": "0.37.0",
+      "pypi_latest": "0.37.0"
+    },
+    {
+      "package": "requests",
+      "resolved": "2.34.2",
+      "pypi_latest": "2.34.2"
+    },
+    {
+      "package": "rpds-py",
+      "resolved": "2026.9.1",
+      "pypi_latest": "2026.9.1"
+    },
+    {
+      "package": "ruff",
+      "resolved": "0.17.5",
+      "pypi_latest": "0.17.5"
+    },
+    {
+      "package": "s3transfer",
+      "resolved": "0.19.3",
+      "pypi_latest": "0.19.3"
+    },
+    {
+      "package": "six",
+      "resolved": "1.17.0",
+      "pypi_latest": "1.17.0"
+    },
+    {
+      "package": "sqlite-vec",
+      "resolved": "0.1.9",
+      "pypi_latest": "0.1.9"
+    },
+    {
+      "package": "sse-starlette",
+      "resolved": "3.7.0",
+      "pypi_latest": "3.7.0"
+    },
+    {
+      "package": "starlette",
+      "resolved": "1.10.0",
+      "pypi_latest": "1.10.0"
+    },
+    {
+      "package": "temporalio",
+      "resolved": "1.36.1",
+      "pypi_latest": "1.36.1"
+    },
+    {
+      "package": "tokenizers",
+      "resolved": "0.23.3",
+      "pypi_latest": "0.23.3"
+    },
+    {
+      "package": "tqdm",
+      "resolved": "4.70.1",
+      "pypi_latest": "4.70.1"
+    },
+    {
+      "package": "truststore",
+      "resolved": "0.10.5",
+      "pypi_latest": "0.10.5"
+    },
+    {
+      "package": "types-protobuf",
+      "resolved": "7.35.1.20260906",
+      "pypi_latest": "7.35.1.20260906"
+    },
+    {
+      "package": "typing-extensions",
+      "resolved": "4.16.0",
+      "pypi_latest": "4.16.0"
+    },
+    {
+      "package": "typing-inspection",
+      "resolved": "0.4.5",
+      "pypi_latest": "0.4.5"
+    },
+    {
+      "package": "urllib3",
+      "resolved": "2.8.0",
+      "pypi_latest": "2.8.0"
+    },
+    {
+      "package": "uvicorn",
+      "resolved": "0.54.0",
+      "pypi_latest": "0.54.0"
+    },
+    {
+      "package": "uvloop",
+      "resolved": "0.23.0",
+      "pypi_latest": "0.23.0"
+    },
+    {
+      "package": "watchfiles",
+      "resolved": "1.3.0",
+      "pypi_latest": "1.3.0"
+    },
+    {
+      "package": "websockets",
+      "resolved": "17.4",
+      "pypi_latest": "17.4"
+    },
+    {
+      "package": "win32-setctime",
+      "resolved": "1.2.1",
+      "pypi_latest": "1.2.1"
+    },
+    {
+      "package": "wrapt",
+      "resolved": "2.5.2",
+      "pypi_latest": "2.5.2"
+    }
+  ],
+  "npm_direct": {
+    "@capacitor/android": {
+      "resolved": "8.6.2",
+      "latest": "8.6.2"
+    },
+    "@capacitor/app": {
+      "resolved": "8.1.2",
+      "latest": "8.1.2"
+    },
+    "@capacitor/core": {
+      "resolved": "8.6.2",
+      "latest": "8.6.2"
+    },
+    "@capacitor/filesystem": {
+      "resolved": "8.1.5",
+      "latest": "8.1.5"
+    },
+    "@capacitor/ios": {
+      "resolved": "8.6.2",
+      "latest": "8.6.2"
+    },
+    "@capacitor/keyboard": {
+      "resolved": "8.0.6",
+      "latest": "8.0.6"
+    },
+    "@capacitor/share": {
+      "resolved": "8.0.3",
+      "latest": "8.0.3"
+    },
+    "@dagrejs/dagre": {
+      "resolved": "3.1.3",
+      "latest": "3.1.3"
+    },
+    "@quasar/extras": {
+      "resolved": "2.1.0",
+      "latest": "2.1.0"
+    },
+    "@vue-flow/background": {
+      "resolved": "1.3.2",
+      "latest": "1.3.2"
+    },
+    "@vue-flow/core": {
+      "resolved": "1.48.2",
+      "latest": "1.48.2"
+    },
+    "css-tree": {
+      "resolved": "3.2.1",
+      "latest": "3.2.1"
+    },
+    "dompurify": {
+      "resolved": "3.4.18",
+      "latest": "3.4.18"
+    },
+    "highlight.js": {
+      "resolved": "11.12.0",
+      "latest": "11.12.0"
+    },
+    "idb": {
+      "resolved": "8.0.4",
+      "latest": "8.0.4"
+    },
+    "marked": {
+      "resolved": "18.2.0",
+      "latest": "18.2.0"
+    },
+    "quasar": {
+      "resolved": "2.35.4",
+      "latest": "2.35.4"
+    },
+    "vue": {
+      "resolved": "3.5.45",
+      "latest": "3.5.45"
+    },
+    "vue-router": {
+      "resolved": "5.5.1",
+      "latest": "5.5.1"
+    },
+    "@capacitor/cli": {
+      "resolved": "8.6.2",
+      "latest": "8.6.2"
+    },
+    "@playwright/test": {
+      "resolved": "1.65.1",
+      "latest": "1.65.1"
+    },
+    "@quasar/vite-plugin": {
+      "resolved": "2.0.2",
+      "latest": "2.0.2"
+    },
+    "@vitejs/plugin-vue": {
+      "resolved": "6.0.11",
+      "latest": "6.0.11"
+    },
+    "electron": {
+      "resolved": "45.3.2",
+      "latest": "45.3.2"
+    },
+    "electron-builder": {
+      "resolved": "26.18.0",
+      "latest": "26.18.0"
+    },
+    "fake-indexeddb": {
+      "resolved": "6.2.8",
+      "latest": "6.2.8"
+    },
+    "sass-embedded": {
+      "resolved": "1.108.2",
+      "latest": "1.108.2"
+    },
+    "vite": {
+      "resolved": "8.3.8",
+      "latest": "8.3.8"
+    }
+  },
+  "npm_parent_owned_holds": [
+    {
+      "package": "@babel/helper-string-parser",
+      "current": "7.29.14",
+      "wanted": "7.29.14",
+      "latest": "8.1.2",
+      "dependent": "@babel/types",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@babel/helper-validator-identifier",
+      "current": "7.29.7",
+      "wanted": "7.29.7",
+      "latest": "8.0.6",
+      "dependent": "@babel/types",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@babel/parser",
+      "current": "7.29.14",
+      "wanted": "7.29.14",
+      "latest": "8.1.2",
+      "dependent": "@vue/compiler-core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@babel/parser",
+      "current": "7.29.14",
+      "wanted": "7.29.14",
+      "latest": "8.1.2",
+      "dependent": "@vue/compiler-sfc",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@babel/parser",
+      "current": "7.29.14",
+      "wanted": "7.29.14",
+      "latest": "8.1.2",
+      "dependent": "ast-kit",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@babel/types",
+      "current": "7.29.14",
+      "wanted": "7.29.14",
+      "latest": "8.1.2",
+      "dependent": "@babel/parser",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@dagrejs/graphlib",
+      "current": "4.0.6",
+      "wanted": "4.0.6",
+      "latest": "4.0.7",
+      "dependent": "@dagrejs/dagre",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@electron/asar",
+      "current": "3.4.1",
+      "wanted": "3.4.1",
+      "latest": "4.3.2",
+      "dependent": "@electron/universal",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@electron/asar",
+      "current": "3.4.1",
+      "wanted": "3.4.1",
+      "latest": "4.3.2",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@electron/asar",
+      "current": "3.4.1",
+      "wanted": "3.4.1",
+      "latest": "4.3.2",
+      "dependent": "electron-winstaller",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@electron/fuses",
+      "current": "1.8.0",
+      "wanted": "1.8.0",
+      "latest": "2.1.3",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@electron/get",
+      "current": "3.1.0",
+      "wanted": "3.1.0",
+      "latest": "5.1.0",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@electron/notarize",
+      "current": "2.5.0",
+      "wanted": "2.5.0",
+      "latest": "3.1.2",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@electron/osx-sign",
+      "current": "1.3.3",
+      "wanted": "1.3.3",
+      "latest": "2.7.2",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@electron/universal",
+      "current": "2.0.3",
+      "wanted": "2.0.3",
+      "latest": "3.0.6",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@electron/windows-sign",
+      "current": "1.2.2",
+      "wanted": "1.2.2",
+      "latest": "2.1.0",
+      "dependent": "electron-winstaller",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@noble/hashes",
+      "current": "1.8.0",
+      "wanted": "1.8.0",
+      "latest": "2.4.0",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@noble/hashes",
+      "current": "1.8.0",
+      "wanted": "1.8.0",
+      "latest": "2.4.0",
+      "dependent": "pkijs",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@oxc-project/types",
+      "current": "0.156.0",
+      "wanted": "0.156.0",
+      "latest": "0.158.0",
+      "dependent": "rolldown",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@peculiar/asn1-schema",
+      "current": "2.11.1",
+      "wanted": "2.11.1",
+      "latest": "3.0.0",
+      "dependent": "@peculiar/webcrypto",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@peculiar/asn1-schema",
+      "current": "2.11.1",
+      "wanted": "2.11.1",
+      "latest": "3.0.0",
+      "dependent": "webcrypto-core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@peculiar/json-schema",
+      "current": "1.1.12",
+      "wanted": "1.1.12",
+      "latest": "3.0.0",
+      "dependent": "@peculiar/webcrypto",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@peculiar/json-schema",
+      "current": "1.1.12",
+      "wanted": "1.1.12",
+      "latest": "3.0.0",
+      "dependent": "webcrypto-core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@peculiar/utils",
+      "current": "2.0.3",
+      "wanted": "2.0.3",
+      "latest": "4.1.0",
+      "dependent": "@peculiar/asn1-schema",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@peculiar/utils",
+      "current": "2.0.3",
+      "wanted": "2.0.3",
+      "latest": "4.1.0",
+      "dependent": "@peculiar/webcrypto",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@peculiar/utils",
+      "current": "2.0.3",
+      "wanted": "2.0.3",
+      "latest": "4.1.0",
+      "dependent": "webcrypto-core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@peculiar/webcrypto",
+      "current": "1.7.2",
+      "wanted": "1.7.2",
+      "latest": "2.0.0",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@rolldown/binding-linux-x64-gnu",
+      "current": "1.2.19",
+      "wanted": "1.2.19",
+      "latest": "1.3.2",
+      "dependent": "rolldown",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@sindresorhus/is",
+      "current": "4.6.0",
+      "wanted": "4.6.0",
+      "latest": "8.1.0",
+      "dependent": "got",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@szmarczak/http-timer",
+      "current": "4.0.6",
+      "wanted": "4.0.6",
+      "latest": "5.0.1",
+      "dependent": "got",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@types/fs-extra",
+      "current": "8.1.5",
+      "wanted": "8.1.5",
+      "latest": "11.0.4",
+      "dependent": "@ionic/utils-fs",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@types/fs-extra",
+      "current": "9.0.13",
+      "wanted": "9.0.13",
+      "latest": "11.0.4",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@types/fs-extra",
+      "current": "9.0.13",
+      "wanted": "9.0.13",
+      "latest": "11.0.4",
+      "dependent": "electron-publish",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@types/node",
+      "current": "24.19.2",
+      "wanted": "24.19.2",
+      "latest": "26.6.6",
+      "dependent": "electron",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@types/slice-ansi",
+      "current": "4.0.0",
+      "wanted": "4.0.0",
+      "latest": "5.0.2",
+      "dependent": "@ionic/utils-terminal",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@types/web-bluetooth",
+      "current": "0.0.20",
+      "wanted": "0.0.20",
+      "latest": "0.0.22",
+      "dependent": "@vueuse/core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@vueuse/core",
+      "current": "10.11.1",
+      "wanted": "10.11.1",
+      "latest": "15.0.0",
+      "dependent": "@vue-flow/core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@vueuse/metadata",
+      "current": "10.11.1",
+      "wanted": "10.11.1",
+      "latest": "15.0.0",
+      "dependent": "@vueuse/core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@vueuse/shared",
+      "current": "10.11.1",
+      "wanted": "10.11.1",
+      "latest": "15.0.0",
+      "dependent": "@vueuse/core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "@xmldom/xmldom",
+      "current": "0.8.15",
+      "wanted": "0.8.15",
+      "latest": "0.9.12",
+      "dependent": "plist",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "abbrev",
+      "current": "4.0.0",
+      "wanted": "4.0.0",
+      "latest": "5.0.0",
+      "dependent": "nopt",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "agent-base",
+      "current": "7.1.4",
+      "wanted": "7.1.4",
+      "latest": "9.0.0",
+      "dependent": "http-proxy-agent",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "agent-base",
+      "current": "7.1.4",
+      "wanted": "7.1.4",
+      "latest": "9.0.0",
+      "dependent": "https-proxy-agent",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "ansi-regex",
+      "current": "5.0.1",
+      "wanted": "5.0.1",
+      "latest": "6.6.0",
+      "dependent": "strip-ansi",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "ansi-styles",
+      "current": "4.3.0",
+      "wanted": "4.3.0",
+      "latest": "7.0.0",
+      "dependent": "chalk",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "ansi-styles",
+      "current": "4.3.0",
+      "wanted": "4.3.0",
+      "latest": "7.0.0",
+      "dependent": "slice-ansi",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "ansi-styles",
+      "current": "4.3.0",
+      "wanted": "4.3.0",
+      "latest": "7.0.0",
+      "dependent": "wrap-ansi",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "argparse",
+      "current": "2.0.1",
+      "wanted": "2.0.1",
+      "latest": "3.0.4",
+      "dependent": "js-yaml",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "asn1js",
+      "current": "3.1.0",
+      "wanted": "3.1.0",
+      "latest": "4.0.0",
+      "dependent": "@peculiar/asn1-schema",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "asn1js",
+      "current": "3.1.0",
+      "wanted": "3.1.0",
+      "latest": "4.0.0",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "asn1js",
+      "current": "3.1.0",
+      "wanted": "3.1.0",
+      "latest": "4.0.0",
+      "dependent": "pkijs",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "asn1js",
+      "current": "3.1.0",
+      "wanted": "3.1.0",
+      "latest": "4.0.0",
+      "dependent": "webcrypto-core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "ast-kit",
+      "current": "2.2.0",
+      "wanted": "2.2.0",
+      "latest": "3.0.1",
+      "dependent": "@vue-macros/common",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "asynckit",
+      "current": "0.4.0",
+      "wanted": "0.4.0",
+      "latest": "0.5.0",
+      "dependent": "form-data",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "balanced-match",
+      "current": "4.0.4",
+      "wanted": "4.0.4",
+      "latest": "5.0.0",
+      "dependent": "brace-expansion",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "balanced-match",
+      "current": "1.0.2",
+      "wanted": "1.0.2",
+      "latest": "5.0.0",
+      "dependent": "brace-expansion",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "balanced-match",
+      "current": "1.0.2",
+      "wanted": "1.0.2",
+      "latest": "5.0.0",
+      "dependent": "brace-expansion",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "balanced-match",
+      "current": "1.0.2",
+      "wanted": "1.0.2",
+      "latest": "5.0.0",
+      "dependent": "brace-expansion",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "balanced-match",
+      "current": "1.0.2",
+      "wanted": "1.0.2",
+      "latest": "5.0.0",
+      "dependent": "brace-expansion",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "birpc",
+      "current": "2.9.0",
+      "wanted": "2.9.0",
+      "latest": "4.2.0",
+      "dependent": "@vue/devtools-kit",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "bplist-creator",
+      "current": "0.1.0",
+      "wanted": "0.1.0",
+      "latest": "0.4.0",
+      "dependent": "simple-plist",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "bplist-parser",
+      "current": "0.3.2",
+      "wanted": "0.3.2",
+      "latest": "0.6.0",
+      "dependent": "native-run",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "bplist-parser",
+      "current": "0.3.1",
+      "wanted": "0.3.1",
+      "latest": "0.6.0",
+      "dependent": "simple-plist",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "brace-expansion",
+      "current": "1.1.22",
+      "wanted": "1.1.22",
+      "latest": "5.0.13",
+      "dependent": "minimatch",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "brace-expansion",
+      "current": "2.1.8",
+      "wanted": "2.1.8",
+      "latest": "5.0.13",
+      "dependent": "minimatch",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "brace-expansion",
+      "current": "1.1.22",
+      "wanted": "1.1.22",
+      "latest": "5.0.13",
+      "dependent": "minimatch",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "brace-expansion",
+      "current": "1.1.22",
+      "wanted": "1.1.22",
+      "latest": "5.0.13",
+      "dependent": "minimatch",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "buffer-crc32",
+      "current": "0.2.13",
+      "wanted": "0.2.13",
+      "latest": "1.0.0",
+      "dependent": "yauzl",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "bytestreamjs",
+      "current": "2.0.1",
+      "wanted": "2.0.1",
+      "latest": "3.0.0",
+      "dependent": "pkijs",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "cacheable-lookup",
+      "current": "5.0.4",
+      "wanted": "5.0.4",
+      "latest": "7.0.0",
+      "dependent": "got",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "cacheable-request",
+      "current": "7.0.4",
+      "wanted": "7.0.4",
+      "latest": "13.0.19",
+      "dependent": "got",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "chalk",
+      "current": "4.1.2",
+      "wanted": "4.1.2",
+      "latest": "6.0.1",
+      "dependent": "@electron/fuses",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "chalk",
+      "current": "4.1.2",
+      "wanted": "4.1.2",
+      "latest": "6.0.1",
+      "dependent": "builder-util",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "chalk",
+      "current": "4.1.2",
+      "wanted": "4.1.2",
+      "latest": "6.0.1",
+      "dependent": "electron-builder",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "chalk",
+      "current": "4.1.2",
+      "wanted": "4.1.2",
+      "latest": "6.0.1",
+      "dependent": "electron-publish",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "chokidar",
+      "current": "5.0.0",
+      "wanted": "5.0.0",
+      "latest": "6.0.0",
+      "dependent": "sass",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "ci-info",
+      "current": "4.3.1",
+      "wanted": "4.3.1",
+      "latest": "4.5.0",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "cliui",
+      "current": "8.0.1",
+      "wanted": "8.0.1",
+      "latest": "9.0.1",
+      "dependent": "yargs",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "clone-response",
+      "current": "1.0.3",
+      "wanted": "1.0.3",
+      "latest": "2.0.0",
+      "dependent": "cacheable-request",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "color-convert",
+      "current": "2.0.1",
+      "wanted": "2.0.1",
+      "latest": "3.1.3",
+      "dependent": "ansi-styles",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "color-name",
+      "current": "1.1.4",
+      "wanted": "1.1.4",
+      "latest": "2.1.1",
+      "dependent": "color-convert",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "commander",
+      "current": "12.1.0",
+      "wanted": "12.1.0",
+      "latest": "15.1.0",
+      "dependent": "@capacitor/cli",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "commander",
+      "current": "5.1.0",
+      "wanted": "5.1.0",
+      "latest": "15.1.0",
+      "dependent": "@electron/asar",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "commander",
+      "current": "9.5.0",
+      "wanted": "9.5.0",
+      "latest": "15.1.0",
+      "dependent": "postject",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "concat-map",
+      "current": "0.0.1",
+      "wanted": "0.0.1",
+      "latest": "0.0.2",
+      "dependent": "brace-expansion",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "concat-map",
+      "current": "0.0.1",
+      "wanted": "0.0.1",
+      "latest": "0.0.2",
+      "dependent": "brace-expansion",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "concat-map",
+      "current": "0.0.1",
+      "wanted": "0.0.1",
+      "latest": "0.0.2",
+      "dependent": "brace-expansion",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "confbox",
+      "current": "0.1.8",
+      "wanted": "0.1.8",
+      "latest": "0.3.2",
+      "dependent": "pkg-types",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "decompress-response",
+      "current": "6.0.0",
+      "wanted": "6.0.0",
+      "latest": "10.0.0",
+      "dependent": "got",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "define-lazy-prop",
+      "current": "2.0.0",
+      "wanted": "2.0.0",
+      "latest": "3.0.0",
+      "dependent": "open",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "dir-compare",
+      "current": "4.2.0",
+      "wanted": "4.2.0",
+      "latest": "5.0.0",
+      "dependent": "@electron/universal",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "dotenv",
+      "current": "16.6.1",
+      "wanted": "16.6.1",
+      "latest": "18.0.10",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "dotenv",
+      "current": "16.6.1",
+      "wanted": "16.6.1",
+      "latest": "18.0.10",
+      "dependent": "dotenv-expand",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "dotenv-expand",
+      "current": "11.0.7",
+      "wanted": "11.0.7",
+      "latest": "1000.0.0",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "ejs",
+      "current": "3.1.10",
+      "wanted": "3.1.10",
+      "latest": "7.0.2",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "electron-winstaller",
+      "current": "5.4.0",
+      "wanted": "5.4.0",
+      "latest": "5.4.4",
+      "dependent": "electron-builder-squirrel-windows",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "emoji-regex",
+      "current": "8.0.0",
+      "wanted": "8.0.0",
+      "latest": "11.0.0",
+      "dependent": "string-width",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "entities",
+      "current": "7.0.1",
+      "wanted": "7.0.1",
+      "latest": "9.0.0",
+      "dependent": "@vue/compiler-core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "env-paths",
+      "current": "2.2.1",
+      "wanted": "2.2.1",
+      "latest": "4.0.0",
+      "dependent": "@capacitor/cli",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "env-paths",
+      "current": "3.0.0",
+      "wanted": "3.0.0",
+      "latest": "4.0.0",
+      "dependent": "@electron/get",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "env-paths",
+      "current": "2.2.1",
+      "wanted": "2.2.1",
+      "latest": "4.0.0",
+      "dependent": "@electron/get",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "env-paths",
+      "current": "2.2.1",
+      "wanted": "2.2.1",
+      "latest": "4.0.0",
+      "dependent": "node-gyp",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "err-code",
+      "current": "2.0.3",
+      "wanted": "2.0.3",
+      "latest": "3.0.1",
+      "dependent": "promise-retry",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "escape-string-regexp",
+      "current": "4.0.0",
+      "wanted": "4.0.0",
+      "latest": "5.0.0",
+      "dependent": "matcher",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "estree-walker",
+      "current": "2.0.2",
+      "wanted": "2.0.2",
+      "latest": "3.0.3",
+      "dependent": "@vue/compiler-core",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "estree-walker",
+      "current": "2.0.2",
+      "wanted": "2.0.2",
+      "latest": "3.0.3",
+      "dependent": "@vue/compiler-sfc",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fast-uri",
+      "current": "3.1.9",
+      "wanted": "3.1.9",
+      "latest": "4.2.3",
+      "dependent": "ajv",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "filelist",
+      "current": "1.0.6",
+      "wanted": "1.0.6",
+      "latest": "2.0.2",
+      "dependent": "jake",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "9.1.0",
+      "wanted": "9.1.0",
+      "latest": "11.4.1",
+      "dependent": "@electron/fuses",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "8.1.0",
+      "wanted": "8.1.0",
+      "latest": "11.4.1",
+      "dependent": "@electron/get",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "9.1.0",
+      "wanted": "9.1.0",
+      "latest": "11.4.1",
+      "dependent": "@electron/notarize",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "10.1.0",
+      "wanted": "10.1.0",
+      "latest": "11.4.1",
+      "dependent": "@electron/osx-sign",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "9.1.0",
+      "wanted": "9.1.0",
+      "latest": "11.4.1",
+      "dependent": "@ionic/utils-fs",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "9.1.0",
+      "wanted": "9.1.0",
+      "latest": "11.4.1",
+      "dependent": "@malept/flatpak-bundler",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "10.1.0",
+      "wanted": "10.1.0",
+      "latest": "11.4.1",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "10.1.0",
+      "wanted": "10.1.0",
+      "latest": "11.4.1",
+      "dependent": "builder-util",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "10.1.0",
+      "wanted": "10.1.0",
+      "latest": "11.4.1",
+      "dependent": "dmg-builder",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "10.1.0",
+      "wanted": "10.1.0",
+      "latest": "11.4.1",
+      "dependent": "electron-builder",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "10.1.0",
+      "wanted": "10.1.0",
+      "latest": "11.4.1",
+      "dependent": "electron-publish",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "7.0.1",
+      "wanted": "7.0.1",
+      "latest": "11.4.1",
+      "dependent": "electron-winstaller",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "10.1.0",
+      "wanted": "10.1.0",
+      "latest": "11.4.1",
+      "dependent": "temp-file",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "fs-extra",
+      "current": "11.3.1",
+      "wanted": "11.3.1",
+      "latest": "11.4.1",
+      "dependent": "unzipper",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "get-stream",
+      "current": "5.2.0",
+      "wanted": "5.2.0",
+      "latest": "9.0.1",
+      "dependent": "cacheable-request",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "glob",
+      "current": "7.2.3",
+      "wanted": "7.2.3",
+      "latest": "14.0.6",
+      "dependent": "@electron/asar",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "glob",
+      "current": "7.2.3",
+      "wanted": "7.2.3",
+      "latest": "14.0.6",
+      "dependent": "rimraf",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "global-agent",
+      "current": "3.0.0",
+      "wanted": "3.0.0",
+      "latest": "4.1.7",
+      "dependent": "@electron/get",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "got",
+      "current": "11.8.6",
+      "wanted": "11.8.6",
+      "latest": "16.2.0",
+      "dependent": "@electron/get",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "has-flag",
+      "current": "4.0.0",
+      "wanted": "4.0.0",
+      "latest": "5.0.1",
+      "dependent": "supports-color",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "has-flag",
+      "current": "4.0.0",
+      "wanted": "4.0.0",
+      "latest": "5.0.1",
+      "dependent": "supports-color",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "hookable",
+      "current": "5.5.3",
+      "wanted": "5.5.3",
+      "latest": "6.1.2",
+      "dependent": "@vue/devtools-kit",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "hosted-git-info",
+      "current": "4.1.0",
+      "wanted": "4.1.0",
+      "latest": "10.1.1",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "http-proxy-agent",
+      "current": "7.0.2",
+      "wanted": "7.0.2",
+      "latest": "9.1.0",
+      "dependent": "builder-util",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "http2-wrapper",
+      "current": "1.0.3",
+      "wanted": "1.0.3",
+      "latest": "2.2.4",
+      "dependent": "got",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "https-proxy-agent",
+      "current": "7.0.6",
+      "wanted": "7.0.6",
+      "latest": "9.1.0",
+      "dependent": "builder-util",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "ini",
+      "current": "4.1.3",
+      "wanted": "4.1.3",
+      "latest": "7.0.0",
+      "dependent": "native-run",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "is-docker",
+      "current": "2.2.1",
+      "wanted": "2.2.1",
+      "latest": "4.0.0",
+      "dependent": "is-wsl",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "is-docker",
+      "current": "2.2.1",
+      "wanted": "2.2.1",
+      "latest": "4.0.0",
+      "dependent": "open",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "is-fullwidth-code-point",
+      "current": "3.0.0",
+      "wanted": "3.0.0",
+      "latest": "5.1.0",
+      "dependent": "slice-ansi",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "is-fullwidth-code-point",
+      "current": "3.0.0",
+      "wanted": "3.0.0",
+      "latest": "5.1.0",
+      "dependent": "string-width",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "is-wsl",
+      "current": "2.2.0",
+      "wanted": "2.2.0",
+      "latest": "3.1.1",
+      "dependent": "open",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "isarray",
+      "current": "1.0.0",
+      "wanted": "1.0.0",
+      "latest": "2.0.5",
+      "dependent": "readable-stream",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "isbinaryfile",
+      "current": "4.0.10",
+      "wanted": "4.0.10",
+      "latest": "6.0.0",
+      "dependent": "@electron/osx-sign",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "isbinaryfile",
+      "current": "5.0.7",
+      "wanted": "5.0.7",
+      "latest": "6.0.0",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "isexe",
+      "current": "2.0.0",
+      "wanted": "2.0.0",
+      "latest": "4.0.0",
+      "dependent": "which",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "isexe",
+      "current": "3.1.5",
+      "wanted": "3.1.5",
+      "latest": "4.0.0",
+      "dependent": "which",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "jake",
+      "current": "10.9.4",
+      "wanted": "10.9.4",
+      "latest": "13.0.3",
+      "dependent": "ejs",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "js-yaml",
+      "current": "4.3.2",
+      "wanted": "4.3.2",
+      "latest": "5.5.0",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "js-yaml",
+      "current": "4.3.2",
+      "wanted": "4.3.2",
+      "latest": "5.5.0",
+      "dependent": "builder-util",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "js-yaml",
+      "current": "4.3.2",
+      "wanted": "4.3.2",
+      "latest": "5.5.0",
+      "dependent": "dmg-builder",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "jsonfile",
+      "current": "4.0.0",
+      "wanted": "4.0.0",
+      "latest": "6.2.1",
+      "dependent": "fs-extra",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "jsonfile",
+      "current": "4.0.0",
+      "wanted": "4.0.0",
+      "latest": "6.2.1",
+      "dependent": "fs-extra",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "keyv",
+      "current": "4.5.4",
+      "wanted": "4.5.4",
+      "latest": "6.1.0",
+      "dependent": "cacheable-request",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "kleur",
+      "current": "3.0.3",
+      "wanted": "3.0.3",
+      "latest": "4.1.5",
+      "dependent": "prompts",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "local-pkg",
+      "current": "1.2.1",
+      "wanted": "1.2.1",
+      "latest": "2.0.0",
+      "dependent": "@vue-macros/common",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "lowercase-keys",
+      "current": "2.0.0",
+      "wanted": "2.0.0",
+      "latest": "4.0.1",
+      "dependent": "cacheable-request",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "lowercase-keys",
+      "current": "2.0.0",
+      "wanted": "2.0.0",
+      "latest": "4.0.1",
+      "dependent": "got",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "lowercase-keys",
+      "current": "2.0.0",
+      "wanted": "2.0.0",
+      "latest": "4.0.1",
+      "dependent": "responselike",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "lru-cache",
+      "current": "6.0.0",
+      "wanted": "6.0.0",
+      "latest": "11.5.3",
+      "dependent": "hosted-git-info",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "magic-string",
+      "current": "0.30.21",
+      "wanted": "0.30.21",
+      "latest": "1.4.5",
+      "dependent": "@vue/compiler-sfc",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "magic-string",
+      "current": "0.30.21",
+      "wanted": "0.30.21",
+      "latest": "1.4.5",
+      "dependent": "magic-string-ast",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "magic-string-ast",
+      "current": "1.0.3",
+      "wanted": "1.0.3",
+      "latest": "2.1.1",
+      "dependent": "@vue-macros/common",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "matcher",
+      "current": "3.0.0",
+      "wanted": "3.0.0",
+      "latest": "7.0.0",
+      "dependent": "global-agent",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "mdn-data",
+      "current": "2.27.1",
+      "wanted": "2.27.1",
+      "latest": "2.37.2",
+      "dependent": "css-tree",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "mime",
+      "current": "2.6.0",
+      "wanted": "2.6.0",
+      "latest": "4.1.2",
+      "dependent": "electron-publish",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "mime-db",
+      "current": "1.52.0",
+      "wanted": "1.52.0",
+      "latest": "1.54.0",
+      "dependent": "mime-types",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "mime-types",
+      "current": "2.1.35",
+      "wanted": "2.1.35",
+      "latest": "3.0.2",
+      "dependent": "form-data",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "mimic-response",
+      "current": "1.0.1",
+      "wanted": "1.0.1",
+      "latest": "4.0.0",
+      "dependent": "clone-response",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "mimic-response",
+      "current": "3.1.0",
+      "wanted": "3.1.0",
+      "latest": "4.0.0",
+      "dependent": "decompress-response",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "minimatch",
+      "current": "3.1.5",
+      "wanted": "3.1.5",
+      "latest": "11.0.8",
+      "dependent": "@electron/asar",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "minimatch",
+      "current": "3.1.5",
+      "wanted": "3.1.5",
+      "latest": "11.0.8",
+      "dependent": "dir-compare",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "minimatch",
+      "current": "5.1.9",
+      "wanted": "5.1.9",
+      "latest": "11.0.8",
+      "dependent": "filelist",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "minimatch",
+      "current": "3.1.5",
+      "wanted": "3.1.5",
+      "latest": "11.0.8",
+      "dependent": "glob",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "mkdirp",
+      "current": "0.5.6",
+      "wanted": "0.5.6",
+      "latest": "3.0.1",
+      "dependent": "temp",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "muggle-string",
+      "current": "0.4.1",
+      "wanted": "0.4.1",
+      "latest": "1.0.4",
+      "dependent": "vue-router",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "nanoid",
+      "current": "3.3.20",
+      "wanted": "3.3.20",
+      "latest": "6.0.2",
+      "dependent": "postcss",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "node-addon-api",
+      "current": "7.1.1",
+      "wanted": "7.1.1",
+      "latest": "8.9.2",
+      "dependent": "@parcel/watcher",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "node-gyp",
+      "current": "12.4.0",
+      "wanted": "12.4.0",
+      "latest": "13.1.0",
+      "dependent": "@electron/rebuild",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "nopt",
+      "current": "9.0.0",
+      "wanted": "9.0.0",
+      "latest": "10.0.1",
+      "dependent": "node-gyp",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "normalize-url",
+      "current": "6.1.0",
+      "wanted": "6.1.0",
+      "latest": "10.0.0",
+      "dependent": "cacheable-request",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "open",
+      "current": "8.4.2",
+      "wanted": "8.4.2",
+      "latest": "11.0.4",
+      "dependent": "@capacitor/cli",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "p-cancelable",
+      "current": "2.1.1",
+      "wanted": "2.1.1",
+      "latest": "5.0.0",
+      "dependent": "got",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "p-limit",
+      "current": "3.1.0",
+      "wanted": "3.1.0",
+      "latest": "7.3.3",
+      "dependent": "dir-compare",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "path-key",
+      "current": "3.1.1",
+      "wanted": "3.1.1",
+      "latest": "4.0.0",
+      "dependent": "cross-spawn",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "pe-library",
+      "current": "0.4.1",
+      "wanted": "0.4.1",
+      "latest": "2.0.3",
+      "dependent": "resedit",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "pkg-types",
+      "current": "1.3.1",
+      "wanted": "1.3.1",
+      "latest": "2.4.0",
+      "dependent": "mlly",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "pkijs",
+      "current": "3.4.3",
+      "wanted": "3.4.3",
+      "latest": "4.0.1",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "plist",
+      "current": "3.1.1",
+      "wanted": "3.1.1",
+      "latest": "5.1.1",
+      "dependent": "@capacitor/cli",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "plist",
+      "current": "3.1.1",
+      "wanted": "3.1.1",
+      "latest": "5.1.1",
+      "dependent": "@electron/osx-sign",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "plist",
+      "current": "3.1.1",
+      "wanted": "3.1.1",
+      "latest": "5.1.1",
+      "dependent": "@electron/universal",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "plist",
+      "current": "3.1.0",
+      "wanted": "3.1.0",
+      "latest": "5.1.1",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "plist",
+      "current": "3.1.1",
+      "wanted": "3.1.1",
+      "latest": "5.1.1",
+      "dependent": "native-run",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "plist",
+      "current": "3.1.1",
+      "wanted": "3.1.1",
+      "latest": "5.1.1",
+      "dependent": "simple-plist",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "proc-log",
+      "current": "6.1.0",
+      "wanted": "6.1.0",
+      "latest": "7.0.0",
+      "dependent": "node-gyp",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "pvutils",
+      "current": "1.2.0",
+      "wanted": "1.2.0",
+      "latest": "2.0.0",
+      "dependent": "asn1js",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "pvutils",
+      "current": "1.2.0",
+      "wanted": "1.2.0",
+      "latest": "2.0.0",
+      "dependent": "pkijs",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "quansync",
+      "current": "0.2.11",
+      "wanted": "0.2.11",
+      "latest": "1.0.0",
+      "dependent": "local-pkg",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "quick-lru",
+      "current": "5.1.1",
+      "wanted": "5.1.1",
+      "latest": "8.0.0",
+      "dependent": "http2-wrapper",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "readable-stream",
+      "current": "2.3.8",
+      "wanted": "2.3.8",
+      "latest": "4.8.0",
+      "dependent": "duplexer2",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "readable-stream",
+      "current": "3.6.2",
+      "wanted": "3.6.2",
+      "latest": "4.8.0",
+      "dependent": "through2",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "resedit",
+      "current": "1.7.2",
+      "wanted": "1.7.2",
+      "latest": "3.1.1",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "responselike",
+      "current": "2.0.1",
+      "wanted": "2.0.1",
+      "latest": "4.0.2",
+      "dependent": "cacheable-request",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "responselike",
+      "current": "2.0.1",
+      "wanted": "2.0.1",
+      "latest": "4.0.2",
+      "dependent": "got",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "retry",
+      "current": "0.12.0",
+      "wanted": "0.12.0",
+      "latest": "0.13.1",
+      "dependent": "promise-retry",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "retry",
+      "current": "0.12.0",
+      "wanted": "0.12.0",
+      "latest": "0.13.1",
+      "dependent": "proper-lockfile",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "rimraf",
+      "current": "2.6.3",
+      "wanted": "2.6.3",
+      "latest": "6.1.4",
+      "dependent": "temp",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "roarr",
+      "current": "2.15.4",
+      "wanted": "2.15.4",
+      "latest": "7.21.7",
+      "dependent": "global-agent",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "rolldown",
+      "current": "1.2.19",
+      "wanted": "1.3.2",
+      "latest": "1.3.2",
+      "dependent": "unplugin",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "rolldown",
+      "current": "1.2.19",
+      "wanted": "1.2.19",
+      "latest": "1.3.2",
+      "dependent": "vite",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "safe-buffer",
+      "current": "5.1.2",
+      "wanted": "5.1.2",
+      "latest": "5.2.1",
+      "dependent": "readable-stream",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "safe-buffer",
+      "current": "5.1.2",
+      "wanted": "5.1.2",
+      "latest": "5.2.1",
+      "dependent": "string_decoder",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "sax",
+      "current": "1.1.4",
+      "wanted": "1.1.4",
+      "latest": "1.6.1",
+      "dependent": "elementtree",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "semver",
+      "current": "6.3.2",
+      "wanted": "6.3.2",
+      "latest": "7.8.6",
+      "dependent": "@electron/get",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "semver",
+      "current": "7.7.4",
+      "wanted": "7.7.4",
+      "latest": "7.8.6",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "semver",
+      "current": "5.7.3",
+      "wanted": "5.7.3",
+      "latest": "7.8.6",
+      "dependent": "tiny-async-pool",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "serialize-error",
+      "current": "7.0.1",
+      "wanted": "7.0.1",
+      "latest": "13.1.0",
+      "dependent": "global-agent",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "shebang-regex",
+      "current": "3.0.0",
+      "wanted": "3.0.0",
+      "latest": "4.0.0",
+      "dependent": "shebang-command",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "signal-exit",
+      "current": "3.0.7",
+      "wanted": "3.0.7",
+      "latest": "4.1.0",
+      "dependent": "@ionic/utils-process",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "signal-exit",
+      "current": "3.0.7",
+      "wanted": "3.0.7",
+      "latest": "4.1.0",
+      "dependent": "@ionic/utils-terminal",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "signal-exit",
+      "current": "3.0.7",
+      "wanted": "3.0.7",
+      "latest": "4.1.0",
+      "dependent": "proper-lockfile",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "sisteransi",
+      "current": "1.0.5",
+      "wanted": "1.0.5",
+      "latest": "2.0.0",
+      "dependent": "prompts",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "slice-ansi",
+      "current": "4.0.0",
+      "wanted": "4.0.0",
+      "latest": "10.0.1",
+      "dependent": "@ionic/utils-terminal",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "source-map",
+      "current": "0.6.1",
+      "wanted": "0.6.1",
+      "latest": "0.8.0",
+      "dependent": "source-map-support",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "stream-buffers",
+      "current": "2.2.0",
+      "wanted": "2.2.0",
+      "latest": "3.0.3",
+      "dependent": "bplist-creator",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "string_decoder",
+      "current": "1.1.1",
+      "wanted": "1.1.1",
+      "latest": "1.3.0",
+      "dependent": "readable-stream",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "string-width",
+      "current": "4.2.3",
+      "wanted": "4.2.3",
+      "latest": "9.0.0",
+      "dependent": "@ionic/utils-terminal",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "string-width",
+      "current": "4.2.3",
+      "wanted": "4.2.3",
+      "latest": "9.0.0",
+      "dependent": "cliui",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "string-width",
+      "current": "4.2.3",
+      "wanted": "4.2.3",
+      "latest": "9.0.0",
+      "dependent": "wrap-ansi",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "string-width",
+      "current": "4.2.3",
+      "wanted": "4.2.3",
+      "latest": "9.0.0",
+      "dependent": "yargs",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "strip-ansi",
+      "current": "6.0.1",
+      "wanted": "6.0.1",
+      "latest": "7.2.0",
+      "dependent": "@ionic/utils-terminal",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "strip-ansi",
+      "current": "6.0.1",
+      "wanted": "6.0.1",
+      "latest": "7.2.0",
+      "dependent": "cliui",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "strip-ansi",
+      "current": "6.0.1",
+      "wanted": "6.0.1",
+      "latest": "7.2.0",
+      "dependent": "string-width",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "strip-ansi",
+      "current": "6.0.1",
+      "wanted": "6.0.1",
+      "latest": "7.2.0",
+      "dependent": "wrap-ansi",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "supports-color",
+      "current": "7.2.0",
+      "wanted": "7.2.0",
+      "latest": "11.0.0",
+      "dependent": "chalk",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "supports-color",
+      "current": "8.1.1",
+      "wanted": "8.1.1",
+      "latest": "11.0.0",
+      "dependent": "sass-embedded",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "through2",
+      "current": "4.0.2",
+      "wanted": "4.0.2",
+      "latest": "5.0.12",
+      "dependent": "native-run",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "tiny-async-pool",
+      "current": "1.3.0",
+      "wanted": "1.3.0",
+      "latest": "2.1.0",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "tiny-async-pool",
+      "current": "1.3.0",
+      "wanted": "1.3.0",
+      "latest": "2.1.0",
+      "dependent": "builder-util",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "type-fest",
+      "current": "0.13.1",
+      "wanted": "0.13.1",
+      "latest": "5.10.0",
+      "dependent": "serialize-error",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "undici",
+      "current": "7.30.2",
+      "wanted": "7.30.2",
+      "latest": "8.12.4",
+      "dependent": "@electron/get",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "undici",
+      "current": "6.29.1",
+      "wanted": "6.29.1",
+      "latest": "8.12.4",
+      "dependent": "node-gyp",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "undici-types",
+      "current": "8.9.0",
+      "wanted": "8.9.0",
+      "latest": "8.12.4",
+      "dependent": "@types/node",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "undici-types",
+      "current": "7.24.6",
+      "wanted": "7.24.6",
+      "latest": "8.12.4",
+      "dependent": "@types/node",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "universalify",
+      "current": "0.1.2",
+      "wanted": "0.1.2",
+      "latest": "2.0.1",
+      "dependent": "fs-extra",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "universalify",
+      "current": "0.1.2",
+      "wanted": "0.1.2",
+      "latest": "2.0.1",
+      "dependent": "fs-extra",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "untildify",
+      "current": "4.0.0",
+      "wanted": "4.0.0",
+      "latest": "6.0.0",
+      "dependent": "@ionic/utils-terminal",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "webcrypto-core",
+      "current": "1.9.2",
+      "wanted": "1.9.2",
+      "latest": "2.0.0",
+      "dependent": "@peculiar/webcrypto",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "which",
+      "current": "5.0.0",
+      "wanted": "5.0.0",
+      "latest": "7.0.0",
+      "dependent": "app-builder-lib",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "which",
+      "current": "2.0.2",
+      "wanted": "2.0.2",
+      "latest": "7.0.0",
+      "dependent": "cross-spawn",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "which",
+      "current": "6.0.1",
+      "wanted": "6.0.1",
+      "latest": "7.0.0",
+      "dependent": "node-gyp",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "wrap-ansi",
+      "current": "7.0.0",
+      "wanted": "7.0.0",
+      "latest": "10.0.2",
+      "dependent": "@ionic/utils-terminal",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "wrap-ansi",
+      "current": "7.0.0",
+      "wanted": "7.0.0",
+      "latest": "10.0.2",
+      "dependent": "cliui",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "xmlbuilder",
+      "current": "11.0.1",
+      "wanted": "11.0.1",
+      "latest": "15.1.1",
+      "dependent": "xml2js",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "yallist",
+      "current": "4.0.0",
+      "wanted": "4.0.0",
+      "latest": "5.0.0",
+      "dependent": "lru-cache",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "yargs",
+      "current": "17.7.3",
+      "wanted": "17.7.3",
+      "latest": "18.2.0",
+      "dependent": "electron-builder",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "yargs-parser",
+      "current": "21.1.1",
+      "wanted": "21.1.1",
+      "latest": "22.0.0",
+      "dependent": "yargs",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "yauzl",
+      "current": "2.10.0",
+      "wanted": "2.10.0",
+      "latest": "3.4.0",
+      "dependent": "native-run",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    },
+    {
+      "package": "yocto-queue",
+      "current": "0.1.0",
+      "wanted": "0.1.0",
+      "latest": "1.2.2",
+      "dependent": "p-limit",
+      "reason": "Parent-owned compatible range or exact pin; update the named parent and rerun its integration/platform tests, not an unreviewed transitive override."
+    }
+  ],
+  "npm_rolldown_note": "Vite 8.3.8 requires ~1.2.18; unplugin accepts the deduplicated 1.2.19. Its wanted=1.3.2 is not a compatible replacement for Vite. Wait for a compatible Vite release.",
+  "github_releases": {
+    "actions/checkout": {
+      "tag": "v7.0.1",
+      "url": "https://github.com/actions/checkout/releases/tag/v7.0.1"
+    },
+    "actions/setup-java": {
+      "tag": "v6.3.0",
+      "url": "https://github.com/actions/setup-java/releases/tag/v6.3.0"
+    },
+    "actions/setup-node": {
+      "tag": "v7.1.0",
+      "url": "https://github.com/actions/setup-node/releases/tag/v7.1.0"
+    },
+    "actions/setup-python": {
+      "tag": "v7.1.0",
+      "url": "https://github.com/actions/setup-python/releases/tag/v7.1.0"
+    },
+    "actions/upload-artifact": {
+      "tag": "v7.0.2",
+      "url": "https://github.com/actions/upload-artifact/releases/tag/v7.0.2"
+    },
+    "agentgateway/agentgateway": {
+      "tag": "v1.7.0",
+      "url": "https://github.com/agentgateway/agentgateway/releases/tag/v1.7.0"
+    },
+    "anchore/sbom-action": {
+      "tag": "v0.24.3",
+      "url": "https://github.com/anchore/sbom-action/releases/tag/v0.24.3"
+    },
+    "anchore/scan-action": {
+      "tag": "v7.4.2",
+      "url": "https://github.com/anchore/scan-action/releases/tag/v7.4.2"
+    },
+    "android-actions/setup-android": {
+      "tag": "v4.0.4",
+      "url": "https://github.com/android-actions/setup-android/releases/tag/v4.0.4"
+    },
+    "astral-sh/setup-uv": {
+      "tag": "v10.3.3",
+      "url": "https://github.com/astral-sh/setup-uv/releases/tag/v10.3.3"
+    },
+    "astral-sh/uv": {
+      "tag": "0.13.8",
+      "url": "https://github.com/astral-sh/uv/releases/tag/0.13.8"
+    },
+    "coollabsio/maxio": {
+      "tag": "v0.4.2",
+      "url": "https://github.com/coollabsio/maxio/releases/tag/v0.4.2"
+    },
+    "docker/bake-action": {
+      "tag": "v7.5.0",
+      "url": "https://github.com/docker/bake-action/releases/tag/v7.5.0"
+    },
+    "docker/build-push-action": {
+      "tag": "v7.4.0",
+      "url": "https://github.com/docker/build-push-action/releases/tag/v7.4.0"
+    },
+    "docker/buildx": {
+      "tag": "v0.39.0",
+      "url": "https://github.com/docker/buildx/releases/tag/v0.39.0"
+    },
+    "docker/login-action": {
+      "tag": "v4.8.0",
+      "url": "https://github.com/docker/login-action/releases/tag/v4.8.0"
+    },
+    "docker/setup-buildx-action": {
+      "tag": "v4.4.1",
+      "url": "https://github.com/docker/setup-buildx-action/releases/tag/v4.4.1"
+    },
+    "earendil-works/pi": {
+      "tag": "v1.5.2",
+      "url": "https://github.com/earendil-works/pi/releases/tag/v1.5.2"
+    },
+    "nginx/nginx": {
+      "tag": "release-1.31.8",
+      "url": "https://github.com/nginx/nginx/releases/tag/release-1.31.8"
+    },
+    "npm/cli": {
+      "tag": "v12.2.2",
+      "url": "https://github.com/npm/cli/releases/tag/v12.2.2"
+    },
+    "open-telemetry/opentelemetry-collector-contrib": {
+      "tag": "v0.165.1",
+      "url": "https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.165.1"
+    },
+    "rust-lang/rust": {
+      "tag": "1.100.0",
+      "url": "https://github.com/rust-lang/rust/releases/tag/1.100.0"
+    },
+    "softprops/action-gh-release": {
+      "tag": "v3.0.4",
+      "url": "https://github.com/softprops/action-gh-release/releases/tag/v3.0.4"
+    },
+    "temporalio/temporal": {
+      "tag": "v1.32.2",
+      "url": "https://github.com/temporalio/temporal/releases/tag/v1.32.2"
+    },
+    "temporalio/ui": {
+      "tag": "v2.58.1",
+      "url": "https://github.com/temporalio/ui/releases/tag/v2.58.1"
+    },
+    "tianon/gosu": {
+      "tag": "1.20",
+      "url": "https://github.com/tianon/gosu/releases/tag/1.20"
+    }
+  },
+  "rust_crates": {
+    "bitflags": "2.13.2",
+    "cc": "1.11.2",
+    "fallible-iterator": "0.3.0",
+    "fallible-streaming-iterator": "0.1.9",
+    "find-msvc-tools": "0.1.15",
+    "foldhash": "0.2.0",
+    "hashbrown": "0.17.1",
+    "hashlink": "0.12.2",
+    "itoa": "1.0.19",
+    "libsqlite3-sys": "0.40.0",
+    "memchr": "2.8.3",
+    "pkg-config": "0.3.34",
+    "proc-macro2": "1.0.107",
+    "quote": "1.0.47",
+    "rsqlite-vfs": "0.2.0",
+    "rusqlite": "0.43.0",
+    "serde": "1.0.229",
+    "serde_core": "1.0.229",
+    "serde_derive": "1.0.229",
+    "serde_json": "1.0.154",
+    "shlex": "2.0.1",
+    "smallvec": "1.16.5",
+    "sqlite-wasm-rs": "0.6.3",
+    "syn": "3.0.10",
+    "thiserror": "2.0.21",
+    "thiserror-impl": "2.0.21",
+    "unicode-ident": "1.0.27",
+    "vcpkg": "0.2.15",
+    "zmij": "1.0.23"
+  },
+  "artcraft": {
+    "photocraft": {
+      "version": "0.23.1",
+      "release": "https://github.com/storytold/photocraft/releases/tag/v0.23.1",
+      "verified_architecture_digests": {
+        "x86_64": "4383aef67a07cc370ad250a6ed60015205d3e6c463faf3ff4b0f67b8178ccfc8",
+        "aarch64": "fcc81c38ae62c72fa9f4fd1ec3d18396493ba261662792d6995cc35905ce71d2"
+      }
+    },
+    "vectorcraft": {
+      "version": "0.24.1",
+      "release": "https://github.com/storytold/vectorcraft/releases/tag/v0.24.1",
+      "verified_architecture_digests": {
+        "x86_64": "a090514252fde145495ac6fc65d6ff1311d698998e57ba434d5d0896c3d1fbfa",
+        "aarch64": "4b9735489789d336c1ca4344689eb4a1d4a3f0b6e8db7f8c0659c24d10653455"
+      }
+    },
+    "filmcraft": {
+      "version": "0.20.1",
+      "release": "https://github.com/storytold/filmcraft/releases/tag/v0.20.1",
+      "verified_architecture_digests": {
+        "x86_64": "3e4fea3cb8d473e68f189a0a8792ba46160fab507adab3ab8920073fd41f24fa",
+        "aarch64": "cdce3d832620c7cf7150e6609fd98ad9702e7d4c57f827aab562e87d816ea13f"
+      }
+    },
+    "lightcraft": {
+      "version": "0.21.1",
+      "release": "https://github.com/storytold/lightcraft/releases/tag/v0.21.1",
+      "verified_architecture_digests": {
+        "x86_64": "b123de16915809a79e64ba4ee3aee9e1cded6ef23b737c06f81cdc7e2f286d62",
+        "aarch64": "ae8c557ef7028cbfaefe105c27c30cef9490d25c199803c3f1cbe072bc39d7b6"
+      }
+    },
+    "pdfcraft": {
+      "version": "0.21.1",
+      "release": "https://github.com/storytold/pdfcraft/releases/tag/v0.21.1",
+      "verified_architecture_digests": {
+        "x86_64": "a97b2e789d214360424f19814bc66f3eaf6d04ef5e42e472b46f7b9ddceea5c8",
+        "aarch64": "e41fc6d757eb6e0b4b6f6d9115a3efa530785c092fc9a5be914893416da6c9f3"
+      }
+    },
+    "effectcraft": {
+      "version": "0.24.1",
+      "release": "https://github.com/storytold/effectcraft/releases/tag/v0.24.1",
+      "verified_architecture_digests": {
+        "x86_64": "5ce0393690144227fa9186e82308ad638a6ef6d9f976c996e6d03b5b51b65a7b",
+        "aarch64": "ad10c445065681760de9353117c6e2c45167eabcccf0ed19bde2f5c5ac908695"
+      }
+    },
+    "designcraft": {
+      "version": "0.20.1",
+      "release": "https://github.com/storytold/designcraft/releases/tag/v0.20.1",
+      "verified_architecture_digests": {
+        "x86_64": "e91630d4cdf578ccb1e2f39f88e24e8520f1482d51ae4714657ee471e2237f44",
+        "aarch64": "208c3cf73565fa765c47eeb601f94fec425e817d15cc2131dfa1c1ebe2d06620"
+      }
+    },
+    "figcraft": {
+      "version": "0.18.1",
+      "release": "https://github.com/storytold/figcraft/releases/tag/v0.18.1",
+      "verified_architecture_digests": {
+        "x86_64": "8276d2ac55c6f77f7af3a411a9b00415d3feb0b59607a54523311340e653fc19",
+        "aarch64": "b27dee10be5db50def03dee3be470bc2f9ce508be1690e75b4765354d2b89c88"
+      }
+    },
+    "wordcraft": {
+      "version": "0.18.1",
+      "release": "https://github.com/storytold/wordcraft/releases/tag/v0.18.1",
+      "verified_architecture_digests": {
+        "x86_64": "312a057d46dd80597c12dccfd1097ce25edea40baaaeb50bcb6f01ac1aebadb5",
+        "aarch64": "3f4afc0598357378ad8af9b2e37a2c171f6dd474c9206c9cf0cf56ea686259ed"
+      }
+    },
+    "soundcraft": {
+      "version": "0.20.1",
+      "release": "https://github.com/storytold/soundcraft/releases/tag/v0.20.1",
+      "verified_architecture_digests": {
+        "x86_64": "caefcf85c4f1138717d592d31ce5be07f2fca616ec36d63fac6760cdefbe28a9",
+        "aarch64": "93c6c6e5e37c0e57acea76201faacc777ed0f7b8fb8b86baaa71bb55cfd33dfd"
+      }
+    },
+    "deckcraft": {
+      "version": "0.18.1",
+      "release": "https://github.com/storytold/deckcraft/releases/tag/v0.18.1",
+      "verified_architecture_digests": {
+        "x86_64": "5bae7d5566638624411ef968f2532ab3358dc280884144583e497c5631db8a26",
+        "aarch64": "3fbd005ce382c853ad056dca7b937802fc0ef6b8564eca5a99a52b670c159e94"
+      }
+    },
+    "cadcraft": {
+      "version": "0.20.1",
+      "release": "https://github.com/storytold/cadcraft/releases/tag/v0.20.1",
+      "verified_architecture_digests": {
+        "x86_64": "57b6f1b41b4f3c542a82f103202ed1a779440e5ff8d25c08ef66abda1a8cb1b9",
+        "aarch64": "b149db4bdf61d135fcb40ce7361828c75b18d6f3f710e165ca17f30819d23212"
+      }
+    },
+    "gridcraft": {
+      "version": "0.19.1",
+      "release": "https://github.com/storytold/gridcraft/releases/tag/v0.19.1",
+      "verified_architecture_digests": {
+        "x86_64": "8d97bba2d5bb00fd69ed55064852c1fd914de40d5ecd55ca01c8df81b828946d",
+        "aarch64": "c05373a366e6dded3201380cb82b3a0a137569a1b122d37c1b0ecf01cbd46b75"
+      }
+    }
+  },
+  "runtime": {
+    "node24": "24.22.3",
+    "python313": "3.13.18",
+    "go": "1.27.4",
+    "rust": "1.100.0",
+    "npm11": "11.21.2",
+    "gosu": "1.20",
+    "moby-user": "v0.5.0",
+    "x-sys": "v0.50.0",
+    "search_model": "aa8f8b060edb00e03bfdd08813a2949946c8ba55",
+    "moonshine": "0.1.6"
+  },
+  "known_upstream_container_hold": {
+    "package": "otel/opentelemetry-collector-contrib",
+    "current": "0.165.0",
+    "source_release": "0.165.1",
+    "evidence": "https://hub.docker.com/v2/repositories/otel/opentelemetry-collector-contrib/tags/0.165.1 returned HTTP 404 on 2026-11-16, while 0.165.0 returned 200. Core v0.165.1 release also absent.",
+    "next_step": "Consume official image when published; inspect SBOM/Grype and test repository OTLP/config compatibility. Do not select nightly or silently switch registries/binaries."
+  }
+}

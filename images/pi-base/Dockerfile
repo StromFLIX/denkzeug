@@ -22,7 +22,7 @@ RUN uv python install --default 3.13 \
 
 # Match services/frontend/package-lock.json. Preinstall both Chromium and its OS
 # libraries/fonts so browser tests need no privileged apt install at runtime.
-ARG PLAYWRIGHT_VERSION=1.65.0
+ARG PLAYWRIGHT_VERSION=1.65.1
 RUN npm install -g --ignore-scripts playwright@${PLAYWRIGHT_VERSION} \
   && playwright install --with-deps chromium \
   && chmod -R a+rX /opt/python /opt/playwright-browsers \

@@ -133,7 +133,7 @@ jobs:
     # hundreds of packages from a live Ubuntu mirror on every test run.
     # tests/test_playwright_ci.py guards this pin against package-lock.json.
     container:
-      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
       options: --ipc=host
     defaults:
       run:
@@ -149,7 +149,7 @@ jobs:
 
       # The flow browser fixtures import stdlib-only backend projections, not
       # the backend runtime or uv workspace. Make their interpreter explicit.
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
 

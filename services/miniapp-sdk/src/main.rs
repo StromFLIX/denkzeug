@@ -237,6 +237,39 @@ mod tests {
     }
 
     #[test]
+    fn sqlite_upgrade_preserves_state_and_idempotent_health() {
+        let path = std::env::temp_dir().join(format!("denkzeug-sdk-{}.db", std::process::id()));
+        {
+            let mut ctx = Context {
+                db: rusqlite::Connection::open(&path).unwrap(),
+            };
+            app::health(&mut ctx).unwrap();
+            ctx.db
+                .execute("UPDATE counter SET value=42 WHERE id=1", [])
+                .unwrap();
+        }
+        {
+            let mut ctx = Context {
+                db: rusqlite::Connection::open(&path).unwrap(),
+            };
+            app::health(&mut ctx).unwrap();
+            let value: i64 = ctx.db
+                .query_row("SELECT value FROM counter WHERE id=1", [], |row| row.get(0))
+                .unwrap();
+            assert_eq!(value, 42);
+            let version: String = ctx.db
+                .query_row("SELECT sqlite_version()", [], |row| row.get(0))
+                .unwrap();
+            assert_eq!(version, "3.54.1");
+            // rusqlite 0.43 deliberately rejects statements with no SQL. Do not
+            // swallow this error or turn application errors into successful writes.
+            assert!(ctx.db.prepare("-- comment only").is_err());
+            assert!(ctx.db.prepare("").is_err());
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
     fn oversized_request_is_rejected_before_body_read() {
         let result = exchange("POST /rpc HTTP/1.1\r\nAuthorization: Bearer test-app-token\r\nContent-Length: 65537\r\n\r\n".into());
         assert!(result.starts_with("HTTP/1.1 413"));
