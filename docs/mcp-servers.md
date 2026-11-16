@@ -76,6 +76,57 @@ Deploy both **agentgateway and backend** for these protections; restart/recreate
 the gateway to load the baseline failure policy. Existing agent turns that
 started without MCP tools need a new turn to rediscover them.
 
+## MCP request deadlines and agent overrides
+
+Ordinary agent MCP calls have a **120-second request deadline**. Initialization
+and tool discovery have a separate **30-second** budget; interactive OAuth sign-in
+is not charged to a business call's request deadline. The deadline stays active
+through response-body consumption and is not reset by session recovery.
+
+For a deliberately slower (or faster) call, agents can use the local utility:
+
+```json
+{
+  "tool": "workiq_retrieve",
+  "arguments": {"query": "Find the usage dashboard", "strategy": "copilot"},
+  "preset": "long"
+}
+```
+
+Call `mcp_call_with_timeout` with that input. Presets are `fast` (**30s**),
+`normal` (**120s**, the default), and `long` (**600s**). Alternatively, supply
+`timeout_seconds` as an integer from **1 to 600**, instead of `preset`. This is a
+per-invocation override: concurrent calls keep their own budgets. The wrapper can
+only reach already selected MCP tools, uses Pi's normal argument validation,
+permission hooks and account/OAuth checks, and never injects a timeout argument
+into a remote server's schema or arguments. It cannot call local shell/file tools
+or grant additional MCP access. It is absent when no MCP tools are selected.
+
+agentgateway v1.7 has a separate, otherwise hidden **10-second HTTP subrequest
+limit**. The baseline workflow target and managed HTTP targets now default their
+`policies.http.requestTimeout` to **615s**, allowing the agent's deadline to fire
+first. Backend startup upgrades existing managed targets without replacing
+credentials, TLS policies, custom conditions or explicit administrator timeouts.
+That exact default is normalized out of credential-ownership snapshots, so it
+does not invalidate existing OAuth connections. Stdio targets do not accept this
+HTTP policy. Explicit administrator/upstream limits may still be shorter than an
+agent request deadline. Custom file-owned HTTP targets should set this same
+policy explicitly. LLM/model route timeouts are unchanged.
+
+A client deadline now produces an actionable **"MCP tool … timed out after …s"**
+error, naming the selected budget. Caller cancellation is not mislabeled as a
+timeout. A 504 is described as a reported gateway/upstream timeout; an opaque 500
+remains a generic transport failure, optionally with a fixed, sanitized gateway
+reason such as `gateway_send_failed`. This gateway version cannot safely identify
+which underlying cause produced every 500. Raw error bodies/credentials are never
+shown, and unsafe gateway error-detail exposure remains disabled.
+
+**A timeout does not prove that the upstream operation stopped or did not run.**
+Neither deadlines nor 5xx failures trigger an automatic tool replay, including for
+read-only tools. Inspect the outcome before retrying a mutation. Deploy the
+backend, gateway baseline and rebuilt default agent image together; new turns
+load the updated utility and error descriptions.
+
 ## Agent startup discovery and direct tool availability
 
 Pi still discovers live tools on every agent start. For an explicit tool selection,

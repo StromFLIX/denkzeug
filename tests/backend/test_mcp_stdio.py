@@ -206,6 +206,7 @@ def test_transport_switch_does_not_carry_credentials_to_other_transport(client, 
     assert stdio_ready.gateway.resources["mcp.target"]["brave"] == {
         "name": "brave",
         "mcp": {"host": LINEAR},
+        "policies": {"http": {"requestTimeout": "615s"}},
     }
 
 

@@ -253,6 +253,10 @@ class GatewayClient:
         return await self._write_config_resources(kind, values)
 
     async def _write_config_resources(self, kind: str, values: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        if kind == "mcp.target":
+            from ..mcp_timeouts import with_http_timeout
+
+            values = [with_http_timeout(value) for value in values]
         response = await shared().put(
             f"{self.base_url}/api/config/resources/{kind}",
             json={"resources": [{"value": value} for value in values]},

@@ -73,7 +73,7 @@ async function fixture(fn) {
   const config = join(dir, 'config'); mkdirSync(config)
   writeFileSync(join(config, 'settings.json'), JSON.stringify({ retry: { enabled: false } }))
   const records = [], modelRequests = [], calls = [], headers = []
-  let runId = 0, called = false, sessions = 0
+  let runId = 0, called = false, sessions = 0, timed = false, timeoutOverride, remoteDelay = 0
   const server = createServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk
     const body = raw ? JSON.parse(raw) : {}
@@ -87,7 +87,7 @@ async function fixture(fn) {
         result = { protocolVersion: '2025-06-18', capabilities: { tools: {} }, serverInfo: { name: 'fixture', version: '1' } }
         res.setHeader('mcp-session-id', `fixture-${++sessions}`)
       } else if (body.method === 'tools/list') result = { tools: [
-        { name: 'remote_lookup', description: 'Look up a remote record', inputSchema: { type: 'object', properties: { value: { type: 'string' } } }, annotations: { readOnlyHint: true } },
+        { name: 'remote_lookup', description: 'Look up a remote record', inputSchema: { type: 'object', additionalProperties: false, properties: { value: { type: 'string' } } }, annotations: { readOnlyHint: true } },
         { name: 'remote_secondary', description: 'Read another remote record', inputSchema: { type: 'object' } },
         { name: 'remote_denied', description: 'This is not allowed', inputSchema: { type: 'object' } },
         { name: 'backend_mcp_oauth_gate', inputSchema: { type: 'object' } },
@@ -95,7 +95,9 @@ async function fixture(fn) {
       else if (body.params?.name === 'backend_mcp_oauth_tools') result = { content: [{ type: 'text', text: JSON.stringify({ tools: [], oauth_tools: ['remote_lookup'] }) }] }
       else if (body.params?.name === 'backend_mcp_oauth_gate') result = { content: [{ type: 'text', text: '{"status":"ready"}' }] }
       else {
-        calls.push({ runId, name: body.params?.name })
+        calls.push({ runId, name: body.params?.name, arguments: body.params?.arguments })
+        if (remoteDelay) await new Promise(resolve => setTimeout(resolve, remoteDelay))
+        if (res.destroyed) return
         result = { content: [{ type: 'text', text: 'lookup succeeded' }] }
       }
       res.writeHead(200, { 'content-type': 'application/json' })
@@ -106,7 +108,11 @@ async function fixture(fn) {
     const chunk = (delta, finish_reason = null) => res.write(`data: ${JSON.stringify({ id: `m-${modelRequests.length}`, object: 'chat.completion.chunk', model: 'test-model', choices: [{ index: 0, delta, finish_reason }] })}\n\n`)
     chunk({ role: 'assistant', content: '' })
     const names = new Set((body.tools || []).map(t => t.function.name))
-    if (!called && names.has('remote_lookup')) {
+    if (!called && timed && names.has('mcp_call_with_timeout')) {
+      called = true
+      chunk({ tool_calls: [{ index: 0, id: `timed-${runId}`, type: 'function', function: { name: 'mcp_call_with_timeout', arguments: JSON.stringify({ tool: 'remote_lookup', arguments: { value: 'once' }, ...(timeoutOverride === undefined ? { preset: 'fast' } : { timeout_seconds: timeoutOverride }) }) } }] })
+      chunk({}, 'tool_calls')
+    } else if (!called && names.has('remote_lookup')) {
       called = true
       chunk({ tool_calls: [{ index: 0, id: `lookup-${runId}`, type: 'function', function: { name: 'remote_lookup', arguments: '{"value":"once"}' } }] })
       chunk({}, 'tool_calls')
@@ -128,8 +134,8 @@ async function fixture(fn) {
       for (const name of ['remote_lookup','remote_secondary']) pi.registerTool({ name, description: name, exposure: 'deferred', parameters: { type: 'object', properties: { value: { type: 'string' } } }, async execute() { return { content: [{type:'text',text:'legacy fixture result'}], details: {} }; } });
       pi.on('session_start', () => { pi.setActiveTools([...pi.getActiveTools().filter(name => !['remote_lookup','remote_secondary'].includes(name)), 'tool_search']); pi.appendEntry('nautionette.mcp-schema-mode', {mode:process.env.LEGACY_SCHEMA_MARKER || 'deferred'}); });
     }`)
-    async function run({ allowed = ['remote_lookup', 'remote_secondary'], seedLegacy = false, persistent = true, oldMode = 'deferred', legacyMarker = 'deferred' } = {}) {
-      runId++; called = false
+    async function run({ allowed = ['remote_lookup', 'remote_secondary'], seedLegacy = false, persistent = true, oldMode = 'deferred', legacyMarker = 'deferred', timeoutWrapper = false, timeoutSeconds, delay = 0 } = {}) {
+      runId++; called = false; timed = timeoutWrapper; timeoutOverride = timeoutSeconds; remoteDelay = delay
       // Explicit native search here simulates its normal CLI registration; the
       // production supervisor must no longer force-load or activate this tool.
       child = spawn('pi', ['--mode', 'json', ...(persistent ? ['--session', join(dir, 'session.jsonl')] : ['--no-session']), '--no-extensions', '--no-context-files', '--no-skills', '--no-themes', '--no-prompt-templates', '-e', 'builtin:tool-search', '-e', seedLegacy ? legacy : extension, '--provider', 'nautionette', '--model', 'test-model', '--approve', '--', 'fixture request'], {
@@ -168,6 +174,24 @@ test('real Pi calls selected MCP directly from its first request, including one-
   assert.equal(f.records.filter(r => r.name === 'backend_mcp_oauth_gate').length, 1)
   assert.ok(f.headers.filter(r => r.name === 'remote_lookup').every(r => r.value === 'remote'))
   assert.ok(f.headers.filter(r => r.name === 'backend_mcp_oauth_gate').every(r => r.value === ''))
+}))
+
+test('real Pi timeout wrapper preserves upstream schema, selected scope and OAuth gate', { timeout: 15000 }, () => fixture(async f => {
+  const requests = await f.run({ persistent: false, timeoutWrapper: true })
+  assertDirect(requests[0])
+  assert.ok(requests[0].tools.some(t => t.function.name === 'mcp_call_with_timeout'))
+  assert.equal(f.calls.length, 1)
+  assert.deepEqual(f.calls[0].arguments, { value: 'once' })
+  assert.match(JSON.stringify(requests.at(-1).messages), /lookup succeeded/)
+  assert.equal(f.records.filter(r => r.name === 'backend_mcp_oauth_gate').length, 1)
+  assert.ok(f.headers.filter(r => r.name === 'remote_lookup').every(r => r.value === 'remote'))
+}))
+
+test('real Pi carries the wrapper deadline through nested execution to fresh OAuth HTTP dispatch', { timeout: 15000 }, () => fixture(async f => {
+  const requests = await f.run({ persistent: false, timeoutWrapper: true, timeoutSeconds: 1, delay: 1500 })
+  assert.equal(f.calls.length, 1)
+  assert.match(JSON.stringify(requests.at(-1).messages), /remote_lookup timed out after 1s/)
+  assert.equal(f.records.filter(r => r.name === 'backend_mcp_oauth_gate').length, 1)
 }))
 
 test('stale schema-mode environment settings cannot reactivate deferred schemas', { timeout: 15000 }, () => fixture(async f => {

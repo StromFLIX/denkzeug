@@ -43,6 +43,12 @@ mcp:
     - name: workflows
       mcp:
         host: http://workflow-mcp:8000/mcp
+      # Internal MCP HTTP calls otherwise default to 10s in agentgateway 1.7.
+      # This ceiling accommodates the agent's bounded 1–600s request deadline;
+      # its normal/default deadline is 120s. LLM route policies are unchanged.
+      policies:
+        http:
+          requestTimeout: 615s
     # The backend registers its own authenticated /mcp/ target after a successful
     # handshake. Its tools arrive as backend_<operation>; no manual approval gate.
     # Further servers are added in the app, under Settings > MCP servers, and

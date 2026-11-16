@@ -8,6 +8,7 @@ import pytest
 from nautionette_backend import mcp_selection as scope
 from nautionette_backend import mcp_servers
 from nautionette_backend.clients.agentgateway import GatewayClient
+from nautionette_backend.mcp_timeouts import with_http_timeout
 
 
 @pytest.mark.parametrize(
@@ -105,12 +106,34 @@ async def test_reconciliation_preserves_secrets_conditions_and_logical_oauth_sna
     backend.gateway.resources["mcp.target"] = {"external": deepcopy(original)}
     await mcp_servers.reconcile_selection()
     saved = backend.gateway.resources["mcp.target"]["external"]
-    assert saved == scope.scoped_target(original)
+    assert saved == with_http_timeout(scope.scoped_target(original))
     _, resources = await mcp_servers.fetch_resources()
     assert resources[0]["value"] == original
     writes = len(backend.gateway.writes)
     await mcp_servers.reconcile_selection()
     assert len(backend.gateway.writes) == writes
+
+
+async def test_timeout_migration_handles_singletons_without_scoping_or_replacing_custom_limits(backend):
+    backend.gateway.file_targets = []
+    original = {
+        "name": "single",
+        "mcp": {"host": "https://single.test/mcp"},
+        "condition": "false",
+        "policies": {"backendAuth": {"key": {"value": "fixture"}}},
+    }
+    backend.gateway.resources["mcp.target"] = {"single": deepcopy(original)}
+    await mcp_servers.reconcile_selection()
+    saved = backend.gateway.resources["mcp.target"]["single"]
+    assert saved == with_http_timeout(original)
+    assert saved["condition"] == "false"
+    _, resources = await mcp_servers.fetch_resources()
+    assert resources[0]["value"] == original
+    saved["policies"]["http"]["requestTimeout"] = "45s"
+    writes = len(backend.gateway.writes)
+    await mcp_servers.reconcile_selection()
+    assert len(backend.gateway.writes) == writes
+    assert saved["policies"]["http"]["requestTimeout"] == "45s"
 
 
 async def test_reconciliation_reads_latest_resource_not_a_stale_credential_snapshot(
@@ -159,10 +182,10 @@ async def test_singleton_publication_remains_raw_and_multitarget_publication_is_
     gateway = GatewayClient(base)
     target = {"name": "example", "mcp": {"host": "https://example.test/mcp"}}
     await gateway.put_config_resources("mcp.target", [target])
-    assert writes[-1] == target
+    assert writes[-1] == with_http_timeout(target)
     targets.append({"name": "workflows", "mcp": {"host": "http://workflows.test/mcp"}})
     await gateway.put_config_resources("mcp.target", [target])
-    assert writes[-1] == scope.scoped_target(target)
+    assert writes[-1] == with_http_timeout(scope.scoped_target(target))
 
 
 async def test_deletion_removes_our_condition_before_gateway_becomes_singleton(http):
@@ -195,6 +218,6 @@ async def test_deletion_removes_our_condition_before_gateway_becomes_singleton(h
     http[base + "/api/config/resources/mcp.target"] = resources
     await GatewayClient(base).delete_config_resource("mcp.target", "deleting")
     assert actions == [
-        ("rewrite", scope.logical_target(remaining)),
+        ("rewrite", with_http_timeout(scope.logical_target(remaining))),
         ("delete", "/api/config/resources/mcp.target/deleting"),
     ]

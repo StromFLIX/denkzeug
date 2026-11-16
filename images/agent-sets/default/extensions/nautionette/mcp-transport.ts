@@ -1,4 +1,37 @@
 /** Recover the shared MCP session without blindly repeating a mutation. */
+import { MCP_DISCOVERY_TIMEOUT_SECONDS, MCP_TIMEOUT_PRESETS, validateMcpTimeout, withMcpDeadline } from "./mcp-timeout.ts";
+
+// Only fixed gateway diagnostics may be surfaced. Upstream bodies can contain
+// credentials or private content; never echo a free-form error message.
+const SAFE_REASONS = new Map([
+  ["failed to send message", "gateway_send_failed"],
+  ["service unavailable", "service_unavailable"],
+  ["upstream error", "upstream_http_error"],
+  ["failed to create session", "session_creation_failed"],
+  ["request body too large", "request_too_large"],
+]);
+async function httpReason(response: Response): Promise<string | undefined> {
+  const reader = response.body?.getReader();
+  if (!reader) return;
+  try {
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 4096) return;
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    const payload = JSON.parse(new TextDecoder().decode(bytes));
+    return SAFE_REASONS.get(payload?.error?.message);
+  } catch { return; }
+  finally { await reader.cancel().catch(() => {}); }
+}
+
 export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, selection: readonly string[] | null = null) {
   // Immutable for the entire MCP session, including recovery and post-login calls.
   const targets = selection === null ? null : [...new Set(selection)].sort();
@@ -14,8 +47,10 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
   class HttpFailure extends Error {
     status: number;
     session: string | undefined;
-    constructor(status: number, session: string | undefined) {
-      super(`MCP transport -> HTTP ${status}`);
+    constructor(status: number, session: string | undefined, label: string, reason?: string) {
+      const classification = status === 504 ? "gateway/upstream timeout reported" : reason;
+      super(`${label} failed: MCP transport -> HTTP ${status}${classification ? ` (${classification})` : ""}. ` +
+        "No automatic retry. The operation's outcome may be unknown; inspect it before retrying a mutation.");
       this.status = status;
       this.session = session;
     }
@@ -33,21 +68,29 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
     };
     const requestSession = sessionId;
     if (requestSession) headers["mcp-session-id"] = requestSession;
+    const label = method === "tools/call" ? `MCP tool ${params.name}` : `MCP ${method}`;
     const response = await fetcher(url, { method: "POST", headers, body: JSON.stringify(body), signal });
+    if (signal?.aborted) { await response.body?.cancel(); signal.throwIfAborted(); }
     if (!response.ok) {
-      // Do not leak upstream bodies or infer that a failed mutation did not run.
-      await response.body?.cancel();
-      throw new HttpFailure(response.status, requestSession);
+      // Do not infer that a failed mutation did not run, or label an opaque 500
+      // as a timeout: v1.7 collapses multiple upstream failures into SendError.
+      throw new HttpFailure(response.status, requestSession, label, await httpReason(response));
     }
     const returned = response.headers.get("mcp-session-id");
     if (returned) sessionId = returned;
     if (notification) { await response.body?.cancel(); return {}; }
     const raw = await response.text();
+    signal?.throwIfAborted();
     const payload = raw.includes("event:") || raw.startsWith("data:")
       ? raw.split("\n").filter(line => line.startsWith("data:")).map(line => line.slice(5).trim()).join("")
       : raw;
     const parsed = JSON.parse(payload);
-    if (parsed.error) throw new Error(`${method} -> ${parsed.error.message ?? "mcp error"}`);
+    if (parsed.error) {
+      const code = Number.isSafeInteger(parsed.error.code) ? ` ${parsed.error.code}` : "";
+      const reason = SAFE_REASONS.get(parsed.error.message);
+      throw new Error(`${label} failed: JSON-RPC${code}${reason ? ` (${reason})` : ""}. ` +
+        "No automatic retry; inspect the operation's outcome before retrying a mutation.");
+    }
     return parsed.result ?? {};
   }
 
@@ -58,12 +101,14 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
     connecting = (async () => {
       sessionId = undefined;
       try {
-        await send("initialize", {
-          protocolVersion: "2025-06-18", capabilities: {},
-          clientInfo: { name: "nautionette-agent-set", version: "1.0.0" },
-        }, signal);
-        await send("notifications/initialized", {}, signal);
-        connected = true;
+        await withMcpDeadline(async requestSignal => {
+          await send("initialize", {
+            protocolVersion: "2025-06-18", capabilities: {},
+            clientInfo: { name: "nautionette-agent-set", version: "1.0.0" },
+          }, requestSignal);
+          await send("notifications/initialized", {}, requestSignal);
+          connected = true;
+        }, MCP_DISCOVERY_TIMEOUT_SECONDS, "MCP initialization", signal);
       } catch (error) {
         sessionId = undefined;
         connected = false;
@@ -73,24 +118,29 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
     try { await connecting; } finally { connecting = undefined; }
   }
 
-  async function rpc(method: string, params: Record<string, any> = {}, signal?: AbortSignal): Promise<Record<string, any>> {
+  async function rpc(method: string, params: Record<string, any> = {}, signal?: AbortSignal, timeoutSeconds?: number): Promise<Record<string, any>> {
+    const seconds = validateMcpTimeout(timeoutSeconds ?? (method === "tools/call" ? MCP_TIMEOUT_PRESETS.normal : MCP_DISCOVERY_TIMEOUT_SECONDS));
     await connect(signal);
-    try { return await send(method, params, signal); }
-    catch (error) {
-      // A stale gateway session rejects otherwise unrelated tools with 400/404.
-      // Re-handshake once; don't retry network errors, auth failures or RPC errors.
-      if (!(error instanceof HttpFailure) || !error.session || ![400, 404].includes(error.status)) throw error;
-      if (sessionId === error.session) connected = false;
-      const safe = method === "tools/list" || (method === "tools/call" && readonlyTools.has(params.name));
-      try { await connect(signal); }
-      catch {
-        throw new Error(`${method} -> HTTP ${error.status}; MCP session recovery failed. Original operation was not replayed.`);
+    return withMcpDeadline(async requestSignal => {
+      try { return await send(method, params, requestSignal); }
+      catch (error) {
+        // Re-handshake stale sessions once. Timeout, network, auth and RPC
+        // errors are never replayed, even for an explicitly read-only tool.
+        if (!(error instanceof HttpFailure) || !error.session || ![400, 404].includes(error.status)) throw error;
+        if (sessionId === error.session) connected = false;
+        const safe = method === "tools/list" || (method === "tools/call" && readonlyTools.has(params.name));
+        try { await connect(requestSignal); }
+        catch {
+          requestSignal.throwIfAborted();
+          throw new Error(`${method} -> HTTP ${error.status}; MCP session recovery failed. Original operation was not replayed.`);
+        }
+        if (!safe) {
+          throw new Error(`${method} -> HTTP ${error.status}; MCP session refreshed. Original operation was NOT replayed; inspect its outcome before retrying.`);
+        }
+        // Share the original deadline, not another full timeout after recovery.
+        return await send(method, params, requestSignal);
       }
-      if (!safe) {
-        throw new Error(`${method} -> HTTP ${error.status}; MCP session refreshed. Original operation was NOT replayed; inspect its outcome before retrying.`);
-      }
-      return await send(method, params, signal);
-    }
+    }, seconds, method === "tools/call" ? `MCP tool ${params.name}` : `MCP ${method}`, signal);
   }
 
   async function close() {
@@ -104,12 +154,11 @@ export function createMcpTransport(url: string, fetcher: typeof fetch = fetch, s
     } catch { /* Best effort; cleanup must not hide an operation's outcome. */ }
   }
 
-  async function rpcFresh(method: string, params: Record<string, any>, signal?: AbortSignal) {
-    // Federation sessions may retain the upstream connection/credentials from
-    // before OAuth finished. Never dispatch an authenticated call through that
-    // old snapshot or reset a shared session underneath concurrent tool calls.
+  async function rpcFresh(method: string, params: Record<string, any>, signal?: AbortSignal, timeoutSeconds?: number) {
+    // Never dispatch authenticated calls through a pre-login snapshot or reset
+    // a shared session underneath concurrent tool calls.
     const fresh = createMcpTransport(url, fetcher, targets);
-    try { return await fresh.rpc(method, params, signal); }
+    try { return await fresh.rpc(method, params, signal, timeoutSeconds); }
     finally { await fresh.close(); }
   }
 

@@ -61,6 +61,10 @@ class FakeGateway:
         if kind in self.fail_kinds:
             raise self.fail_kinds[kind]
         for value in values:
+            if kind == "mcp.target":
+                from nautionette_backend.mcp_timeouts import with_http_timeout
+
+                value = with_http_timeout(value)
             self.writes.append((kind, value))
             self.resources.setdefault(kind, {})[value.get("id") or value["name"]] = value
 

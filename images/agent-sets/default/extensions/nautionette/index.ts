@@ -12,6 +12,7 @@ import brand from "./brand.json" with { type: "json" };
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { modelApi } from "./model-api.ts";
 import { createMcpTransport } from "./mcp-transport.ts";
+import { MCP_TIMEOUT_TOOL, currentMcpTimeout, registerMcpTimeoutTool } from "./mcp-timeout.ts";
 import { AUTH_TRANSPORT_TOOLS, authControl, waitForMcpAuth } from "./mcp-auth.ts";
 import { modelLimits } from "./model-limits.ts";
 import { reasoningConfig, reasoningPayload } from "./reasoning.ts";
@@ -113,7 +114,7 @@ export default async function (pi: ExtensionAPI) {
       }
     }
     transport.setReadOnlyTools(all.filter(tool => tool.annotations?.readOnlyHint === true).map(tool => tool.name));
-    const tools = all.filter((tool) => !AUTH_TRANSPORT_TOOLS.has(tool.name) && !isOutputTransportTool(tool.name) && !SUBAGENT_TOOLS.has(tool.name) && !CRAFT_TOOL_NAMES.has(tool.name) && (ALLOWED === null || ALLOWED.has(tool.name)));
+    const tools = all.filter((tool) => tool.name !== MCP_TIMEOUT_TOOL && !AUTH_TRANSPORT_TOOLS.has(tool.name) && !isOutputTransportTool(tool.name) && !SUBAGENT_TOOLS.has(tool.name) && !CRAFT_TOOL_NAMES.has(tool.name) && (ALLOWED === null || ALLOWED.has(tool.name)));
 
     // Payload-free provenance for the supervisor's workflow accounting. Tool
     // names come from discovery, never namespace/name heuristics.
@@ -140,13 +141,14 @@ export default async function (pi: ExtensionAPI) {
           const argumentsWithActor = (tool.name.startsWith("backend_") || tool.name.startsWith("workflows_")) && grant?.grant
             ? { ...(params as Record<string, unknown> ?? {}), __denkzeug_actor: grant.grant }
             : params ?? {};
-          const result = await dispatch("tools/call", { name: tool.name, arguments: argumentsWithActor }, signal);
+          const result = await dispatch("tools/call", { name: tool.name, arguments: argumentsWithActor }, signal, currentMcpTimeout());
           const text = renderToolResult(result);
           if (result?.isError) throw new Error(text);
           return { content: [{ type: "text", text }], details: result ?? {} };
         },
       }));
     registerMcpTools(pi, definitions);
+    registerMcpTimeoutTool(pi, definitions.map(tool => tool.name));
     console.error(`[nautionette] bridged ${tools.length} of ${all.length} MCP tool(s) from ${MCP_URL}`);
   } catch (error) {
     // A missing gateway must not cost the agent its built-in tools.

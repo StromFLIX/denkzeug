@@ -39,6 +39,7 @@ def test_adding_a_server_probes_it_before_writing_it(client, reachable):
     assert reachable.gateway.resources["mcp.target"]["linear"] == {
         "name": "linear",
         "mcp": {"host": LINEAR},
+        "policies": {"http": {"requestTimeout": "615s"}},
     }
     server = response.json()["servers"][0]
     assert server["managed"] is True
@@ -48,7 +49,10 @@ def test_adding_a_server_probes_it_before_writing_it(client, reachable):
 def test_a_token_is_stored_with_the_target(client, reachable):
     client.put("/api/mcp-servers/linear", json={"url": LINEAR, "token": "lin_api_1"})
     target = reachable.gateway.resources["mcp.target"]["linear"]
-    assert target["policies"] == {"backendAuth": {"key": {"value": "lin_api_1"}}}
+    assert target["policies"] == {
+        "backendAuth": {"key": {"value": "lin_api_1"}},
+        "http": {"requestTimeout": "615s"},
+    }
     server = client.get("/api/mcp-servers").json()["servers"][0]
     assert server["credential"] == {"mode": "stored", "variable": ""}
 
