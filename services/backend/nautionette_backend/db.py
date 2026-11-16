@@ -548,6 +548,9 @@ class Database:
             from .access import install_access_schema
 
             install_access_schema(self._conn)
+            from .local_apps import install_schema as install_apps_schema
+
+            install_apps_schema(self._conn)
             # Ownership is migrated above; recent diagnostic pages should seek
             # directly into this account's ordering, not sort every owned chat.
             self._conn.execute(

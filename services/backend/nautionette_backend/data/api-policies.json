@@ -1,4 +1,34 @@
 {
+  "GET /api/apps": {
+    "scope": "apps:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "POST /api/apps": {
+    "scope": "apps:write",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/apps/{app_id}": {
+    "scope": "apps:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/apps/{app_id}/revisions/{revision}": {
+    "scope": "apps:read",
+    "authentication": "account",
+    "resource": null
+  },
+  "PATCH /api/apps/{app_id}": {
+    "scope": "apps:write",
+    "authentication": "account",
+    "resource": null
+  },
+  "GET /api/chats/{chat_id}/apps/{instance_id}": {
+    "scope": "chats:read",
+    "authentication": "account",
+    "resource": "chat:chat_id"
+  },
   "DELETE /api/access/grants": {
     "scope": "access:manage",
     "authentication": "session",

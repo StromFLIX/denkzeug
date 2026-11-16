@@ -25,6 +25,7 @@ DOMAINS = {
     "agents": ("read", "write"),
     "projects": ("read", "write"),
     "outputs": ("read", "write"),
+    "apps": ("read", "write"),
     "settings": ("read", "write"),
     "tokens": ("read", "manage"),
     "system": ("read", "control"),

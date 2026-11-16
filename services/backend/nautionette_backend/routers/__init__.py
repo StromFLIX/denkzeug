@@ -8,6 +8,7 @@ from __future__ import annotations
 from .. import access
 from . import (
     agents,
+    apps,
     artcraft,
     auth,
     chat_inspection,
@@ -43,6 +44,7 @@ ROUTERS = (
     usage.router,
     storage.router,
     agents.router,
+    apps.router,
     subagents.router,
     pi_packages.router,
     artcraft.router,

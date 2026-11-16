@@ -14,11 +14,15 @@ from .db import db
 def finish(workflow_id: str, status: str, result: Any, *, notify: bool) -> None:
     """Record the terminal result and its delivery obligation in one commit."""
     with db.transaction() as conn:
-        row = conn.execute("SELECT id FROM runs WHERE workflow_id = ?", (workflow_id,)).fetchone()
+        row = conn.execute("SELECT * FROM runs WHERE workflow_id = ?", (workflow_id,)).fetchone()
         if row is None:
             raise ValueError("Cannot finish an unrecorded workflow run")
         if conn.execute("SELECT 1 FROM run_deliveries WHERE run_id = ?", (row["id"],)).fetchone():
             return  # A duplicate watcher must not overwrite an already sealed result.
+        if status == "completed" and notify:
+            from .local_apps import snapshot_workflow
+
+            snapshot_workflow(conn, row, result)
         conn.execute(
             "UPDATE runs SET status = ?, result = ?, updated_at = ? WHERE id = ?",
             (status, json.dumps(result) if result is not None else None, time.time(), row["id"]),
@@ -66,7 +70,7 @@ def commit(
     now = time.time()
     message_id = hashlib.sha256(f"workflow-result:{workflow_id}".encode()).hexdigest()
     with db.transaction() as conn:
-        run = conn.execute("SELECT owner_user_id FROM runs WHERE workflow_id=?", (workflow_id,)).fetchone()
+        run = conn.execute("SELECT id,owner_user_id FROM runs WHERE workflow_id=?", (workflow_id,)).fetchone()
         from .access import human_id
 
         owner = run["owner_user_id"] if run else human_id()
@@ -132,6 +136,10 @@ def commit(
                     "DO UPDATE SET chat_id=excluded.chat_id",
                     (name, owner, chat_id),
                 )
+            if run:
+                from .local_apps import attach_workflow
+
+                body, meta = attach_workflow(conn, run["id"], chat_id, body, meta)
             conn.execute(
                 "INSERT INTO messages (id, chat_id, role, content, meta, created_at) "
                 "VALUES (?,?,'assistant',?,?,?)",

@@ -214,7 +214,14 @@ async def deliver_to_chat(name: str, workflow_id: str, status: str, result: Any)
     with contextlib.suppress(Exception):
         workflow_title = (await authoring.get_workflow(name)).get("title") or name
 
-    body = render_result(result)
+    body = (
+        result["summary"]
+        if status == "completed"
+        and isinstance(result, dict)
+        and "ui" in result
+        and isinstance(result.get("summary"), str)
+        else render_result(result)
+    )
     if status != "completed":
         body = (
             f"**Run {status.replace('_', ' ')}**\n\n"

@@ -496,6 +496,8 @@ async def authorize_request(request: Request, who) -> None:
             if parts[4] in {"messages", "queue", "title", "branch"} and method not in {"GET", "HEAD"}:
                 require_owner_execution("chats", parts[3])
         return
+    if path == "/api/apps" or path.startswith("/api/apps/"):
+        return  # Registry handlers enforce acting-account ownership, even for admins.
     if path.startswith("/api/tokens"):
         return  # Key metadata/history handlers enforce ownership, even for admins.
     if path.startswith("/api/triggers/") or (
