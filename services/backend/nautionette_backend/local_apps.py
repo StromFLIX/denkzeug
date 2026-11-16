@@ -140,7 +140,9 @@ def validate_data(schema: dict, data: dict) -> str:
     try:
         checked = subprocess.run(  # noqa: S603 - fixed own interpreter/worker; data only on stdin
             [sys.executable, "-I", str(Path(__file__).with_name("app_schema.py"))],
-            input=json.dumps({"schema": schema, "data": data}, ensure_ascii=False, separators=(",", ":")).encode(),
+            input=json.dumps(
+                {"schema": schema, "data": data}, ensure_ascii=False, separators=(",", ":")
+            ).encode(),
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             env={},  # Validation receives schema/data, never backend credentials.
