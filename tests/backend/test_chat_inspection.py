@@ -183,14 +183,17 @@ def test_payload_budget_keeps_a_cursor_for_remaining_events(client, sessions):
 
 @pytest.mark.parametrize("operation", ["inspect", "search", "sessions"])
 @pytest.mark.parametrize("history_turn", ["failed-turn", "healthy-turn"])
-def test_chat_diagnostics_do_not_scan_streaming_history(client, sessions, operation, history_turn):
+@pytest.mark.parametrize("event_type", ["delta", "error"])
+def test_chat_diagnostics_do_not_scan_streaming_history(
+    client, sessions, operation, history_turn, event_type
+):
     first, _ = sessions
-    # Streaming events dominate real histories. A summary must not read/parse
-    # all streaming payloads, whether they belong to this chat or another one.
+    # Summaries must not parse streaming payloads or scan every failure just to
+    # detect a failed turn / find its latest error, even within the selected chat.
     with db.transaction() as conn:
         conn.executemany(
             "INSERT INTO chat_turn_events(turn_id, payload) VALUES (?, ?)",
-            [(history_turn, json.dumps({"type": "delta", "text": "x" * 512}))] * 20000,
+            [(history_turn, json.dumps({"type": event_type, "text": "x" * 512}))] * 20000,
         )
 
     statements = []

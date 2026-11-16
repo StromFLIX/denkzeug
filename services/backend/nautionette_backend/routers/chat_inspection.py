@@ -131,9 +131,10 @@ def _chat_summaries(chats: list[dict]) -> list[dict]:
         chat["session_count"] += row["count"]
         chat["session_states"].append({"state": row["state"], "count": row["count"]})
     for row in db.query(
-        "SELECT t.chat_id, COUNT(DISTINCT t.id) AS count FROM chat_turns t "
-        "JOIN chat_turn_events e ON e.turn_id = t.id "
-        f"WHERE t.chat_id IN ({placeholders}) AND {_ERROR} GROUP BY t.chat_id",
+        "SELECT t.chat_id, COUNT(*) AS count FROM chat_turns t "
+        f"WHERE t.chat_id IN ({placeholders}) AND EXISTS "
+        f"(SELECT 1 FROM chat_turn_events e WHERE e.turn_id = t.id AND {_ERROR}) "
+        "GROUP BY t.chat_id",
         ids,
     ):
         by_id[row["chat_id"]]["failed_session_count"] = row["count"]
@@ -266,10 +267,12 @@ def list_chat_sessions(
         failures = {
             row["turn_id"]: row["seq"]
             for row in db.query(
-                "SELECT e.turn_id, MAX(e.seq) AS seq FROM chat_turn_events e "
-                f"WHERE e.turn_id IN ({placeholders}) AND {_ERROR} GROUP BY e.turn_id",
+                "SELECT t.id AS turn_id, (SELECT e.seq FROM chat_turn_events e "
+                f"WHERE e.turn_id = t.id AND {_ERROR} ORDER BY e.seq DESC LIMIT 1) AS seq "
+                f"FROM chat_turns t WHERE t.id IN ({placeholders})",
                 ids,
             )
+            if row["seq"] is not None
         }
     for row in page["sessions"]:
         row["runtime_owner"] = turn_has_owner(row["id"]) if row["state"] == "running" else None
