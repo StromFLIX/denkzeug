@@ -109,8 +109,9 @@ first. Backend startup upgrades existing managed targets without replacing
 credentials, TLS policies, custom conditions or explicit administrator timeouts.
 That exact default is normalized out of credential-ownership snapshots, so it
 does not invalidate existing OAuth connections. Stdio targets do not accept this
-HTTP policy. Explicit administrator/upstream limits may still be shorter than an
-agent request deadline. Custom file-owned HTTP targets should set this same
+HTTP policy. Explicit administrator/provider limits and the runtime's HTTP idle
+limits remain in force; these are total request deadlines, not a way to bypass
+other transport safeguards. Custom file-owned HTTP targets should set this same
 policy explicitly. LLM/model route timeouts are unchanged.
 
 A client deadline now produces an actionable **"MCP tool … timed out after …s"**

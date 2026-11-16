@@ -39,7 +39,10 @@ for (const selection of [null, [], ["search"], ["unavailable"], ["search", "read
         registerProvider() {}, on() {},
         registerTool(tool: { name: string }) { registered.push(tool.name); },
       } as any);
-      assert.deepEqual(registered, ["search", "read"].filter((name) => selection === null || selection.includes(name)));
+      const selected = ["search", "read"].filter((name) => selection === null || selection.includes(name));
+      // The local deadline utility is available only when there is an allowed
+      // MCP tool to wrap; it grants no additional remote selection.
+      assert.deepEqual(registered, [...selected, ...(selected.length ? ["mcp_call_with_timeout"] : [])]);
     } finally {
       globalThis.fetch = originalFetch;
       for (const [key, value] of Object.entries(previous)) {
