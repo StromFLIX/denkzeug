@@ -78,6 +78,13 @@ jobs:
           DENKZEUG_SMOKE_USERNAME: ${{ secrets.DENKZEUG_SMOKE_USERNAME }}
           DENKZEUG_SMOKE_PASSWORD: ${{ secrets.DENKZEUG_SMOKE_PASSWORD }}
         run: python3 -m scripts.check_workflow_lifecycle
+      - name: Verify MCP Apps registry, workflow results and isolated sandbox (staging only)
+        if: github.event_name == 'workflow_run'
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          DENKZEUG_SMOKE_USERNAME: ${{ secrets.DENKZEUG_SMOKE_USERNAME }}
+          DENKZEUG_SMOKE_PASSWORD: ${{ secrets.DENKZEUG_SMOKE_PASSWORD }}
+        run: python3 -m scripts.check_mcp_apps_deployment
       - name: Verify CLI and HTTPS MCP OAuth compatibility (staging only)
         if: github.event_name == 'workflow_run'
         env:

@@ -1,3 +1,4 @@
+import { appEventFields } from '../../images/pi-base/mcp-app-events.mjs'
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import { readFileSync } from 'node:fs'
@@ -33,7 +34,7 @@ async function runAgent (events, job = {}) {
   const source = readFileSync(new URL('../../images/pi-base/agent-run.mjs', import.meta.url), 'utf8')
     .replace(/^import .*;\n/gm, '')
   await runInNewContext(source, {
-    Buffer, console, contextUsage, createChatRecovery, prepareFiles, fileReferences,
+    Buffer, console, appEventFields, contextUsage, createChatRecovery, prepareFiles, fileReferences,
     createTelemetry: (job) => createTelemetry(job, { OTEL_SDK_DISABLED: 'true' }),
     mkdirSync () {}, writeFileSync () {}, existsSync () { return false },
     projectEnvironment () { return {} },

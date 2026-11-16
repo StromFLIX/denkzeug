@@ -18,6 +18,7 @@ import time
 import uuid
 from html.parser import HTMLParser
 from pathlib import Path
+from threading import BoundedSemaphore
 from typing import Any
 
 from fastapi import HTTPException
@@ -34,6 +35,7 @@ MAX_INSTANCE_BYTES = 64 * 1024 * 1024
 MAX_INSTANCES = 1000
 SLUG = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z")
 CSP = {"connectDomains": [], "resourceDomains": []}
+_VALIDATION_SLOTS = BoundedSemaphore(2)
 
 
 def install_schema(conn: sqlite3.Connection) -> None:
@@ -133,17 +135,22 @@ def validate_schema_shape(schema: dict) -> None:
 def validate_data(schema: dict, data: dict) -> str:
     text = encoded(data, MAX_DATA_BYTES, "App data")
     validate_schema_shape(schema)
+    if not _VALIDATION_SLOTS.acquire(timeout=0.1):
+        raise HTTPException(429, "App validation capacity reached; try again shortly")
     try:
         checked = subprocess.run(  # noqa: S603 - fixed own interpreter/worker; data only on stdin
             [sys.executable, "-I", str(Path(__file__).with_name("app_schema.py"))],
-            input=json.dumps({"schema": schema, "data": data}).encode(),
+            input=json.dumps({"schema": schema, "data": data}, ensure_ascii=False, separators=(",", ":")).encode(),
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
+            env={},  # Validation receives schema/data, never backend credentials.
             timeout=2,
             check=False,
         )
     except subprocess.TimeoutExpired as exc:
         raise HTTPException(422, "App validation exceeded its safe execution limit") from exc
+    finally:
+        _VALIDATION_SLOTS.release()
     if checked.returncode != 0 or checked.stdout != b"ok":
         raise HTTPException(422, "App schema/data is invalid or exceeded safe validation limits")
     return text

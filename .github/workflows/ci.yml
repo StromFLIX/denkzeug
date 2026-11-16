@@ -76,7 +76,7 @@ jobs:
         run: uv run pytest tests/backend/test_catalog.py tests/backend/test_model_limits.py tests/backend/test_model_capabilities.py tests/backend/test_chat_images.py tests/backend/test_chat_drafts.py tests/backend/test_chat_outputs.py tests/backend/test_output_storage.py
 
       - name: Private MCP Apps registry, workflow snapshots and isolated sandbox
-        run: uv run pytest tests/backend/test_local_apps.py tests/backend/test_mcp_app_results.py tests/lib/test_mcp_apps.py
+        run: uv run pytest tests/backend/test_local_apps.py tests/backend/test_mcp_app_results.py tests/lib/test_mcp_apps.py tests/test_mcp_apps_deployment.py
 
       - name: Real MaxIO binary uploads, large-file restore, integrity and migration
         env:

@@ -1,3 +1,4 @@
+import { appEventFields } from '../../images/pi-base/mcp-app-events.mjs'
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import { readFileSync } from 'node:fs'
@@ -272,7 +273,7 @@ const runner = readFileSync(new URL('../../images/pi-base/agent-run.mjs', import
 async function runWrapper (events, exitCode = null, signal = null, oomCounts = []) {
   const output = []
   await runInNewContext(runner, {
-    Buffer, console, createChatControl, createChatRecovery, prepareFiles, fileReferences,
+    Buffer, console, appEventFields, createChatControl, createChatRecovery, prepareFiles, fileReferences,
     createTelemetry () { return { start () {}, end () {}, finish () {}, async flush () {} } },
     readFileSync () {
       if (!oomCounts.length) throw new Error('No cgroup v2')

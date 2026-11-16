@@ -1,5 +1,6 @@
 // Real production runner + Pi RPC + loopback model: fresh processes resume the
 // exact native session. No Docker, credentials, network or paid provider needed.
+import { appEventFields } from '../../images/pi-base/mcp-app-events.mjs'
 import assert from 'node:assert/strict'
 import { spawn as spawnChild } from 'node:child_process'
 import { once } from 'node:events'
@@ -68,7 +69,7 @@ test('native RPC budgets and continuity across failed/successful compaction, mod
     async function run(job, ok = true) {
       const output = []; outputs.push(output)
       await runInNewContext(runner.replace('const workspace = "/workspace";', `const workspace = ${JSON.stringify(workspace)};`), {
-        Buffer, console, createChatControl, createChatRecovery, fileReferences,
+        Buffer, console, appEventFields, createChatControl, createChatRecovery, fileReferences,
         prepareSession: (job, ws) => prepareSession(job, ws, state),
         prepareFiles: (job, ws) => prepareFiles(job, ws, join(state, 'attachments')),
         createTelemetry () { return { start () {}, end () {}, finish () {}, async flush () {} } },

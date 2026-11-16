@@ -1,5 +1,6 @@
 // Real Pi RPC + the production runner, with a loopback-only model. No provider
 // keys, paid calls or Docker: prove that the tool history and workspace survive.
+import { appEventFields } from '../../images/pi-base/mcp-app-events.mjs'
 import assert from 'node:assert/strict'
 import { spawn as spawnChild, spawnSync } from 'node:child_process'
 import { once } from 'node:events'
@@ -82,7 +83,7 @@ for (const outcome of ['recovered', 'exhausted', 'permanent', 'compaction', 'SIG
       // Only file/system setup is isolated. Real commands, events, recovery logic
       // and the actual Pi subprocess are unchanged; no /workspace files are touched.
       await runInNewContext(source, {
-        Buffer, console, createChatControl, createChatRecovery, prepareFiles, fileReferences,
+        Buffer, console, appEventFields, createChatControl, createChatRecovery, prepareFiles, fileReferences,
         createTelemetry () { return { start () {}, end () {}, finish () {}, async flush () {} } },
         mkdirSync () {}, existsSync () { return false }, writeFileSync () {},
         preparePackages () { return {} }, projectEnvironment () { return {} }, contextUsage () { return null },

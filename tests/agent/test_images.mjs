@@ -1,3 +1,4 @@
+import { appEventFields } from '../../images/pi-base/mcp-app-events.mjs'
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import { readFileSync } from 'node:fs'
@@ -17,7 +18,7 @@ async function run (job, events = null, mcpNames = null) {
   const commands = [], output = [], writes = [], removed = []
   let spawnArgs, spawnOptions
   await runInNewContext(source, {
-    Buffer, console, createChatRecovery, dirname, brand,
+    Buffer, console, appEventFields, createChatRecovery, dirname, brand,
     createTelemetry: (job) => createTelemetry(job, { OTEL_SDK_DISABLED: 'true' }),
     mkdirSync () {}, existsSync (path) { return path.startsWith('/tmp/nautionette-mcp-') && mcpNames !== null },
     lstatSync () { return { isDirectory: () => true } },
