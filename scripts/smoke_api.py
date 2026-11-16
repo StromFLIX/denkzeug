@@ -38,7 +38,7 @@ class API:
     def __exit__(self, *args):
         self.session.close()
 
-    def call(self, path, method="GET", body=None, expected=200):
+    def call(self, path, method="GET", body=None, expected=200, *, timeout=250):
         request = urllib.request.Request(  # noqa: S310 - validated HTTPS; redirects disabled
             self.url + path,
             method=method,
@@ -46,7 +46,7 @@ class API:
             headers={"Content-Type": "application/json"},
         )
         try:
-            with self.session.open(request, timeout=250) as response:
+            with self.session.open(request, timeout=timeout) as response:
                 if response.status != expected:
                     raise RuntimeError(f"Deployment smoke: unexpected HTTP {response.status}")
                 return json.load(response)
