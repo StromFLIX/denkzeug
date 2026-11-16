@@ -1,5 +1,5 @@
 {
-  "commit": "31b874867f0c91d4ace6bdd68bfcee945c58224d",
+  "commit": "8ea92d5c6723de102140dec769c8904427e4f422",
   "clock": "2026-06-15T10:30:00.000Z",
   "viewport": {
     "width": 1280,
@@ -38,27 +38,17 @@
           }
         },
         {
-          "id": "nav-runs",
-          "selector": "navigation[Main navigation] link[Runs]",
-          "pixels": {
-            "x": 8,
-            "y": 244,
-            "width": 73,
-            "height": 70
-          }
-        },
-        {
           "id": "nav-settings",
           "selector": "navigation[Main navigation] link[Settings]",
           "pixels": {
             "x": 8,
-            "y": 756,
+            "y": 678,
             "width": 73,
             "height": 70
           }
         }
       ],
-      "pngBytes": 172466
+      "pngBytes": 162152
     },
     {
       "id": "outputs",
@@ -95,27 +85,17 @@
           }
         },
         {
-          "id": "nav-runs",
-          "selector": "navigation[Main navigation] link[Runs]",
-          "pixels": {
-            "x": 8,
-            "y": 244,
-            "width": 73,
-            "height": 70
-          }
-        },
-        {
           "id": "nav-settings",
           "selector": "navigation[Main navigation] link[Settings]",
           "pixels": {
             "x": 8,
-            "y": 756,
+            "y": 678,
             "width": 73,
             "height": 70
           }
         }
       ],
-      "pngBytes": 161396
+      "pngBytes": 160692
     },
     {
       "id": "workflows",
@@ -132,38 +112,28 @@
           }
         },
         {
-          "id": "nav-runs",
-          "selector": "navigation[Main navigation] link[Runs]",
-          "pixels": {
-            "x": 8,
-            "y": 244,
-            "width": 73,
-            "height": 70
-          }
-        },
-        {
           "id": "nav-settings",
           "selector": "navigation[Main navigation] link[Settings]",
           "pixels": {
             "x": 8,
-            "y": 756,
+            "y": 678,
             "width": 73,
             "height": 70
           }
         }
       ],
-      "pngBytes": 105814
+      "pngBytes": 112921
     },
     {
       "id": "runs",
-      "route": "/runs/digest-record",
+      "route": "/workflows/digest/runs/digest-record",
       "controls": [
         {
           "id": "run-statistics",
           "selector": "button[name=Statistics]",
           "pixels": {
             "x": 573,
-            "y": 80,
+            "y": 136.5,
             "width": 103,
             "height": 44.375
           }
@@ -193,24 +163,24 @@
           "selector": "navigation[Main navigation] link[Settings]",
           "pixels": {
             "x": 8,
-            "y": 756,
+            "y": 678,
             "width": 73,
             "height": 70
           }
         }
       ],
-      "pngBytes": 96168
+      "pngBytes": 112664
     },
     {
       "id": "statistics",
-      "route": "/runs/digest-record",
+      "route": "/workflows/digest/runs/digest-record",
       "controls": [
         {
           "id": "statistics-details",
           "selector": "button[name=Details]",
           "pixels": {
             "x": 489,
-            "y": 80,
+            "y": 136.5,
             "width": 82,
             "height": 44.375
           }
@@ -240,13 +210,13 @@
           "selector": "navigation[Main navigation] link[Settings]",
           "pixels": {
             "x": 8,
-            "y": 756,
+            "y": 678,
             "width": 73,
             "height": 70
           }
         }
       ],
-      "pngBytes": 131373
+      "pngBytes": 144201
     },
     {
       "id": "settings",
@@ -281,79 +251,90 @@
             "width": 73,
             "height": 70
           }
-        },
-        {
-          "id": "nav-runs",
-          "selector": "navigation[Main navigation] link[Runs]",
-          "pixels": {
-            "x": 8,
-            "y": 244,
-            "width": 73,
-            "height": 70
-          }
         }
       ],
-      "pngBytes": 171805
+      "pngBytes": 173514
     }
   ],
   "conversions": {
     "libwebp": "1.6.0",
     "files": [
       {
+        "id": "desktop-small",
+        "webpBytes": 35950,
+        "pngSha256": "01f0264a7338172c5a619f2216abb4d4ac63488e6c7fb02b5240c6692c91748a",
+        "webpSha256": "c5721ca283b87893f184d231c83acf6642a439e0525108417576dd1ca725157b",
+        "pixelIdentical": true
+      },
+      {
+        "id": "desktop",
+        "webpBytes": 54808,
+        "pngSha256": "0c831f5e156487f2febc131788b7e495caaf74be4913c2d5a6fc44f69bf2ca08",
+        "webpSha256": "a4372fb70ada450a3ea2e14e690eb30782a546ea8349f5609d91b326555898fa",
+        "pixelIdentical": true
+      },
+      {
+        "id": "phone",
+        "webpBytes": 39036,
+        "pngSha256": "c05070ece57be40c130074ed6ae4a56736ab41ee1e535ed0f922775741a673fa",
+        "webpSha256": "513cec4b101a5f83c6fd30f5c817e25f429880047b595a6a606be57500de9723",
+        "pixelIdentical": true
+      },
+      {
         "id": "chat",
-        "webpBytes": 59140,
-        "pngSha256": "0fa467ba2c6f862e18f2db749bca05436969086de5f6fa199c3abb9e1161fddb",
-        "webpSha256": "65a0f23636b4643b5e267fd8036be1dd92752c3b17acae3bb02f13d60b9a13c6",
+        "webpBytes": 54808,
+        "pngSha256": "0c831f5e156487f2febc131788b7e495caaf74be4913c2d5a6fc44f69bf2ca08",
+        "webpSha256": "a4372fb70ada450a3ea2e14e690eb30782a546ea8349f5609d91b326555898fa",
         "pixelIdentical": true
       },
       {
         "id": "outputs",
-        "webpBytes": 54078,
-        "pngSha256": "fdccb306234c9157c68febeb9631777a475edc9f7dcea903a42d3f52f8ed6177",
-        "webpSha256": "9068c57072599458d4bd24318f6d21ab950eba47433e342f63776783e65b3cd1",
+        "webpBytes": 53646,
+        "pngSha256": "3ee58cbb179a3a13621145536c40e06826902e9028780fee6cb7f8a0a6874fef",
+        "webpSha256": "b563a37aebbe4b761daea29bf6e8e25b4edac29dbd9f7d720cbdc9311f5f50af",
         "pixelIdentical": true
       },
       {
         "id": "runs",
-        "webpBytes": 35436,
-        "pngSha256": "2ed4db6fc3c50d4f3992182a403602594c16676005cdda9cc433cc846c9bfba5",
-        "webpSha256": "e605eb99dce7d2a686ef4ba7bc50459c17321fa9ca98ce69382fc5781692b220",
+        "webpBytes": 41810,
+        "pngSha256": "209d3b6755451a2826d0aebdd107a5ac52c498c040548a53bd8d095186cf043a",
+        "webpSha256": "cc4f549abd663cb43f4334b10c1c558aff99dc889cd82a6ce0e97d076021c935",
         "pixelIdentical": true
       },
       {
         "id": "settings",
-        "webpBytes": 53842,
-        "pngSha256": "d34e49c186028fc457d9b928af15bb13245f7f0dd666fb8b6b93d1a393a80f36",
-        "webpSha256": "25a50ff2ec16408fce553838f6a6d98e5a8891e6640b9adc1f98a236f8a62b06",
+        "webpBytes": 55204,
+        "pngSha256": "1cee3a3a57bd4f1e007a34fd618e93ce70964515eaf9fee516f62416ed4633a5",
+        "webpSha256": "544f4d72bc18363aa311e2e87e647c0239150e08dcf31e2327e58e8936bb2131",
         "pixelIdentical": true
       },
       {
         "id": "statistics",
-        "webpBytes": 48064,
-        "pngSha256": "b1bb538c8f83f15df0c2eb0e2966abc8c9db57f7e059487b48676ef6943094fd",
-        "webpSha256": "0a6ea2d894c02bbacc4e706b6b2c13357726ab8aae361a826df26a10cfe146e7",
+        "webpBytes": 53722,
+        "pngSha256": "eff2aeeaba84bafbf5c263f6dd7532ea54b7a5a3ad831d39005e49f819f7e644",
+        "webpSha256": "64cf19c2bf8d1db75a6bae5d3c71850af23cac6195d9db91c22cf55605935d20",
         "pixelIdentical": true
       },
       {
         "id": "workflows",
-        "webpBytes": 39252,
-        "pngSha256": "b46b350351809be3cfdaa8d7f63c73308a8e86271f9bdae1a0017c9301ee151e",
-        "webpSha256": "105546c70762a95c76d0a1e9aec2dba81298db91f3bdab06fc8bc9bd7721f0f0",
+        "webpBytes": 41328,
+        "pngSha256": "cb318927abeeddcebf8cd1282324fdd978eb268e856f9e5729fceba3f573e505",
+        "webpSha256": "7a59c327a409cdb5ebda6bac8f4efa1974879753615238d8f5d07e0c05429d51",
         "pixelIdentical": true
       }
     ]
   },
   "requests": [
     {
-      "path": "/api/chats/alpha",
+      "path": "/api/auth/me",
       "method": "GET"
     },
     {
-      "path": "/api/speech",
+      "path": "/api/catalog",
       "method": "GET"
     },
     {
-      "path": "/api/chats/alpha",
+      "path": "/api/chats",
       "method": "GET"
     },
     {
@@ -393,11 +374,19 @@
       "method": "GET"
     },
     {
-      "path": "/api/chats/alpha/stream",
+      "path": "/api/chats/alpha",
+      "method": "GET"
+    },
+    {
+      "path": "/api/speech",
       "method": "GET"
     },
     {
       "path": "/api/events",
+      "method": "GET"
+    },
+    {
+      "path": "/api/chats/alpha/stream",
       "method": "GET"
     },
     {
@@ -445,11 +434,23 @@
       "method": "GET"
     },
     {
+      "path": "/api/runs",
+      "method": "GET"
+    },
+    {
+      "path": "/api/runs",
+      "method": "GET"
+    },
+    {
       "path": "/api/runs/digest-record",
       "method": "GET"
     },
     {
-      "path": "/api/runs/digest-record/graph",
+      "path": "/api/auth/sessions",
+      "method": "GET"
+    },
+    {
+      "path": "/api/auth/meta",
       "method": "GET"
     },
     {

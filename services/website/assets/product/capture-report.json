@@ -1,329 +1,409 @@
-[
-  {
-    "name": "desktop",
-    "viewport": {
-      "width": 1280,
-      "height": 840
+{
+  "commit": "8ea92d5c6723de102140dec769c8904427e4f422",
+  "clock": "2026-06-15T10:30:00.000Z",
+  "errors": [],
+  "forbidden": [],
+  "captures": [
+    {
+      "id": "desktop",
+      "viewport": {
+        "width": 1280,
+        "height": 840
+      },
+      "deviceScaleFactor": 1.5,
+      "pngBytes": 162152,
+      "requests": [
+        {
+          "path": "/api/auth/me",
+          "method": "GET"
+        },
+        {
+          "path": "/api/catalog",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats",
+          "method": "GET"
+        },
+        {
+          "path": "/api/system",
+          "method": "GET"
+        },
+        {
+          "path": "/api/agents",
+          "method": "GET"
+        },
+        {
+          "path": "/api/catalog",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats",
+          "method": "GET"
+        },
+        {
+          "path": "/api/projects",
+          "method": "GET"
+        },
+        {
+          "path": "/api/mcp-oauth/status",
+          "method": "GET"
+        },
+        {
+          "path": "/api/workflows",
+          "method": "GET"
+        },
+        {
+          "path": "/api/drafts",
+          "method": "GET"
+        },
+        {
+          "path": "/api/runs",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/alpha",
+          "method": "GET"
+        },
+        {
+          "path": "/api/speech",
+          "method": "GET"
+        },
+        {
+          "path": "/api/events",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/alpha/stream",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/alpha/read-state",
+          "method": "PATCH"
+        },
+        {
+          "path": "/api/chats/alpha/draft",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-0",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-1",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-2",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-3",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-4",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-5",
+          "method": "GET"
+        }
+      ]
     },
-    "deviceScaleFactor": 1.5,
-    "pixels": {
-      "width": 1920,
-      "height": 1260
+    {
+      "id": "desktop-small",
+      "viewport": {
+        "width": 1280,
+        "height": 840
+      },
+      "deviceScaleFactor": 1,
+      "pngBytes": 100323,
+      "requests": [
+        {
+          "path": "/api/auth/me",
+          "method": "GET"
+        },
+        {
+          "path": "/api/catalog",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats",
+          "method": "GET"
+        },
+        {
+          "path": "/api/system",
+          "method": "GET"
+        },
+        {
+          "path": "/api/agents",
+          "method": "GET"
+        },
+        {
+          "path": "/api/catalog",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats",
+          "method": "GET"
+        },
+        {
+          "path": "/api/projects",
+          "method": "GET"
+        },
+        {
+          "path": "/api/mcp-oauth/status",
+          "method": "GET"
+        },
+        {
+          "path": "/api/workflows",
+          "method": "GET"
+        },
+        {
+          "path": "/api/drafts",
+          "method": "GET"
+        },
+        {
+          "path": "/api/runs",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/alpha",
+          "method": "GET"
+        },
+        {
+          "path": "/api/speech",
+          "method": "GET"
+        },
+        {
+          "path": "/api/events",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/alpha/stream",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/alpha/read-state",
+          "method": "PATCH"
+        },
+        {
+          "path": "/api/chats/alpha/draft",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-0",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-1",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-2",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-3",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-4",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-5",
+          "method": "GET"
+        }
+      ]
     },
-    "clock": "2026-06-15T10:30:00.000Z",
-    "timezone": "UTC",
-    "errors": [],
-    "requests": [
-      {
-        "path": "/api/chats/alpha",
-        "method": "GET"
-      },
-      {
-        "path": "/api/speech",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/alpha",
-        "method": "GET"
-      },
-      {
-        "path": "/api/system",
-        "method": "GET"
-      },
-      {
-        "path": "/api/agents",
-        "method": "GET"
-      },
-      {
-        "path": "/api/catalog",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats",
-        "method": "GET"
-      },
-      {
-        "path": "/api/projects",
-        "method": "GET"
-      },
-      {
-        "path": "/api/mcp-oauth/status",
-        "method": "GET"
-      },
-      {
-        "path": "/api/workflows",
-        "method": "GET"
-      },
-      {
-        "path": "/api/drafts",
-        "method": "GET"
-      },
-      {
-        "path": "/api/runs",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/alpha/stream",
-        "method": "GET"
-      },
-      {
-        "path": "/api/events",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/alpha/read-state",
-        "method": "PATCH"
-      },
-      {
-        "path": "/api/chats/alpha/draft",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-0",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-1",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-2",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-3",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-4",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-5",
-        "method": "GET"
-      }
-    ]
-  },
-  {
-    "name": "desktop-small",
-    "viewport": {
-      "width": 1280,
-      "height": 840
-    },
-    "deviceScaleFactor": 1,
-    "pixels": {
-      "width": 1280,
-      "height": 840
-    },
-    "clock": "2026-06-15T10:30:00.000Z",
-    "timezone": "UTC",
-    "errors": [],
-    "requests": [
-      {
-        "path": "/api/chats/alpha",
-        "method": "GET"
-      },
-      {
-        "path": "/api/speech",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/alpha",
-        "method": "GET"
-      },
-      {
-        "path": "/api/system",
-        "method": "GET"
-      },
-      {
-        "path": "/api/agents",
-        "method": "GET"
-      },
-      {
-        "path": "/api/catalog",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats",
-        "method": "GET"
-      },
-      {
-        "path": "/api/projects",
-        "method": "GET"
-      },
-      {
-        "path": "/api/mcp-oauth/status",
-        "method": "GET"
-      },
-      {
-        "path": "/api/workflows",
-        "method": "GET"
-      },
-      {
-        "path": "/api/drafts",
-        "method": "GET"
-      },
-      {
-        "path": "/api/runs",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/alpha/stream",
-        "method": "GET"
-      },
-      {
-        "path": "/api/events",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/alpha/read-state",
-        "method": "PATCH"
-      },
-      {
-        "path": "/api/chats/alpha/draft",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-0",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-1",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-2",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-3",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-4",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-5",
-        "method": "GET"
-      }
-    ]
-  },
-  {
-    "name": "phone",
-    "viewport": {
-      "width": 390,
-      "height": 844
-    },
-    "deviceScaleFactor": 2,
-    "pixels": {
-      "width": 780,
-      "height": 1688
-    },
-    "clock": "2026-06-15T10:30:00.000Z",
-    "timezone": "UTC",
-    "errors": [],
-    "requests": [
-      {
-        "path": "/api/chats/alpha",
-        "method": "GET"
-      },
-      {
-        "path": "/api/speech",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/alpha",
-        "method": "GET"
-      },
-      {
-        "path": "/api/system",
-        "method": "GET"
-      },
-      {
-        "path": "/api/agents",
-        "method": "GET"
-      },
-      {
-        "path": "/api/catalog",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats",
-        "method": "GET"
-      },
-      {
-        "path": "/api/projects",
-        "method": "GET"
-      },
-      {
-        "path": "/api/mcp-oauth/status",
-        "method": "GET"
-      },
-      {
-        "path": "/api/workflows",
-        "method": "GET"
-      },
-      {
-        "path": "/api/drafts",
-        "method": "GET"
-      },
-      {
-        "path": "/api/runs",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/alpha/stream",
-        "method": "GET"
-      },
-      {
-        "path": "/api/events",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/alpha/read-state",
-        "method": "PATCH"
-      },
-      {
-        "path": "/api/chats/alpha/draft",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-0",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-1",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-2",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-3",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-4",
-        "method": "GET"
-      },
-      {
-        "path": "/api/chats/sample-5",
-        "method": "GET"
+    {
+      "id": "phone",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScaleFactor": 2,
+      "pngBytes": 127793,
+      "requests": [
+        {
+          "path": "/api/auth/me",
+          "method": "GET"
+        },
+        {
+          "path": "/api/catalog",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats",
+          "method": "GET"
+        },
+        {
+          "path": "/api/system",
+          "method": "GET"
+        },
+        {
+          "path": "/api/agents",
+          "method": "GET"
+        },
+        {
+          "path": "/api/catalog",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats",
+          "method": "GET"
+        },
+        {
+          "path": "/api/projects",
+          "method": "GET"
+        },
+        {
+          "path": "/api/mcp-oauth/status",
+          "method": "GET"
+        },
+        {
+          "path": "/api/workflows",
+          "method": "GET"
+        },
+        {
+          "path": "/api/drafts",
+          "method": "GET"
+        },
+        {
+          "path": "/api/runs",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/alpha",
+          "method": "GET"
+        },
+        {
+          "path": "/api/speech",
+          "method": "GET"
+        },
+        {
+          "path": "/api/events",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/alpha/stream",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/alpha/read-state",
+          "method": "PATCH"
+        },
+        {
+          "path": "/api/chats/alpha/draft",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-0",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-1",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-2",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-3",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-4",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/sample-5",
+          "method": "GET"
+        }
+      ]
+    }
+  ],
+  "conversions": {
+    "libwebp": "1.6.0",
+    "files": [
+      {
+        "id": "desktop-small",
+        "webpBytes": 35950,
+        "pngSha256": "01f0264a7338172c5a619f2216abb4d4ac63488e6c7fb02b5240c6692c91748a",
+        "webpSha256": "c5721ca283b87893f184d231c83acf6642a439e0525108417576dd1ca725157b",
+        "pixelIdentical": true
+      },
+      {
+        "id": "desktop",
+        "webpBytes": 54808,
+        "pngSha256": "0c831f5e156487f2febc131788b7e495caaf74be4913c2d5a6fc44f69bf2ca08",
+        "webpSha256": "a4372fb70ada450a3ea2e14e690eb30782a546ea8349f5609d91b326555898fa",
+        "pixelIdentical": true
+      },
+      {
+        "id": "phone",
+        "webpBytes": 39036,
+        "pngSha256": "c05070ece57be40c130074ed6ae4a56736ab41ee1e535ed0f922775741a673fa",
+        "webpSha256": "513cec4b101a5f83c6fd30f5c817e25f429880047b595a6a606be57500de9723",
+        "pixelIdentical": true
+      },
+      {
+        "id": "chat",
+        "webpBytes": 54808,
+        "pngSha256": "0c831f5e156487f2febc131788b7e495caaf74be4913c2d5a6fc44f69bf2ca08",
+        "webpSha256": "a4372fb70ada450a3ea2e14e690eb30782a546ea8349f5609d91b326555898fa",
+        "pixelIdentical": true
+      },
+      {
+        "id": "outputs",
+        "webpBytes": 53646,
+        "pngSha256": "3ee58cbb179a3a13621145536c40e06826902e9028780fee6cb7f8a0a6874fef",
+        "webpSha256": "b563a37aebbe4b761daea29bf6e8e25b4edac29dbd9f7d720cbdc9311f5f50af",
+        "pixelIdentical": true
+      },
+      {
+        "id": "runs",
+        "webpBytes": 41810,
+        "pngSha256": "209d3b6755451a2826d0aebdd107a5ac52c498c040548a53bd8d095186cf043a",
+        "webpSha256": "cc4f549abd663cb43f4334b10c1c558aff99dc889cd82a6ce0e97d076021c935",
+        "pixelIdentical": true
+      },
+      {
+        "id": "settings",
+        "webpBytes": 55204,
+        "pngSha256": "1cee3a3a57bd4f1e007a34fd618e93ce70964515eaf9fee516f62416ed4633a5",
+        "webpSha256": "544f4d72bc18363aa311e2e87e647c0239150e08dcf31e2327e58e8936bb2131",
+        "pixelIdentical": true
+      },
+      {
+        "id": "statistics",
+        "webpBytes": 53722,
+        "pngSha256": "eff2aeeaba84bafbf5c263f6dd7532ea54b7a5a3ad831d39005e49f819f7e644",
+        "webpSha256": "64cf19c2bf8d1db75a6bae5d3c71850af23cac6195d9db91c22cf55605935d20",
+        "pixelIdentical": true
+      },
+      {
+        "id": "workflows",
+        "webpBytes": 41328,
+        "pngSha256": "cb318927abeeddcebf8cd1282324fdd978eb268e856f9e5729fceba3f573e505",
+        "webpSha256": "7a59c327a409cdb5ebda6bac8f4efa1974879753615238d8f5d07e0c05429d51",
+        "pixelIdentical": true
       }
     ]
   }
-]
+}

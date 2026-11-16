@@ -35,23 +35,12 @@ export const productTour = Object.freeze({
           }
         },
         {
-          "id": "nav-runs",
-          "label": "Show Runs screenshot",
-          "target": "runs",
-          "rect": {
-            "x": 0.00625,
-            "y": 0.2904761904761905,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
-          }
-        },
-        {
           "id": "nav-settings",
           "label": "Show Settings screenshot",
           "target": "settings",
           "rect": {
             "x": 0.00625,
-            "y": 0.9,
+            "y": 0.8071428571428572,
             "width": 0.05703125,
             "height": 0.08333333333333333
           }
@@ -59,7 +48,7 @@ export const productTour = Object.freeze({
       ],
       "source": {
         "route": "/chats/alpha",
-        "commit": "31b874867f0c91d4ace6bdd68bfcee945c58224d"
+        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
       }
     },
     {
@@ -102,23 +91,12 @@ export const productTour = Object.freeze({
           }
         },
         {
-          "id": "nav-runs",
-          "label": "Show Runs screenshot",
-          "target": "runs",
-          "rect": {
-            "x": 0.00625,
-            "y": 0.2904761904761905,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
-          }
-        },
-        {
           "id": "nav-settings",
           "label": "Show Settings screenshot",
           "target": "settings",
           "rect": {
             "x": 0.00625,
-            "y": 0.9,
+            "y": 0.8071428571428572,
             "width": 0.05703125,
             "height": 0.08333333333333333
           }
@@ -126,7 +104,7 @@ export const productTour = Object.freeze({
       ],
       "source": {
         "route": "/chats/alpha",
-        "commit": "31b874867f0c91d4ace6bdd68bfcee945c58224d"
+        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
       }
     },
     {
@@ -147,23 +125,12 @@ export const productTour = Object.freeze({
           }
         },
         {
-          "id": "nav-runs",
-          "label": "Show Runs screenshot",
-          "target": "runs",
-          "rect": {
-            "x": 0.00625,
-            "y": 0.2904761904761905,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
-          }
-        },
-        {
           "id": "nav-settings",
           "label": "Show Settings screenshot",
           "target": "settings",
           "rect": {
             "x": 0.00625,
-            "y": 0.9,
+            "y": 0.8071428571428572,
             "width": 0.05703125,
             "height": 0.08333333333333333
           }
@@ -171,7 +138,7 @@ export const productTour = Object.freeze({
       ],
       "source": {
         "route": "/workflows/digest",
-        "commit": "31b874867f0c91d4ace6bdd68bfcee945c58224d"
+        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
       }
     },
     {
@@ -186,7 +153,7 @@ export const productTour = Object.freeze({
           "target": "statistics",
           "rect": {
             "x": 0.44765625,
-            "y": 0.09523809523809523,
+            "y": 0.1625,
             "width": 0.08046875,
             "height": 0.05282738095238095
           }
@@ -219,15 +186,15 @@ export const productTour = Object.freeze({
           "target": "settings",
           "rect": {
             "x": 0.00625,
-            "y": 0.9,
+            "y": 0.8071428571428572,
             "width": 0.05703125,
             "height": 0.08333333333333333
           }
         }
       ],
       "source": {
-        "route": "/runs/digest-record",
-        "commit": "31b874867f0c91d4ace6bdd68bfcee945c58224d"
+        "route": "/workflows/digest/runs/digest-record",
+        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
       }
     },
     {
@@ -242,7 +209,7 @@ export const productTour = Object.freeze({
           "target": "runs",
           "rect": {
             "x": 0.38203125,
-            "y": 0.09523809523809523,
+            "y": 0.1625,
             "width": 0.0640625,
             "height": 0.05282738095238095
           }
@@ -275,15 +242,15 @@ export const productTour = Object.freeze({
           "target": "settings",
           "rect": {
             "x": 0.00625,
-            "y": 0.9,
+            "y": 0.8071428571428572,
             "width": 0.05703125,
             "height": 0.08333333333333333
           }
         }
       ],
       "source": {
-        "route": "/runs/digest-record",
-        "commit": "31b874867f0c91d4ace6bdd68bfcee945c58224d"
+        "route": "/workflows/digest/runs/digest-record",
+        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
       }
     },
     {
@@ -324,22 +291,11 @@ export const productTour = Object.freeze({
             "width": 0.05703125,
             "height": 0.08333333333333333
           }
-        },
-        {
-          "id": "nav-runs",
-          "label": "Show Runs screenshot",
-          "target": "runs",
-          "rect": {
-            "x": 0.00625,
-            "y": 0.2904761904761905,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
-          }
         }
       ],
       "source": {
         "route": "/settings/general",
-        "commit": "31b874867f0c91d4ace6bdd68bfcee945c58224d"
+        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
       }
     }
   ]
