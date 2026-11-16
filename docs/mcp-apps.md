@@ -23,6 +23,15 @@ Configure DNS, TLS and the reverse proxy to point the sandbox origin at
 `app-sandbox:8092`, **not** the backend, website, or frontend. In Coolify, add a
 Compose domain for service `app-sandbox` selecting internal port 8092.
 
+When upgrading an existing Coolify application, let it parse the updated Compose
+file before assigning this new service's domain. Its API can acknowledge a domain
+update while silently omitting services absent from its stored Compose definition.
+After assigning the domain, redeploy the tested revision so routing labels and TLS
+are regenerated. Verify the persisted hostname and a certificate-verified HTTPS
+`/healthz` response; do not work around a missing certificate by disabling TLS checks.
+The staging deployment smoke checks both the authenticated workflow result path
+and the credential-free sandbox's HTTP CSP after this provisioning step.
+
 The web backend injects the configured sandbox origin into the shell's frame CSP.
 A same-origin, invalid, or absent configuration fails closed: results stay readable
 but executable interfaces do not mount. Never reverse-proxy the sandbox endpoint
