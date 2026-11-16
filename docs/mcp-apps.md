@@ -151,6 +151,13 @@ text fallback without changing successful run status or blocking delivery.
 `notify: false` is still silent. Existing string/Markdown/JSON results are unchanged.
 Historical messages are not automatically rewritten.
 
+Interfaces lazy-load on their first approach to the viewport. After that, their
+iframes stay mounted for as long as the message stays mounted in the chat;
+scrolling away and back does not refetch the snapshot, reconnect the app, or
+reset local filters and other interface state. Leaving the chat still tears down
+the bridge and aborts pending requests. Reopening the chat starts a fresh view of
+the same immutable result, without rerunning its workflow or tool.
+
 Keep a useful summary: it is the fallback for unavailable sandboxes and also the
 text visible to the model. On the execution path, App HTML and app-private MCP result `_meta` do not enter
 model context or model-retrievable native session details. A one-shot container

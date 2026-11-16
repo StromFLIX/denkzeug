@@ -9,7 +9,7 @@ test.beforeAll(async () => {
   const build = await rolldown({ input: new URL('./fixtures/mcp-app-client.js', import.meta.url).pathname })
   const { output } = await build.generate({ format: 'iife', minify: true })
   await build.close()
-  appHtml = `<html><body><h2 id="result">Waiting</h2><button id="copy">Copy Markdown</button><button id="link">Open release page</button><p id="status"></p><script>${output[0].code.replace(/<\/script/gi, '<\\/script')}</script></body></html>`
+  appHtml = `<html><body><h2 id="result">Waiting</h2><input aria-label="Local filter"><button id="copy">Copy Markdown</button><button id="link">Open release page</button><p id="status"></p><script>${output[0].code.replace(/<\/script/gi, '<\\/script')}</script></body></html>`
 })
 
 async function harness (page) {
@@ -96,6 +96,68 @@ test('saved workflow results and tool results share the inline host without repl
   await page.reload()
   await expect(view.locator('#result')).toHaveText('# A useful release')
   expect(mutations).toEqual([])
+})
+
+test('cards lazy-load once and retain their iframe and local state while scrolling', async ({ page, context }) => {
+  const state = await mockAgents(context)
+  const descriptor = { id: 'persistent-card', title: 'Persistent card', app_id: 'report', revision: 1 }
+  state.data.messages = [
+    { id: 'card-message', role: 'assistant', content: 'Saved result', created_at: Date.now() / 1000, meta: { apps: [descriptor] } },
+    { id: 'later-message', role: 'assistant', content: Array.from({ length: 90 }, () => 'Later conversation content.').join('\n\n') + '\n\nEnd of scroll test.', created_at: Date.now() / 1000, meta: {} }
+  ]
+  let loads = 0
+  const mutations = []
+  page.on('request', request => { if (request.method() === 'POST' && /\/api\/(workflows|chats).*\/(run|messages)/.test(request.url())) mutations.push(request.url()) })
+  await context.route('**/api/mcp-apps/runtime', route => route.fulfill({ json: { sandbox_url: 'http://127.0.0.1:8092' } }))
+  await context.route('**/api/chats/alpha/apps/persistent-card', route => {
+    loads++
+    return route.fulfill({ json: { html: appHtml, input: {}, title: descriptor.title, result: { content: [], structuredContent: { notes: '# Persistent result' } } } })
+  })
+  await page.goto('/chats/alpha')
+  const panel = page.locator('#chat-conversation-panel')
+  const card = page.getByRole('region', { name: descriptor.title, exact: true })
+  const end = page.getByText('End of scroll test.', { exact: true })
+  await expect(end).toBeInViewport()
+  await expect(card).not.toBeInViewport()
+  expect(loads).toBe(0)
+  await expect(card.getByText('Interactive result loads when visible.')).toHaveCount(1)
+
+  await card.scrollIntoViewIfNeeded()
+  const frame = page.locator('iframe[title="Persistent card"]')
+  const view = page.frameLocator('iframe[title="Persistent card"]').frameLocator('iframe')
+  await expect(view.locator('#result')).toHaveText('# Persistent result')
+  await view.getByRole('textbox', { name: 'Local filter' }).fill('keep this filter')
+  const originalFrame = await frame.elementHandle()
+  expect(loads).toBe(1)
+
+  for (let cycle = 0; cycle < 2; cycle++) {
+    await panel.evaluate(node => node.scrollTo({ top: node.scrollHeight, behavior: 'instant' }))
+    await expect(end).toBeInViewport()
+    await expect(card).not.toBeInViewport()
+    // Let visibility observers run after the scroll without a timing sleep.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    await expect(frame).toBeAttached()
+    expect(await originalFrame.evaluate(node => node.isConnected)).toBe(true)
+    await expect(view.getByRole('textbox', { name: 'Local filter' })).toHaveValue('keep this filter')
+    await card.scrollIntoViewIfNeeded()
+    await expect(view.locator('#result')).toHaveText('# Persistent result')
+    await expect(view.getByRole('textbox', { name: 'Local filter' })).toHaveValue('keep this filter')
+    expect(loads).toBe(1)
+  }
+  // A normal live snapshot also replaces message/meta descriptor objects.
+  state.data.messages[0].content = 'Saved result updated by live snapshot'
+  await expect(page.getByText('Saved result updated by live snapshot', { exact: true })).toBeVisible()
+  await expect(view.getByRole('textbox', { name: 'Local filter' })).toHaveValue('keep this filter')
+  expect(loads).toBe(1)
+  await page.getByRole('tab', { name: 'Outputs', exact: true }).click()
+  await expect(frame).toBeAttached()
+  await page.getByRole('tab', { name: 'Chat', exact: true }).click()
+  await expect(view.getByRole('textbox', { name: 'Local filter' })).toHaveValue('keep this filter')
+  expect(loads).toBe(1)
+  expect(mutations).toEqual([])
+  await page.getByRole('link', { name: 'Settings', exact: true }).click()
+  await expect(frame).toHaveCount(0)
+  expect(await originalFrame.evaluate(node => node.isConnected)).toBe(false)
 })
 
 test('same-origin and malformed sandbox requests fail closed', async ({ request }) => {

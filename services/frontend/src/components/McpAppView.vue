@@ -85,16 +85,19 @@ async function load () {
   }
 }
 function restart () { document.value = null; load() }
-watch(() => [props.app, props.instance?.id, props.chatId, props.sandboxUrl], load)
+// Compare stable identities individually: live chat snapshots replace descriptor
+// objects without changing the saved app instance or its mounted local state.
+watch([() => props.app, () => props.instance?.id, () => props.chatId, () => props.sandboxUrl], load)
 watch(currentTokens, () => bridge?.setContext(hostContext()), { deep: true })
 onMounted(() => {
   if (!window.IntersectionObserver) { visible.value = true; load(); return }
   observer = new IntersectionObserver(entries => {
-    const near = entries.some(entry => entry.isIntersecting)
-    if (near === visible.value) return
-    visible.value = near
-    if (near) load()
-    else { ++generation; controller?.abort(); close() }
+    if (visible.value || destroyed || !entries.some(entry => entry.isIntersecting)) return
+    // Lazy-start once, not once per viewport entry. Keep the iframe and its
+    // local state alive while this message remains mounted in the chat.
+    visible.value = true
+    observer.disconnect()
+    load()
   }, { rootMargin: '600px' })
   observer.observe(root.value)
 })
