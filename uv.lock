@@ -1005,7 +1005,6 @@ source = { editable = "services/docker-broker" }
 dependencies = [
     { name = "docker" },
     { name = "fastapi" },
-    { name = "httpx" },
     { name = "nautionette" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -1014,7 +1013,6 @@ dependencies = [
 requires-dist = [
     { name = "docker", specifier = ">=7.1" },
     { name = "fastapi", specifier = ">=0.115" },
-    { name = "httpx", specifier = ">=0.28" },
     { name = "nautionette", editable = "libs/nautionette" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
 ]
