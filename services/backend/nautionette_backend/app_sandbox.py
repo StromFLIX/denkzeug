@@ -87,6 +87,7 @@ def sandbox_policy(parent: str, csp: dict) -> dict[str, str]:
         ),
         "Referrer-Policy": "no-referrer",
         "X-Content-Type-Options": "nosniff",
+        "X-DNS-Prefetch-Control": "off",
         "Cache-Control": "no-store",
         "Cross-Origin-Resource-Policy": "cross-origin",
     }

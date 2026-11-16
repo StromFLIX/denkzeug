@@ -18,6 +18,7 @@ import { createChatControl, listenForChatControl } from "./chat-control.mjs";
 import { createChatRecovery } from "./chat-recovery.mjs";
 import { prepareFiles, fileReferences } from "./chat-files.mjs";
 import { prepareSession } from "./chat-session.mjs";
+import { appEventFields } from "./mcp-app-events.mjs";
 
 import brand from "./brand.json" with { type: "json" };
 
@@ -392,8 +393,7 @@ async function main() {
           source: toolSource(event.toolName),
           error: Boolean(event.isError),
           result: toolResultText(event.result),
-          ...(event.result?.details?.mcpApp ? { mcp_app: event.result.details.mcpApp } : {}),
-          ...(event.result?.details?.mcpAppError ? { app_error: event.result.details.mcpAppError } : {}),
+          ...appEventFields(event.result),
         });
         break;
       case "message_end": {

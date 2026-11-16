@@ -24,7 +24,7 @@
   </ul>
   <section id="apps-permissions" class="apps-permissions" aria-label="App permissions">
     <h3>Permissions</h3>
-    <p class="caption dim">Apps run in an isolated preview. This release grants no network or tool access. Preview uses sample data only; it never runs a workflow. Imported code can be misleading: inspect its HTML before previewing it.</p>
+    <p class="caption dim">Apps have no host tools or credentials. CSP restricts ordinary network requests, but a browser iframe is not a fully network-isolated runtime. Publish only code you trust to receive your workflow data. Preview uses sample data only and never runs a workflow; inspect imported code first.</p>
   </section>
   <section id="apps-editor" class="apps-editor" aria-label="App source & revisions">
     <p v-if="detailLoading" class="caption dim" role="status">Loading app source…</p>
@@ -35,6 +35,7 @@
         <span class="caption" role="status">{{ historical ? `Viewing revision ${selectedRevision} (read-only)` : dirty ? 'Unsaved draft' : 'Published source' }}</span>
       </div>
       <p v-if="summary && usage" class="caption dim">{{ usage.saved_results }} saved workflow results<span v-if="usage.workflows?.length"> · {{ usage.workflows.join(', ') }}</span>. Results retain their original revision.</p>
+      <p class="caption dim">Publishing authorizes this code to receive your workflow results. Imported packages are not trusted or published automatically.</p>
       <p class="caption dim">Drafts stay in memory while this Apps pane is open. Leaving this Settings category or reloading discards unpublished changes.</p>
       <div v-if="summary" class="apps-history">
         <label for="apps-revision" class="caption">Revision history</label>

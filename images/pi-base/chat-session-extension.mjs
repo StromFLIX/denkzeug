@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { syncFile } from './session-sync.mjs';
 import { toolContextEdits } from './tool-context.mjs';
+import { modelHistoryEntry } from './mcp-app-events.mjs';
 
 export default function (pi) {
   pi.on('message_start', (event, ctx) => {
@@ -76,7 +77,7 @@ export default function (pi) {
       for (const entry of entries.toReversed()) {
         if (entry.type === 'message' && (entry.message.role === 'system' ||
             (!args.entry_id && entry.message.role === 'toolResult' && entry.message.toolName === 'chat_history'))) continue;
-        const text = JSON.stringify(entry);
+        const text = JSON.stringify(modelHistoryEntry(entry));
         if (args.query && !text.toLowerCase().includes(args.query.toLowerCase())) continue;
         const offset = args.entry_id ? (args.offset || 0) : 0;
         const excerpt = text.slice(offset, offset + 12000);

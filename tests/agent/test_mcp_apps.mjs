@@ -4,7 +4,9 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { appAuthoringSchema, appAuthoringInput, appAuthoringResult } from '../../images/agent-sets/default/extensions/nautionette/app-authoring.ts'
-import { APP_MIME, APP_CAPABILITIES, modelResult, modelVisible, snapshotApp } from '../../images/agent-sets/default/extensions/nautionette/mcp-apps.ts'
+import { appEventFields } from '../../images/pi-base/mcp-app-events.mjs'
+import sessionExtension from '../../images/pi-base/chat-session-extension.mjs'
+import { APP_MIME, APP_CAPABILITIES, modelResult, modelVisible, snapshotApp, storeAppSnapshot } from '../../images/agent-sets/default/extensions/nautionette/mcp-apps.ts'
 
 test('file-backed publication preserves backend validation and avoids bundle echo', async () => {
   const schema = { type: 'object', properties: { body: { $ref: '#/$defs/AppPublish' } }, $defs: { AppPublish: { type: 'object', properties: { html: { type: 'string' } }, required: ['html', 'id'] } } }
@@ -24,6 +26,28 @@ test('file-backed publication preserves backend validation and avoids bundle ech
     const receipt = appAuthoringResult(tool.name, { content: [{ type: 'text', text: JSON.stringify({ revision: { revision: 1, html: 'compiled bundle' } }) }] })
     assert.doesNotMatch(receipt.content[0].text, /compiled bundle/)
   } finally { await rm(directory, { recursive: true, force: true }) }
+})
+
+test('private UI state crosses only the one-shot supervisor channel, not native history', async () => {
+  const snapshot = { html: '<html>PRIVATE_HTML</html>', result: { _meta: { private: 'PRIVATE_SENTINEL' } } }
+  const ref = storeAppSnapshot(snapshot)
+  const result = { content: [{ type: 'text', text: 'Public result' }], details: { mcpAppRef: ref } }
+  assert.doesNotMatch(JSON.stringify(result), /PRIVATE_SENTINEL|PRIVATE_HTML/)
+  assert.deepEqual(appEventFields(result), { mcp_app: snapshot })
+  assert.ok(appEventFields(result).app_error) // already consumed; no implicit replay
+  const entry = { id: 'tool-entry', type: 'message', message: { role: 'toolResult', toolCallId: 'call', toolName: 'weather', content: result.content, details: { ...snapshot.result, mcpApp: snapshot } } }
+  const tools = []
+  sessionExtension({ on() {}, registerTool: tool => tools.push(tool) })
+  const history = tools.find(tool => tool.name === 'chat_history')
+  const ctx = { sessionManager: { getEntries: () => [entry] } }
+  for (const args of [{}, { entry_id: 'tool-entry' }]) {
+    const reply = await history.execute('history', args, undefined, undefined, ctx)
+    assert.doesNotMatch(reply.content[0].text, /PRIVATE_SENTINEL|PRIVATE_HTML/)
+    assert.match(reply.content[0].text, /Public result/)
+  }
+  const search = await history.execute('history', { query: 'PRIVATE_SENTINEL' }, undefined, undefined, ctx)
+  assert.deepEqual(JSON.parse(search.content[0].text).entries, [])
+  assert.ok(entry.message.details.mcpApp) // projection never rewrites raw legacy evidence
 })
 
 const uri = 'ui://weather+forecast/view'

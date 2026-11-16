@@ -64,6 +64,7 @@ COPY chat-session.mjs /usr/local/lib/nautionette/chat-session.mjs
 COPY session-sync.mjs /usr/local/lib/nautionette/session-sync.mjs
 COPY chat-session-extension.mjs /usr/local/lib/nautionette/chat-session-extension.mjs
 COPY tool-context.mjs /usr/local/lib/nautionette/tool-context.mjs
+COPY mcp-app-events.mjs /usr/local/lib/nautionette/mcp-app-events.mjs
 COPY package-install.mjs /usr/local/lib/nautionette/package-install.mjs
 COPY package-runtime.mjs /usr/local/lib/nautionette/package-runtime.mjs
 RUN printf '#!/bin/sh\nexec node /usr/local/lib/nautionette/agent-run.mjs "$@"\n' \

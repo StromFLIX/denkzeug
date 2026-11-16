@@ -4,6 +4,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Path
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StringConstraints
+from starlette.concurrency import run_in_threadpool
 
 from .. import local_apps
 from ..security import require_user
@@ -45,10 +46,12 @@ async def publish_app(body: AppPublish):
 
     Use a self-contained HTML document, a Draft 2020-12 JSON schema with only
     local fragment references, and matching sample_data. Apps run only in the
-    client's isolated sandbox with network denied; there is no server build.
+    client's isolated sandbox with restrictive CSP; there is no server build.
+    Publish only code trusted to receive your workflow data: browser isolation
+    is not an OS-level network sandbox.
     Workflow results may use {summary, data, ui: {app: slug, revision?: number}}.
     """
-    return local_apps.publish(body)
+    return await run_in_threadpool(local_apps.publish, body)
 
 
 @router.get("/api/apps/{app_id}", name="get_app")

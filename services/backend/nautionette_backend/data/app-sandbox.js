@@ -24,7 +24,11 @@ window.addEventListener('message', event => {
       loaded = true
       // The response header's CSP is inherited by srcdoc and cannot be loosened
       // by the app. Opaque inner origin also prevents access to the proxy DOM.
-      view.srcdoc = message.params.html
+      // Defense in depth for browser APIs not governed by connect-src. The
+      // opaque app cannot borrow constructors from this proxy; deny nested
+      // browsing/worker realms before any authored script executes.
+      const guard = `<meta http-equiv="Content-Security-Policy" content="frame-src 'none'; child-src 'none'; worker-src 'none'"><meta http-equiv="x-dns-prefetch-control" content="off"><script>for(const key of ['RTCPeerConnection','webkitRTCPeerConnection']){Object.defineProperty(globalThis,key,{value:undefined,writable:false,configurable:false})}<\/script>`
+      view.srcdoc = '<!doctype html>' + guard + message.params.html
     } else if (loaded && !message.method?.startsWith('ui/notifications/sandbox-')) {
       view.contentWindow.postMessage(message, '*')
     }

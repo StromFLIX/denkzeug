@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import time
 from unittest.mock import patch
 
 import pytest
@@ -359,6 +360,26 @@ async def test_member_authorization_and_no_ambient_admin_read(backend):
     finally:
         current_principal.reset(token)
     assert local_apps.list_apps() == {"apps": []}
+
+
+def test_hostile_schema_is_killable_and_does_not_hold_database_transaction(backend, monkeypatch):
+    schema = {"type": "object", "properties": {"value": {"type": "string", "pattern": "^(a+)+$"}}}
+    original = local_apps.validate_data
+    lock_states = []
+
+    def checked(schema, data):
+        lock_states.append(backend.db._conn.in_transaction)
+        return original(schema, data)
+
+    monkeypatch.setattr(local_apps, "validate_data", checked)
+    publish(input_schema=schema, sample_data={"value": "a"})
+    record(backend)
+    started = time.monotonic()
+    run_delivery.finish("report-1", "completed", result(data={"value": "a" * 40 + "!"}), notify=True)
+    assert time.monotonic() - started < 5
+    assert lock_states == [False, False]
+    assert backend.db.one("SELECT code FROM workflow_app_diagnostics")["code"] == "invalid_app_result"
+    assert backend.db.one("SELECT state FROM run_deliveries")["state"] == "pending"
 
 
 def test_policy_manifest_and_backend_mcp_exposure():

@@ -1,4 +1,15 @@
 /** MCP Apps metadata and resource snapshots. Never send app HTML/_meta to the model. */
+import { mkdirSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+
+export function storeAppSnapshot(snapshot: unknown): string {
+  const directory = "/tmp/denkzeug-mcp-apps";
+  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  const path = `${directory}/${randomUUID()}.json`;
+  writeFileSync(path, JSON.stringify(snapshot), { mode: 0o600, flag: "wx" });
+  return path;
+}
+
 export const APP_MIME = "text/html;profile=mcp-app";
 export const APP_CAPABILITIES = {
   extensions: { "io.modelcontextprotocol/ui": { mimeTypes: [APP_MIME] } },

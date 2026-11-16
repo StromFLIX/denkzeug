@@ -83,6 +83,13 @@ this reads a local UTF-8 bundle without passing hundreds of kilobytes through mo
 context. The service receives and validates the actual HTML, not a filesystem path.
 Member agents cannot use this local-filesystem convenience.
 
+**Trust model:** publishing authorizes that revision's code to receive your
+workflow data, just as deploying a workflow authorizes its code. Import only
+software you trust; preview receives only the sample data you choose. This is
+not a marketplace that automatically executes unreviewed packages. Remote apps
+receive only the arguments/result already supplied to or returned by their
+selected MCP server, never unrelated conversation context or host credentials.
+
 Source and revision history live in the existing backend SQLite data volume.
 Back up that volume as normal; export packages are portable and credential-free.
 Git provenance/synchronization and multi-file server builds are not implemented.
@@ -121,8 +128,11 @@ Declare these fields in the workflow's output schema. The app revision's
 `input_schema` validates `data` (the value delivered as `structuredContent`).
 The schema can use local fragment `$ref`s only; the server never retrieves remote
 schema identifiers. Omit `revision` to select the active revision at completion.
-The backend resolves under the **run owner's** account, validates data and pins
-that revision in the same transaction that seals the result/outbox.
+The backend resolves under the **run owner's** account and validates data in a
+killable, CPU/memory/wall-time-bounded worker outside its event loop and SQLite
+write transaction. The selected immutable revision is then pinned atomically
+with the result/outbox. Schema regexes and combinatorial validation never execute
+unbounded on the shared backend thread.
 
 Delivery attaches a saved app-instance reference to chat metadata and uses
 `summary` as readable message text. Opening a chat or retrying interface loading
@@ -133,8 +143,11 @@ text fallback without changing successful run status or blocking delivery.
 Historical messages are not automatically rewritten.
 
 Keep a useful summary: it is the fallback for unavailable sandboxes and also the
-text visible to the model. App HTML and app-private MCP result `_meta` do not enter
-model context. The original run result remains available in run history.
+text visible to the model. On the execution path, App HTML and app-private MCP result `_meta` do not enter
+model context or model-retrievable native session details. A one-shot container
+file carries the snapshot to the supervisor and is consumed immediately; history
+reads project away out-of-band tool details before searching or pagination.
+Explicit app-source inspection tools remain intentional source reads. The original run result remains available in run history.
 
 ## Connected third-party MCP Apps
 
@@ -158,6 +171,13 @@ This first host supports initialization, tool input/result delivery, inline sizi
 theme context, bounded teardown, and HTTPS open-link requests. It uses the official
 `@modelcontextprotocol/ext-apps` AppBridge. Local workflow apps and remote MCP Apps
 use exactly the same component/bridge and standard protocol.
+
+A browser iframe is **not an OS-level network sandbox**. CSP governs ordinary
+fetch/WebSocket/resource loads, not every browser networking feature. The host
+also disables peer-connection constructors before authored scripts, denies nested
+frame/worker realms, and disables DNS prefetch as defense in depth. These guards
+are not a promise of browser-independent air-gapping: published local code must
+be trusted by its owner to receive the supplied data.
 
 The outer proxy has a different origin, with `allow-scripts allow-same-origin`.
 The inner app has an opaque origin (`allow-scripts` only); it cannot read the

@@ -12,7 +12,7 @@ import brand from "./brand.json" with { type: "json" };
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { modelApi } from "./model-api.ts";
 import { createMcpTransport } from "./mcp-transport.ts";
-import { modelVisible, modelResult, snapshotApp } from "./mcp-apps.ts";
+import { modelVisible, modelResult, snapshotApp, storeAppSnapshot } from "./mcp-apps.ts";
 import { appAuthoringSchema, appAuthoringInput, appAuthoringResult } from "./app-authoring.ts";
 import { MCP_TIMEOUT_TOOL, currentMcpTimeout, registerMcpTimeoutTool } from "./mcp-timeout.ts";
 import { AUTH_TRANSPORT_TOOLS, authControl, waitForMcpAuth } from "./mcp-auth.ts";
@@ -138,18 +138,21 @@ export default async function (pi: ExtensionAPI) {
           const result = await dispatch("tools/call", { name: tool.name, arguments: argumentsWithActor }, signal, currentMcpTimeout());
           const text = renderToolResult(appAuthoringResult(tool.name, result));
           if (result?.isError) throw new Error(text);
-          let mcpApp;
+          let mcpAppRef;
           let mcpAppError;
           if (process.env.NAUTIONETTE_TURN_ID) {
             try {
-              mcpApp = await snapshotApp(dispatch, tool, params, result, signal);
+              const snapshot = await snapshotApp(dispatch, tool, params, result, signal);
+              if (snapshot) mcpAppRef = storeAppSnapshot(snapshot);
             } catch {
               // The business tool already finished. A failed view fetch must
               // never turn that success into a retryable tool failure.
               mcpAppError = "The MCP App interface could not be loaded. The original tool result is unchanged.";
             }
           }
-          return { content: [{ type: "text", text }], details: { ...result, mcpApp, mcpAppError } };
+          // Pi persists details in native history. Keep private result metadata
+          // and executable HTML exclusively in the supervisor's one-shot file.
+          return { content: [{ type: "text", text }], details: { mcpAppRef, mcpAppError } };
         },
       }));
     registerMcpTools(pi, definitions);

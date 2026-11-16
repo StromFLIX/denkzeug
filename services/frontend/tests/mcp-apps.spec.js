@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { rolldown } from 'rolldown'
+import { mockAgents } from './agent-fixture.js'
 
 let appHtml
 // Exercise a real third-party protocol client (the official App SDK), not a
@@ -56,7 +57,45 @@ test('sandbox blocks parent access and unapproved network requests', async ({ pa
     return { parentBlocked, networkBlocked, cookie: (() => { try { return document.cookie } catch { return 'blocked' } })() }
   })
   expect(isolation).toEqual({ parentBlocked: true, networkBlocked: true, cookie: 'blocked' })
+  const guarded = await frame.evaluate(() => {
+    const child = document.createElement('iframe')
+    document.body.append(child)
+    let nestedRTC = false
+    try { nestedRTC = typeof child.contentWindow.RTCPeerConnection === 'function' } catch { /* opaque child */ }
+    let replaceBlocked = false
+    try { Object.defineProperty(globalThis, 'RTCPeerConnection', { value: 'restored' }) } catch { replaceBlocked = true }
+    child.remove()
+    return { rtc: typeof RTCPeerConnection, nestedRTC, replaceBlocked }
+  })
+  expect(guarded).toEqual({ rtc: 'undefined', nestedRTC: false, replaceBlocked: true })
   await page.screenshot({ path: '/workspace/mcp-app-host.png', fullPage: true })
+})
+
+test('saved workflow results and tool results share the inline host without replay', async ({ page, context }) => {
+  const state = await mockAgents(context)
+  const descriptor = { id: 'saved-app', title: 'Release notes', app_id: 'release-notes', revision: 1 }
+  state.data.messages = [{ id: 'result', role: 'assistant', content: 'Release prepared.', created_at: Date.now() / 1000, meta: { apps: [descriptor], origin: { kind: 'workflow', workflow: 'prepare-release', relation: 'result' } } }]
+  let loads = 0
+  const mutations = []
+  page.on('request', request => { if (request.method() === 'POST' && /\/api\/(workflows|chats).*\/(run|messages)/.test(request.url())) mutations.push(request.url()) })
+  await context.route('**/api/mcp-apps/runtime', route => route.fulfill({ json: { sandbox_url: 'http://127.0.0.1:8092' } }))
+  await context.route('**/api/chats/alpha/apps/saved-app', route => {
+    loads++
+    return route.fulfill({ json: { html: appHtml, input: {}, title: 'Release notes', result: { content: [{ type: 'text', text: 'Release prepared.' }], structuredContent: { notes: '# A useful release' } } } })
+  })
+  await page.goto('/chats/alpha')
+  const view = page.frameLocator('iframe[title="Release notes"]').frameLocator('iframe')
+  await expect(view.locator('#result')).toHaveText('# A useful release')
+  await page.reload()
+  await expect(view.locator('#result')).toHaveText('# A useful release')
+  expect(loads).toBe(2)
+  expect(mutations).toEqual([])
+  await page.screenshot({ path: '/workspace/mcp-app-chat.png', fullPage: true })
+  // The tool-result adapter uses the identical component outside collapsed tool details.
+  state.data.messages[0].meta = { steps: [{ kind: 'tool', id: 'call', name: 'weather_forecast', ok: true, result: 'Release prepared.', app: descriptor }] }
+  await page.reload()
+  await expect(view.locator('#result')).toHaveText('# A useful release')
+  expect(mutations).toEqual([])
 })
 
 test('same-origin and malformed sandbox requests fail closed', async ({ request }) => {

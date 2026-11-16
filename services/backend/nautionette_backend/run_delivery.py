@@ -13,6 +13,16 @@ from .db import db
 
 def finish(workflow_id: str, status: str, result: Any, *, notify: bool) -> None:
     """Record the terminal result and its delivery obligation in one commit."""
+    # Expensive/untrusted schema validation must not hold SQLite's write lock.
+    # The immutable revision selected here is pinned atomically below.
+    from .local_apps import prepare_workflow, snapshot_workflow
+
+    row = db.one("SELECT * FROM runs WHERE workflow_id=?", (workflow_id,))
+    if row is None:
+        raise ValueError("Cannot finish an unrecorded workflow run")
+    if db.one("SELECT 1 FROM run_deliveries WHERE run_id=?", (row["id"],)):
+        return
+    prepared = prepare_workflow(row, result) if status == "completed" and notify else None
     with db.transaction() as conn:
         row = conn.execute("SELECT * FROM runs WHERE workflow_id = ?", (workflow_id,)).fetchone()
         if row is None:
@@ -20,9 +30,7 @@ def finish(workflow_id: str, status: str, result: Any, *, notify: bool) -> None:
         if conn.execute("SELECT 1 FROM run_deliveries WHERE run_id = ?", (row["id"],)).fetchone():
             return  # A duplicate watcher must not overwrite an already sealed result.
         if status == "completed" and notify:
-            from .local_apps import snapshot_workflow
-
-            snapshot_workflow(conn, row, result)
+            snapshot_workflow(conn, row, prepared)
         conn.execute(
             "UPDATE runs SET status = ?, result = ?, updated_at = ? WHERE id = ?",
             (status, json.dumps(result) if result is not None else None, time.time(), row["id"]),

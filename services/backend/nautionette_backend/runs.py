@@ -13,6 +13,7 @@ import logging
 import time
 import uuid
 from datetime import UTC, datetime
+from functools import partial
 from typing import Any
 
 from fastapi import HTTPException
@@ -21,7 +22,7 @@ from temporalio.exceptions import ApplicationError
 from temporalio.service import RPCError, RPCStatusCode
 
 from . import provenance, run_delivery
-from .background import spawn
+from .background import run_blocking, spawn
 from .clients import authoring, broker, temporal
 from .db import db
 from .events import bus
@@ -282,7 +283,9 @@ async def try_delivery(name: str, workflow_id: str, status: str, result: Any) ->
 
 
 async def complete_run(name: str, workflow_id: str, status: str, result: Any) -> None:
-    run_delivery.finish(workflow_id, status, result, notify=should_deliver(status, result))
+    await run_blocking(
+        partial(run_delivery.finish, workflow_id, status, result, notify=should_deliver(status, result))
+    )
     sealed = stored_run(workflow_id)
     # Concurrent completion/termination observers share the first sealed result.
     await try_delivery(name, workflow_id, sealed["status"], sealed["result"])

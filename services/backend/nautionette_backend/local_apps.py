@@ -1,7 +1,9 @@
 """Owner-private, immutable single-file MCP Apps and durable workflow snapshots.
 
 HTML is authored code, never executed by the server. Consumers must serve it in
-an isolated MCP App sandbox with the returned (network-denying) resource CSP.
+an isolated MCP App sandbox with the returned restrictive resource CSP.
+Published code is trusted by its owner to receive that owner's workflow data;
+a browser iframe is not an OS-level network isolation boundary.
 """
 
 from __future__ import annotations
@@ -10,16 +12,15 @@ import hashlib
 import json
 import re
 import sqlite3
+import subprocess
+import sys
 import time
 import uuid
 from html.parser import HTMLParser
+from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException
-from jsonschema import Draft202012Validator
-from jsonschema.exceptions import SchemaError, ValidationError
-from referencing import Registry
-from referencing.exceptions import NoSuchResource, Unresolvable
 
 from . import access
 
@@ -107,11 +108,7 @@ def validate_html(html: str) -> None:
         raise HTTPException(422, "Provide a complete HTML document with an html element")
 
 
-def _no_retrieval(uri):
-    raise NoSuchResource(ref=uri)
-
-
-def validator(schema: dict) -> Draft202012Validator:
+def validate_schema_shape(schema: dict) -> None:
     encoded(schema, MAX_SCHEMA_BYTES, "Input schema")
     # Ban all external identifiers/references, including unused branches. A
     # retrieval-denying registry is a second boundary against network/file I/O.
@@ -131,19 +128,24 @@ def validator(schema: dict) -> Draft202012Validator:
                 remaining.append((child, depth + 1))
         elif isinstance(value, list):
             remaining.extend((child, depth + 1) for child in value)
-    try:
-        Draft202012Validator.check_schema(schema)
-    except (SchemaError, RecursionError) as exc:
-        raise HTTPException(422, "Invalid Draft 2020-12 input schema") from exc
-    return Draft202012Validator(schema, registry=Registry(retrieve=_no_retrieval))
 
 
 def validate_data(schema: dict, data: dict) -> str:
     text = encoded(data, MAX_DATA_BYTES, "App data")
+    validate_schema_shape(schema)
     try:
-        validator(schema).validate(data)
-    except (ValidationError, Unresolvable, RecursionError) as exc:
-        raise HTTPException(422, "App data does not satisfy its input schema") from exc
+        checked = subprocess.run(  # noqa: S603 - fixed own interpreter/worker; data only on stdin
+            [sys.executable, "-I", str(Path(__file__).with_name("app_schema.py"))],
+            input=json.dumps({"schema": schema, "data": data}).encode(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=2,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise HTTPException(422, "App validation exceeded its safe execution limit") from exc
+    if checked.returncode != 0 or checked.stdout != b"ok":
+        raise HTTPException(422, "App schema/data is invalid or exceeded safe validation limits")
     return text
 
 
@@ -299,12 +301,10 @@ def archive(app_id: str, archived: bool, expected_revision: int) -> dict:
     return get_app(app_id)
 
 
-def snapshot_workflow(conn, run, result) -> None:
-    """Called in finish's transaction, before the result/outbox is sealed.
+def prepare_workflow(run, result) -> dict | None:
+    """Resolve/validate outside the event loop and outside the completion lock."""
+    from .db import db
 
-    Invalid author-supplied UI is a diagnostic, not a workflow or delivery
-    failure. Database errors still roll back the entire completion transaction.
-    """
     if not isinstance(result, dict) or "ui" not in result:
         return
     try:
@@ -319,22 +319,47 @@ def snapshot_workflow(conn, run, result) -> None:
         ):
             raise HTTPException(422, "Invalid app result envelope")
         encoded(summary, 64 * 1024, "App summary")
-        app = conn.execute(
+        app = db.one(
             "SELECT * FROM local_apps WHERE owner_user_id=? AND id=?", (run["owner_user_id"], ui["app"])
-        ).fetchone()
+        )
         if not app or app["archived"]:
             raise HTTPException(422, "App unavailable")
         revision = ui.get("revision", app["active_revision"])
         if type(revision) is not int or revision < 1:
             raise HTTPException(422, "Invalid app revision")
-        source = conn.execute(
+        source = db.one(
             "SELECT * FROM local_app_revisions WHERE owner_user_id=? AND app_id=? AND revision=?",
             (run["owner_user_id"], app["id"], revision),
-        ).fetchone()
+        )
         if not source:
             raise HTTPException(422, "App revision unavailable")
         data_json = validate_data(json.loads(source["input_schema"]), data)
-        size = len(data_json.encode()) + len(summary.encode())
+        return {
+            "app_id": app["id"],
+            "revision": revision,
+            "title": source["title"],
+            "data_json": data_json,
+            "summary": summary,
+            "size": len(data_json.encode()) + len(summary.encode()),
+        }
+    except HTTPException:
+        return {"invalid": True}
+
+
+def snapshot_workflow(conn, run, prepared) -> None:
+    """Atomic pin/outbox, with no executable schema work inside the transaction."""
+    if prepared is None:
+        return
+    try:
+        if prepared.get("invalid"):
+            raise HTTPException(422, "Invalid app result")
+        app = conn.execute(
+            "SELECT * FROM local_apps WHERE owner_user_id=? AND id=?",
+            (run["owner_user_id"], prepared["app_id"]),
+        ).fetchone()
+        if not app or app["archived"]:
+            raise HTTPException(422, "App unavailable")
+        size = prepared["size"]
         used, count = conn.execute(
             "SELECT COALESCE(SUM(size_bytes),0),COUNT(*) FROM app_instances WHERE owner_user_id=?",
             (run["owner_user_id"],),
@@ -348,10 +373,10 @@ def snapshot_workflow(conn, run, result) -> None:
                 run["owner_user_id"],
                 run["id"],
                 app["id"],
-                revision,
-                source["title"],
-                summary,
-                data_json,
+                prepared["revision"],
+                prepared["title"],
+                prepared["summary"],
+                prepared["data_json"],
                 time.time(),
                 size,
             ),
