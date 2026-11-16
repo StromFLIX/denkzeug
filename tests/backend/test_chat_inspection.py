@@ -181,6 +181,55 @@ def test_payload_budget_keeps_a_cursor_for_remaining_events(client, sessions):
     assert following["events"][0]["seq"] > page["events"][-1]["seq"]
 
 
+@pytest.mark.parametrize("operation", ["inspect", "search", "sessions"])
+@pytest.mark.parametrize("history_turn", ["failed-turn", "healthy-turn"])
+def test_chat_diagnostics_do_not_scan_streaming_history(client, sessions, operation, history_turn):
+    first, _ = sessions
+    # Streaming events dominate real histories. A summary must not read/parse
+    # all streaming payloads, whether they belong to this chat or another one.
+    with db.transaction() as conn:
+        conn.executemany(
+            "INSERT INTO chat_turn_events(turn_id, payload) VALUES (?, ?)",
+            [(history_turn, json.dumps({"type": "delta", "text": "x" * 512}))] * 20000,
+        )
+
+    statements = []
+    instructions = 0
+
+    def budget():
+        nonlocal instructions
+        instructions += 1000
+        return instructions > 100000
+
+    # A VM instruction budget is deterministic on slow CI hosts, unlike a wall
+    # clock assertion. The old full-table scan exhausts it on the first summary.
+    db._conn.set_progress_handler(budget, 1000)
+    db._conn.set_trace_callback(statements.append)
+    try:
+        path, params = {
+            "inspect": (f"/chats/{first}", {}),
+            "search": ("/chats", {"query": first}),
+            "sessions": ("/sessions", {"chat_id": first}),
+        }[operation]
+        response = client.get(BASE + path, params=params)
+        assert response.status_code == 200
+        result = response.json()
+        if operation != "inspect":
+            result = result["chats" if operation == "search" else "sessions"][0]
+        assert result["tool_call_count"] == 1
+    finally:
+        db._conn.set_progress_handler(None, 0)
+        db._conn.set_trace_callback(None)
+    event_queries = [sql for sql in statements if "chat_turn_events e" in sql]
+    assert len(event_queries) == 3
+    for sql in event_queries:
+        plan = db.query("EXPLAIN QUERY PLAN " + sql)
+        assert not any("SCAN e" in row["detail"] for row in plan), plan
+        if operation != "sessions":
+            assert any("chat_turn_chat" in row["detail"] for row in plan), plan
+        assert any("chat_turn_event_" in row["detail"] for row in plan), plan
+
+
 async def test_mcp_chat_diagnostics_use_real_filtered_api(backend, sessions):
     result = await main.backend_mcp.call("search_chats", {"has_error": True, "limit": 1})
     assert not result.is_error
