@@ -6,7 +6,7 @@ import { THEMES } from '../src/themes.js'
 const groups = [
   ['Account & workspace', ['account', 'api-keys', 'users', 'invitations', 'access']],
   ['Your experience', ['general', 'appearance', 'workspace']],
-  ['Build & connect', ['agents', 'packages', 'creative-apps', 'mcp', 'projects', 'git']],
+  ['Build & connect', ['agents', 'packages', 'apps', 'creative-apps', 'mcp', 'projects', 'git']],
   ['Run & manage', ['automation', 'usage', 'storage', 'system', 'activity']]
 ]
 

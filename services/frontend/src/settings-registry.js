@@ -77,6 +77,16 @@ export const SETTINGS_SECTIONS = [
     entries: [entry('pi-packages', 'Extension library', 'Install extensions, skills and prompts for the workspace. Select them separately in agents and chats.', 'npm git search resources secrets environment configuration install update rollback')]
   },
   {
+    key: 'apps', label: 'Apps', icon: 'web', group: 'Build & connect', scope: 'Your account',
+    scopeNote: 'Your private app library. Published revisions are immutable; previews use sample data only.',
+    load: () => import('./components/settings/AppsPane.vue'),
+    entries: [
+      entry('apps-library', 'App library', 'Create or import self-contained interactive HTML apps.', 'package JSON import export source slug'),
+      entry('apps-editor', 'App source & revisions', 'Inspect source, edit drafts, preview sample data and publish immutable revisions.', 'HTML schema history restore archive unarchive'),
+      entry('apps-permissions', 'App permissions', 'Sandboxed previews without network or tool access.', 'security isolation workflows')
+    ]
+  },
+  {
     key: 'creative-apps', label: 'Creative apps', icon: 'draw', group: 'Build & connect', scope: 'Instance',
     load: () => import('./components/settings/CreativeAppsPane.vue'),
     entries: [
