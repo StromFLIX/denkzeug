@@ -87,7 +87,7 @@ test('navigation icons reopen collapsed lists, including the current section', a
   await mockDesign(context)
   await page.goto('/chats/alpha')
   const nav = page.getByRole('navigation', { name: 'Main navigation' })
-  for (const section of ['Chats', 'Workflows', 'Apps', 'Chats']) {
+  for (const section of ['Chats', 'Workflows', 'Chats']) {
     await collapseButton(page).click()
     await nav.getByRole('link', { name: section, exact: true }).click()
     await expect(page.locator('#shell-sidebar')).toBeVisible()
@@ -95,6 +95,7 @@ test('navigation icons reopen collapsed lists, including the current section', a
     await expect(collapseButton(page)).toHaveAttribute('aria-expanded', 'true')
   }
   await expect(nav.getByRole('link', { name: 'Runs', exact: true })).toHaveCount(0)
+  await expect(nav.getByRole('link', { name: 'Apps', exact: true })).toHaveCount(0)
   await nav.getByRole('link', { name: 'Workflows', exact: true }).click()
   await page.getByRole('link', { name: 'All runs', exact: true }).click()
   await collapseButton(page).click()
@@ -118,7 +119,7 @@ for (const interfaceSize of [125, 150]) {
     const header = page.locator('.side__head')
     const title = header.getByRole('heading')
     const collapse = collapseButton(page)
-    for (const section of ['Chats', 'Workflows', 'Apps']) {
+    for (const section of ['Chats', 'Workflows']) {
       await page.getByRole('navigation').getByRole('link', { name: section, exact: true }).click()
       await expect(title).toHaveText(section)
       // Long headings truncate instead of painting over the adjacent buttons.
