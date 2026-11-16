@@ -198,6 +198,9 @@ CREATE TABLE IF NOT EXISTS chat_turns (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS chat_turn_running ON chat_turns(chat_id) WHERE state = 'running';
 CREATE INDEX IF NOT EXISTS chat_turn_user ON chat_turns(user_id);
+-- Diagnostics join turns to events by chat. Without this index SQLite scans and
+-- parses the entire event history while holding the shared database lock.
+CREATE INDEX IF NOT EXISTS chat_turn_chat ON chat_turns(chat_id, id);
 CREATE INDEX IF NOT EXISTS chat_turn_activity ON chat_turns(state, chat_id)
     WHERE state IN ('running', 'queued');
 CREATE TABLE IF NOT EXISTS chat_turn_events (
@@ -208,6 +211,18 @@ CREATE TABLE IF NOT EXISTS chat_turn_events (
 CREATE INDEX IF NOT EXISTS chat_turn_events_turn ON chat_turn_events(turn_id, seq);
 CREATE INDEX IF NOT EXISTS chat_turn_usage ON chat_turn_events(turn_id, seq)
     WHERE json_extract(payload, '$.type') IN ('usage','result');
+-- Summaries need metadata, not streaming text or potentially huge tool results.
+-- Keep these predicates aligned with routers/chat_inspection.py (plan-tested).
+CREATE INDEX IF NOT EXISTS chat_turn_event_tools
+    ON chat_turn_events(turn_id, json_extract(payload, '$.name'))
+    WHERE json_extract(payload, '$.type') = 'tool';
+CREATE INDEX IF NOT EXISTS chat_turn_event_tool_errors ON chat_turn_events(turn_id)
+    WHERE json_extract(payload, '$.type') = 'tool_done' AND json_extract(payload, '$.error') = 1;
+CREATE INDEX IF NOT EXISTS chat_turn_event_failures ON chat_turn_events(turn_id, seq)
+    WHERE (json_extract(payload, '$.type') = 'error' OR
+    (json_extract(payload, '$.type') = 'result' AND json_extract(payload, '$.ok') = 0) OR
+    (json_extract(payload, '$.type') = 'done' AND
+    COALESCE(json_extract(payload, '$.message.meta.error'), '') != ''));
 -- Keep identity tombstones after chat deletion: a workflow retry must not replay side effects.
 CREATE TABLE IF NOT EXISTS workflow_agent_tasks (
     key TEXT PRIMARY KEY,
