@@ -464,6 +464,16 @@ chat's potentially changed model. Failures include backend-restart answers that
 never received an agent result. Event/tool statistics use retained turn events;
 legacy transcript-only messages cannot supply missing tool history.
 
+Diagnostic summaries read indexed event metadata rather than scanning streaming
+payloads. Chat and session pages batch their enrichment: a non-empty chat page
+uses six diagnostic SQL queries, and a session page uses four (excluding account
+authentication and optional chat-ownership validation), independent of page size.
+Session job fields are extracted only after pagination. These are live counts,
+not cached snapshots. Substring message searches still inspect candidate message
+text; the metadata indexes do not turn arbitrary substring searches into FTS.
+Regression tests enforce bounded SQL work with large same-chat/unrelated event
+histories, fixed page query counts, index plans, ranking and ownership isolation.
+
 The HTTP routes are under `/api/chat-inspection`. These tools never expose raw
 persisted jobs, project credentials, attachment bytes or package configuration.
 They do not expose chat mutation, message submission or streaming HTTP routes as

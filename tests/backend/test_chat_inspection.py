@@ -230,6 +230,90 @@ def test_chat_diagnostics_do_not_scan_streaming_history(client, sessions, operat
         assert any("chat_turn_event_" in row["detail"] for row in plan), plan
 
 
+@pytest.mark.parametrize("endpoint,key", [("chats", "chats"), ("sessions", "sessions")])
+def test_page_enrichment_has_constant_query_count(client, backend, endpoint, key):
+    for number in range(51):
+        chat = db.create_chat(f"Page {number}", "default")
+        turn_id = f"page-turn-{number}"
+        db.accept_chat_message(chat["id"], "Read", turn_id)
+        db.record_chat_progress(turn_id, {"type": "tool", "name": "read"}, [], "")
+        db.finish_chat_turn(turn_id, "Done", {})
+    counts = []
+    for limit in (1, 20, 50):
+        statements = []
+        db._conn.set_trace_callback(statements.append)
+        try:
+            response = client.get(BASE + f"/{endpoint}", params={"limit": limit})
+        finally:
+            db._conn.set_trace_callback(None)
+        assert response.status_code == 200
+        page = response.json()
+        assert len(page[key]) == limit and page["next_offset"] == limit
+        assert all(row["tool_call_count"] == 1 for row in page[key])
+        selects = [sql for sql in statements if sql.lstrip().upper().startswith(("SELECT", "WITH"))]
+        counts.append(len(selects))
+        assert len([sql for sql in selects if "chat_turn_events e" in sql]) == 3
+        if endpoint == "chats":
+            page_sql = next(sql for sql in selects if "FROM chats c WHERE" in sql)
+            plan = db.query("EXPLAIN QUERY PLAN " + page_sql)
+            assert any("chats_owner_updated" in row["detail"] for row in plan), plan
+            assert not any("TEMP B-TREE" in row["detail"] for row in plan), plan
+        else:
+            page_sql = next(sql for sql in selects if sql.startswith("WITH page"))
+            plan = db.query("EXPLAIN QUERY PLAN " + page_sql)
+            assert any("MATERIALIZE page" in row["detail"] for row in plan), plan
+    assert counts[0] == counts[1] == counts[2], counts
+
+
+def test_batched_summaries_keep_exact_counts_ranking_and_empty_chats(client, sessions):
+    first, second = sessions
+    empty = db.create_chat("Empty", "default")["id"]
+    db.update_chat(first, {"project_ids": ["project-1"], "timeout_exempt": True})
+    for number in range(22):
+        for _ in range(2 if number == 21 else 1):
+            db.record_chat_progress("failed-turn", {"type": "tool", "name": f"tool-{number:02}"}, [], "")
+    db.record_chat_progress("failed-turn", {"type": "error", "message": "Another failure"}, [], "")
+    db.record_chat_progress("healthy-turn", {"type": "tool_done", "name": "read", "error": True}, [], "")
+    page = client.get(BASE + "/chats", params={"limit": 50}).json()
+    chats = {chat["id"]: chat for chat in page["chats"]}
+    assert chats[first]["tool_call_count"] == 24
+    assert chats[first]["distinct_tool_count"] == 23
+    assert chats[first]["tools_used_truncated"] is True
+    assert len(chats[first]["tools_used"]) == 20
+    assert chats[first]["tools_used"][:3] == [
+        {"name": "tool-21", "calls": 2},
+        {"name": "read", "calls": 1},
+        {"name": "tool-00", "calls": 1},
+    ]
+    assert chats[first]["failed_session_count"] == 1
+    assert chats[first]["message_count"] == 2
+    assert chats[first]["session_count"] == 1
+    assert chats[first]["session_states"] == [{"state": "completed", "count": 1}]
+    assert chats[first]["project_ids"] == ["project-1"]
+    assert chats[first]["timeout_exempt"] is True
+    assert chats[second]["tool_call_count"] == 1
+    assert chats[second]["tool_error_count"] == 1
+    assert chats[second]["failed_session_count"] == 0
+    assert chats[empty]["message_count"] == 0
+    assert chats[empty]["session_count"] == 0
+    assert chats[empty]["session_states"] == []
+    assert chats[empty]["failed_session_count"] == 0
+    assert chats[empty]["tool_call_count"] == 0
+    assert chats[empty]["tools_used"] == []
+    assert chats[empty]["tool_error_count"] == 0
+    assert "SECRET-JOB-TOKEN" not in json.dumps(page)
+    listed = client.get(BASE + "/sessions", params={"limit": 50}).json()["sessions"]
+    turns = {row["id"]: row for row in listed}
+    assert turns["failed-turn"]["tool_call_count"] == 24
+    assert turns["failed-turn"]["tools_used"] == chats[first]["tools_used"]
+    assert turns["failed-turn"]["has_error"] is True
+    latest_error = db.one("SELECT MAX(seq) AS seq FROM chat_turn_events WHERE turn_id=?", ("failed-turn",))
+    assert turns["failed-turn"]["last_error_seq"] == latest_error["seq"]
+    assert turns["healthy-turn"]["has_error"] is False
+    assert turns["healthy-turn"]["last_error_seq"] is None
+    assert turns["healthy-turn"]["tool_error_count"] == 1
+
+
 async def test_mcp_chat_diagnostics_use_real_filtered_api(backend, sessions):
     result = await main.backend_mcp.call("search_chats", {"has_error": True, "limit": 1})
     assert not result.is_error

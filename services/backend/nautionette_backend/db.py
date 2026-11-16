@@ -548,6 +548,11 @@ class Database:
             from .access import install_access_schema
 
             install_access_schema(self._conn)
+            # Ownership is migrated above; recent diagnostic pages should seek
+            # directly into this account's ordering, not sort every owned chat.
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS chats_owner_updated ON chats(owner_user_id, updated_at DESC, id)"
+            )
             self._conn.commit()
 
     # ------------------------------------------------------------------ basics
