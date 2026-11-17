@@ -53,7 +53,9 @@ try {
     window.mcpNativeConnection = await window.DenkzeugMcpHostTest.connectApp(frame, {
       html, input: { client: 'desktop' }, result: { content: [], structuredContent: { notes: '# Native desktop result' } }
     }, 'http://127.0.0.1:8092', {
-      context: { platform: 'desktop', theme: 'light', displayMode: 'inline' },
+      context: { platform: 'desktop', theme: 'dark', displayMode: 'inline', styles: { variables: {
+        '--color-background-primary': '#171b26', '--color-text-primary': '#edf0f8'
+      } } },
       resize: height => { frame.style.height = `${height}px` },
       ready: () => { window.mcpNativeReady = true }, error: message => { window.mcpNativeError = message },
       openLink: url => { window.open(url, '_blank', 'noopener,noreferrer') }
@@ -70,6 +72,23 @@ try {
   await view.locator('#copy').click()
   expect(await application.evaluate(({ clipboard }) => clipboard.readText())).toBe('# Native desktop result')
   const child = page.frames().find(frame => frame.url() === 'about:srcdoc')
+  expect(await child.evaluate(() => window.firstSurface)).toEqual({ scheme: 'dark', background: 'rgb(23, 27, 38)' })
+  const originalSrc = await outer.getAttribute('src')
+  for (const [theme, background, color, rgb] of [
+    ['dark', '#171b26', '#edf0f8', 'rgb(23, 27, 38)'],
+    ['light', '#fafafa', '#111111', 'rgb(250, 250, 250)'],
+    ['dark', '#171b26', '#edf0f8', 'rgb(23, 27, 38)']
+  ]) {
+    await page.evaluate(({ theme, background, color }) => window.mcpNativeConnection.setContext({ theme, styles: { variables: {
+      '--color-background-primary': background, '--color-text-primary': color
+    } } }), { theme, background, color })
+    for (const layer of [outer, proxy.locator('html'), proxy.locator('iframe'), view.locator('html')]) {
+      await expect(layer).toHaveCSS('color-scheme', theme)
+      await expect(layer).toHaveCSS('background-color', rgb)
+    }
+    await expect(outer).toHaveAttribute('src', originalSrc)
+    await expect(view.locator('#result')).toHaveText('# Native desktop result')
+  }
   expect(await child.evaluate(() => {
     let hostBlocked = false
     try { parent.parent.document.body } catch { hostBlocked = true }
@@ -82,7 +101,7 @@ try {
   await view.locator('#link').click()
   await expect.poll(() => application.evaluate(() => globalThis.mcpExternalLinks)).toEqual(['https://github.com/example/project/releases/new'])
   await page.evaluate(() => window.mcpNativeConnection.close())
-  console.log('Desktop MCP Apps: actual capacitor origin, SDK handshake/data, strict RPC binding, external link and Node/preload isolation passed')
+  console.log('Desktop MCP Apps: actual capacitor origin, dark first paint, live theme surfaces without reload, SDK handshake/data, strict RPC binding, external link and Node/preload isolation passed')
 
   // Model Android's local app-asset origin in a separate secure Chromium
   // session. No TLS exceptions or remote API credentials are used. This is

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { appHeight, appHostOrigin, sandboxAddress, externalAppLink, AppFrameTransport } from './mcp-apps.js'
+import { appHeight, appHostOrigin, appSurface, sandboxAddress, externalAppLink, AppFrameTransport } from './mcp-apps.js'
 
 test('sandbox requires an isolated, credential-free secure origin', () => {
   const url = sandboxAddress('https://sandbox.example', 'https://app.example', { resourceDomains: ['https://cdn.example'] })
@@ -28,6 +28,18 @@ test('bundled desktop/iOS and Android host origins never become opaque null', ()
   }
   assert.throws(() => sandboxAddress('capacitor://localhost', 'https://app.example'))
   assert.throws(() => sandboxAddress('https://localhost', 'https://localhost/chats/one'))
+})
+
+test('frame surfaces use bounded theme colors, never arbitrary CSS', () => {
+  assert.deepEqual(appSurface({ theme: 'dark', styles: { variables: {
+    '--color-background-primary': '#171b26', '--color-text-primary': '#edf0f8'
+  } } }), { theme: 'dark', background: '#171b26', color: '#edf0f8' })
+  assert.deepEqual(appSurface(), { theme: 'light', background: '#ffffff', color: '#000000' })
+  for (const value of ['transparent', '#fff', 'red; background:url(https://evil.example)', '</script><script>alert(1)</script>', {}, null]) {
+    assert.deepEqual(appSurface({ theme: 'dark', styles: { variables: {
+      '--color-background-primary': value, '--color-text-primary': value
+    } } }), { theme: 'dark', background: '#181818', color: '#ffffff' })
+  }
 })
 
 test('layout and external links are bounded', () => {

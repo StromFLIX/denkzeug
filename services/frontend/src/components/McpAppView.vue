@@ -79,7 +79,7 @@ async function load () {
       }
     })
     if (mine !== generation || destroyed) await connection.close()
-    else bridge = connection
+    else { bridge = connection; bridge.setContext(hostContext()) }
   } catch (error) {
     if (mine !== generation || error.name === 'AbortError' || destroyed) return
     loading.value = false; failure.value = error.message || 'The interface could not load. The original result is unchanged.'
@@ -89,7 +89,9 @@ function restart () { document.value = null; load() }
 // Compare stable identities individually: live chat snapshots replace descriptor
 // objects without changing the saved app instance or its mounted local state.
 watch([() => props.app, () => props.instance?.id, () => props.chatId, () => props.sandboxUrl], load)
-watch(currentTokens, () => bridge?.setContext(hostContext()), { deep: true })
+// Preferences apply color-scheme in a post-flush watcher. Wait for that DOM
+// update so new palette tokens are never paired with the previous light/dark mode.
+watch(currentTokens, async () => { await nextTick(); bridge?.setContext(hostContext()) }, { deep: true })
 onMounted(() => {
   if (!window.IntersectionObserver) { visible.value = true; load(); return }
   observer = new IntersectionObserver(entries => {
@@ -107,7 +109,7 @@ onBeforeUnmount(() => { destroyed = true; ++generation; observer?.disconnect(); 
 
 <style scoped>
 .mcp-app { min-width: 0; margin: 10px 0; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-app); }
-.mcp-app__frame { display: block; border: 0; width: 100%; max-height: 1400px; }
+.mcp-app__frame { display: block; border: 0; width: 100%; max-height: 1400px; background: var(--surface-app); color-scheme: inherit; }
 .mcp-app__notice { padding: 10px 14px; margin: 0; }
 .mcp-app__notice p { margin: 0 0 8px; }
 .mcp-app__notice a { color: var(--accent); overflow-wrap: anywhere; }

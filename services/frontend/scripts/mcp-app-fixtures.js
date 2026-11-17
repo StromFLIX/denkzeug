@@ -13,6 +13,6 @@ async function bundle (path, name) {
 export async function nativeAppFixtures () {
   const host = await bundle('../src/mcp-apps.js', 'DenkzeugMcpHostTest')
   const client = await bundle('../tests/fixtures/mcp-app-client.js')
-  const html = `<!doctype html><html><body><h2 id="result">Waiting</h2><button id="copy">Copy Markdown</button><button id="link">Open release page</button><p id="status"></p><script>${client.replace(/<\/script/gi, '<\\/script')}</script></body></html>`
+  const html = `<!doctype html><html><head><script>window.firstSurface = { scheme: getComputedStyle(document.documentElement).colorScheme, background: getComputedStyle(document.documentElement).backgroundColor }</script></head><body><h2 id="result">Waiting</h2><button id="copy">Copy Markdown</button><button id="link">Open release page</button><p id="status"></p><script>${client.replace(/<\/script/gi, '<\\/script')}</script></body></html>`
   return { host, html }
 }

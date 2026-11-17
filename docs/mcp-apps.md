@@ -189,6 +189,15 @@ reset local filters and other interface state. Leaving the chat still tears down
 the bridge and aborts pending requests. Reopening the chat starts a fresh view of
 the same immutable result, without rerunning its workflow or tool.
 
+The host gives the embedding iframe, sandbox proxy and opaque app document an
+explicit theme-matched backing surface before app scripts run. This avoids white
+iframe tiles during dark-mode loading/repainting. Host-context updates repaint
+these defaults in place without navigating frames or resetting filters. App
+styles can still override the document's default background and text colors.
+Only the light/dark scheme and validated hex colors travel in the sandbox URL;
+result data and account credentials never do. This needs both the updated sandbox
+service and frontend (rebuild installed native clients to update bundled assets).
+
 Keep a useful summary: it is the fallback for unavailable sandboxes and also the
 text visible to the model. On the execution path, App HTML and app-private MCP result `_meta` do not enter
 model context or model-retrievable native session details. A one-shot container

@@ -56,8 +56,28 @@ export class AppFrameTransport {
   async close () { window.removeEventListener('message', this.listener); this.onclose?.() }
 }
 
+export function appSurface (context = {}) {
+  const theme = context.theme === 'dark' ? 'dark' : 'light'
+  const variables = context.styles?.variables || {}
+  const color = (value, fallback) => typeof value === 'string' && /^#[\da-f]{6}$/i.test(value) ? value : fallback
+  return {
+    theme,
+    background: color(variables['--color-background-primary'], theme === 'dark' ? '#181818' : '#ffffff'),
+    color: color(variables['--color-text-primary'], theme === 'dark' ? '#ffffff' : '#000000')
+  }
+}
+
 export async function connectApp (frame, app, sandbox, { context, resize, ready, error, openLink }) {
   const address = sandboxAddress(sandbox, window.location.href, app.csp || {})
+  // Set both the embedding element and proxy before navigation/first paint.
+  // A transparent iframe can otherwise expose the browser's white backing tile.
+  const paint = value => {
+    const surface = appSurface(value)
+    frame.style.colorScheme = surface.theme
+    frame.style.backgroundColor = surface.background
+    return surface
+  }
+  for (const [key, value] of Object.entries(paint(context))) address.searchParams.set(key, value)
   const bridge = new AppBridge(null, { name: 'Denkzeug', version: '1' }, { openLinks: {} }, { hostContext: context })
   let closed = false, delivered = false, resourcesSent = false
   const fail = () => { if (!closed) error('The app could not initialize. Your original result is still available.') }
@@ -89,7 +109,11 @@ export async function connectApp (frame, app, sandbox, { context, resize, ready,
   await bridge.connect(transport)
   frame.src = address.href
   return {
-    setContext: value => { if (!closed && delivered) bridge.setHostContext(value) },
+    setContext: value => {
+      if (closed) return
+      paint(value)
+      bridge.setHostContext(value)
+    },
     async close () {
       if (closed) return
       closed = true
