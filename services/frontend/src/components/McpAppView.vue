@@ -79,7 +79,7 @@ async function load () {
       }
     })
     if (mine !== generation || destroyed) await connection.close()
-    else { bridge = connection; bridge.setContext(hostContext()) }
+    else bridge = connection
   } catch (error) {
     if (mine !== generation || error.name === 'AbortError' || destroyed) return
     loading.value = false; failure.value = error.message || 'The interface could not load. The original result is unchanged.'

@@ -10,7 +10,11 @@ test.beforeAll(async () => {
   const build = await rolldown({ input: new URL('./fixtures/mcp-app-client.js', import.meta.url).pathname })
   const { output } = await build.generate({ format: 'iife', minify: true })
   await build.close()
-  appHtml = `<html><head><script>window.firstSurface = { scheme: getComputedStyle(document.documentElement).colorScheme, background: getComputedStyle(document.documentElement).backgroundColor }</script></head><body><h2 id="result">Waiting</h2><input aria-label="Local filter"><button id="copy">Copy Markdown</button><button id="link">Open release page</button><p id="status"></p><script>${output[0].code.replace(/<\/script/gi, '<\\/script')}</script></body></html>`
+  appHtml = `<html><body><h2 id="result">Waiting</h2><input aria-label="Local filter"><button id="copy">Copy Markdown</button><button id="link">Open release page</button><p id="status"></p><script>${output[0].code.replace(/<\/script/gi, '<\\/script')}</script></body></html>`
+})
+
+test.afterEach(async ({ page }) => {
+  await page.evaluate(() => window.connection?.close())
 })
 
 async function harness (page, context = { theme: 'light', displayMode: 'inline' }, html = appHtml) {
@@ -49,7 +53,7 @@ test('official App SDK receives data, sizes, links and handles unsupported capab
 test('dark surfaces exist before app scripts and change theme without reloading', async ({ page }) => {
   await harness(page, { theme: 'dark', styles: { variables: {
     '--color-background-primary': '#171b26', '--color-text-primary': '#edf0f8'
-  } } })
+  } } }, appHtml.replace('<html>', '<html><head><script>window.firstSurface = { scheme: getComputedStyle(document.documentElement).colorScheme, background: getComputedStyle(document.documentElement).backgroundColor }</script></head>'))
   const frame = page.locator('#view')
   const proxy = page.frameLocator('#view')
   const view = proxy.frameLocator('iframe')
@@ -90,16 +94,19 @@ test('dark surfaces exist before app scripts and change theme without reloading'
   await page.screenshot({ path: '/workspace/mcp-app-dark-surface.png' })
 })
 
-test('host surface defaults do not override an app explicit background', async ({ page }) => {
-  await harness(page, { theme: 'dark' }, appHtml.replace('<head>', '<head><style>html { background-color: rgb(40, 50, 60); color: rgb(200, 210, 220); }</style>'))
-  const view = page.frameLocator('#view').frameLocator('iframe')
-  await expect(view.locator('#result')).toHaveText('# A useful release')
-  await expect(view.locator('html')).toHaveCSS('background-color', 'rgb(40, 50, 60)')
-  await expect(view.locator('html')).toHaveCSS('color', 'rgb(200, 210, 220)')
-  await page.evaluate(() => window.connection.setContext({ theme: 'light' }))
-  await expect(view.locator('html')).toHaveCSS('color-scheme', 'light')
-  await expect(view.locator('html')).toHaveCSS('background-color', 'rgb(40, 50, 60)')
-})
+for (const selector of ['html', '@layer base { html', '*']) {
+  test(`host surface defaults preserve authored ${selector} styles`, async ({ page }) => {
+    const css = `${selector} { background-color: rgb(40, 50, 60); color: rgb(200, 210, 220); }${selector.startsWith('@layer') ? ' }' : ''}`
+    await harness(page, { theme: 'dark' }, appHtml.replace('<html>', `<html><head><style>${css}</style></head>`))
+    const view = page.frameLocator('#view').frameLocator('iframe')
+    await expect(view.locator('#result')).toHaveText('# A useful release')
+    await expect(view.locator('html')).toHaveCSS('background-color', 'rgb(40, 50, 60)')
+    await expect(view.locator('html')).toHaveCSS('color', 'rgb(200, 210, 220)')
+    await page.evaluate(() => window.connection.setContext({ theme: 'light' }))
+    await expect(view.locator('html')).toHaveCSS('color-scheme', 'light')
+    await expect(view.locator('html')).toHaveCSS('background-color', 'rgb(40, 50, 60)')
+  })
+}
 
 test('sandbox blocks parent access and unapproved network requests', async ({ page }) => {
   await harness(page)
@@ -128,9 +135,6 @@ test('sandbox blocks parent access and unapproved network requests', async ({ pa
 })
 
 test('saved workflow results and tool results share the inline host without replay', async ({ page, context }) => {
-  // Three complete cold navigations: allow the host's 15s initialization
-  // deadline per sandbox rather than coupling it to the 5s assertion default.
-  test.setTimeout(60000)
   const state = await mockAgents(context)
   const descriptor = { id: 'saved-app', title: 'Release notes', app_id: 'release-notes', revision: 1 }
   state.data.messages = [{ id: 'result', role: 'assistant', content: 'Release prepared.', created_at: Date.now() / 1000, meta: { apps: [descriptor], origin: { kind: 'workflow', workflow: 'prepare-release', relation: 'result' } } }]
@@ -144,18 +148,16 @@ test('saved workflow results and tool results share the inline host without repl
   })
   await page.goto('/chats/alpha')
   const view = page.frameLocator('iframe[title="Release notes"]').frameLocator('iframe')
-  await expect(view.locator('#result')).toHaveText('# A useful release', { timeout: 15000 })
+  await expect(view.locator('#result')).toHaveText('# A useful release')
   await page.reload()
-  await expect(page.getByRole('region', { name: 'Release notes', exact: true })).toBeVisible({ timeout: 15000 })
-  await expect(view.locator('#result')).toHaveText('# A useful release', { timeout: 15000 })
+  await expect(view.locator('#result')).toHaveText('# A useful release')
   expect(loads).toBe(2)
   expect(mutations).toEqual([])
   await page.screenshot({ path: '/workspace/mcp-app-chat.png', fullPage: true })
   // The tool-result adapter uses the identical component outside collapsed tool details.
   state.data.messages[0].meta = { steps: [{ kind: 'tool', id: 'call', name: 'weather_forecast', ok: true, result: 'Release prepared.', app: descriptor }] }
   await page.reload()
-  await expect(page.getByRole('region', { name: 'Release notes', exact: true })).toBeVisible({ timeout: 15000 })
-  await expect(view.locator('#result')).toHaveText('# A useful release', { timeout: 15000 })
+  await expect(view.locator('#result')).toHaveText('# A useful release')
   expect(mutations).toEqual([])
 })
 

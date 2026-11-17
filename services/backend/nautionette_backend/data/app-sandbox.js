@@ -18,7 +18,8 @@ function installSurface (initial, frame) {
   const style = document.createElement('style')
   document.head.append(style)
   const paint = () => {
-    style.textContent = `html { color-scheme: ${theme}; background-color: ${background}; color: ${color}; }`
+    const rule = `html { color-scheme: ${theme}; background-color: ${background}; color: ${color}; }`
+    style.textContent = frame ? rule : `@layer denkzeug-host-defaults { ${rule} }`
     if (frame) {
       frame.style.colorScheme = theme
       frame.style.backgroundColor = background
