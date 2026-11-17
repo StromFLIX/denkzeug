@@ -21,8 +21,12 @@ DOCUMENT = (
 ).encode()
 
 
-def origin(value: str, *, local: bool = True) -> str:
-    """Only exact web origins; never CSP directives, wildcards, credentials or paths."""
+def origin(value: str, *, local: bool = True, app_host: bool = False) -> str:
+    """Exact web origins, plus the bundled native origin only for embedding hosts."""
+    # Never allow custom schemes in app resource/connect CSP or sandbox URLs.
+    # Match the entire string: urlsplit alone loses empty query/fragment markers.
+    if app_host and value in ("capacitor://localhost", "capacitor://localhost/"):
+        return "capacitor://localhost"
     try:
         parsed = urlsplit(value)
         port = parsed.port
@@ -53,7 +57,10 @@ def origin(value: str, *, local: bool = True) -> str:
 
 def approved_origins() -> set[str]:
     configured = os.environ.get("MCP_APPS_HOST_ORIGINS", "") or os.environ.get("DENKZEUG_PUBLIC_URL", "")
-    return {origin(item.strip()) for item in configured.split(",") if item.strip()}
+    origins = {origin(item.strip(), app_host=True) for item in configured.split(",") if item.strip()}
+    if os.environ.get("MCP_APPS_INCLUDE_NATIVE_ORIGINS", "true").strip().lower() != "false":
+        origins.update({"capacitor://localhost", "https://localhost"})
+    return origins
 
 
 def sandbox_policy(parent: str, csp: dict) -> dict[str, str]:
@@ -106,7 +113,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             query = parse_qs(parsed.query, strict_parsing=True)
-            parent = origin(query["parent"][0])
+            parent = origin(query["parent"][0], app_host=True)
             csp = json.loads(query.get("csp", ["{}"])[0])
             headers = sandbox_policy(parent, csp)
             # Same-origin hosting is an invalid deployment, even for a caller
