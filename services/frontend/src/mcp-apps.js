@@ -5,15 +5,28 @@ export function appHeight (height) {
   return Number.isFinite(height) ? Math.min(MAX_APP_HEIGHT, Math.max(100, Math.ceil(height))) : 320
 }
 
+export function appHostOrigin (value) {
+  const url = new URL(value)
+  if (url.username || url.password) throw new Error('App host origins cannot contain credentials.')
+  // Some URL implementations serialize custom schemes as "null". Preserve
+  // our explicit bundled origin without ever treating an opaque origin as trusted.
+  if (url.protocol === 'capacitor:' && url.host === 'localhost') return 'capacitor://localhost'
+  const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && loopback)) {
+    throw new Error('Interactive apps require a web or bundled native app origin.')
+  }
+  return url.origin
+}
+
 export function sandboxAddress (configured, parent, csp = {}) {
   const url = new URL(configured)
-  const host = new URL(parent)
+  const hostOrigin = appHostOrigin(parent)
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
-  if ((url.protocol !== 'https:' && !(url.protocol === 'http:' && loopback)) || url.username || url.password || url.origin === host.origin || url.search || url.hash) {
+  if ((url.protocol !== 'https:' && !(url.protocol === 'http:' && loopback)) || url.username || url.password || url.origin === hostOrigin || url.search || url.hash) {
     throw new Error('Apps require a separate HTTPS sandbox origin (HTTP is allowed on localhost).')
   }
   url.pathname = '/sandbox.html'
-  url.searchParams.set('parent', host.origin)
+  url.searchParams.set('parent', hostOrigin)
   url.searchParams.set('csp', JSON.stringify(csp))
   return url
 }
@@ -44,7 +57,7 @@ export class AppFrameTransport {
 }
 
 export async function connectApp (frame, app, sandbox, { context, resize, ready, error, openLink }) {
-  const address = sandboxAddress(sandbox, window.location.origin, app.csp || {})
+  const address = sandboxAddress(sandbox, window.location.href, app.csp || {})
   const bridge = new AppBridge(null, { name: 'Denkzeug', version: '1' }, { openLinks: {} }, { hostContext: context })
   let closed = false, delivered = false, resourcesSent = false
   const fail = () => { if (!closed) error('The app could not initialize. Your original result is still available.') }

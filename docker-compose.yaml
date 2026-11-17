@@ -134,6 +134,7 @@ services:
     environment:
       DENKZEUG_PUBLIC_URL: ${DENKZEUG_PUBLIC_URL:-${APP_URL:-}}
       MCP_APPS_HOST_ORIGINS: ${MCP_APPS_HOST_ORIGINS:-}
+      MCP_APPS_INCLUDE_NATIVE_ORIGINS: ${MCP_APPS_INCLUDE_NATIVE_ORIGINS:-true}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8092/healthz',timeout=4).read()"]
       interval: 30s

@@ -17,8 +17,13 @@ MCP_APPS_HOST_ORIGINS=https://denkzeug.example.net
 ```
 
 `MCP_APPS_HOST_ORIGINS` is an exact comma-separated list of allowed **embedding**
-origins. It defaults to `DENKZEUG_PUBLIC_URL`/`APP_URL` in Compose. Include every
+web origins. It defaults to `DENKZEUG_PUBLIC_URL`/`APP_URL` in Compose. Include every
 actual chat origin used by browsers, including any staging or legacy aliases.
+The exact bundled client origins are included separately by default:
+`capacitor://localhost` for desktop/iOS and `https://localhost` for Android.
+Set `MCP_APPS_INCLUDE_NATIVE_ORIGINS=false` to disable that automatic inclusion;
+then list any native origins you want to permit explicitly. Arbitrary custom
+schemes/hosts and opaque `null` parents remain forbidden.
 Configure DNS, TLS and the reverse proxy to point the sandbox origin at
 `app-sandbox:8092`, **not** the backend, website, or frontend. In Coolify, add a
 Compose domain for service `app-sandbox` selecting internal port 8092.
@@ -49,9 +54,35 @@ Use the exact hostname of the frontend (localhost and 127.0.0.1 are different
 origins). HTTP is accepted only for loopback development. Different ports provide
 origin isolation, **not cookie isolation**; a dedicated hostname/site is preferable
 in production. Host authentication cookies remain HttpOnly, and the sandbox must
-never receive application credentials or host application storage. Browser chat
-is the first supported surface; packaged clients with non-HTTP embedding origins
-need a separately reviewed origin/Permissions Policy integration.
+never receive application credentials or host application storage.
+
+### Desktop and mobile clients
+
+The host preserves the bundled origin explicitly instead of assuming every URL
+implementation can serialize a custom scheme with `URL.origin`. Parent origins
+are derived from the app page, not from its configured remote API server URL.
+Capacitor hostname and iOS/Android schemes are pinned in `capacitor.config.json`.
+Custom-scheme support is allowed only for embedding hosts—never as a sandbox
+serving URL or app resource/connect CSP domain.
+
+These are embedding permissions, **not authentication**: private snapshots still
+require the acting account, and the proxy has no API, token or account authority.
+The outer iframe stays on a different origin; the inner app remains opaque and
+has no Node, preload, account-store or OAuth bridge access. Message forwarding
+still requires the exact source window and origin. Do not allow `parent=null`,
+wildcard ancestors, disable web security or grant Node integration as a workaround.
+
+Upgrade/redeploy the `app-sandbox` service for the new host-origin support. Current
+Electron builds which already serialize `capacitor://localhost` correctly can be
+unblocked by this server update; other URL implementations may require the rebuilt
+client. Rebuild/install native clients to pick up client-side origin handling and
+platform metadata changes—updating the web server cannot replace installed assets.
+
+The native smoke uses the real Electron application, registered scheme, isolated
+preload and sandbox service to check SDK input/results, clipboard copy, safe links
+and denied Node/IPC access. A separate Chromium app-asset session checks Android's
+exact `https://localhost` origin. This is not a physical Android/iOS device test;
+WKWebView, mobile clipboard/popups and device lifecycle still need device acceptance.
 
 ## Author and version an app
 

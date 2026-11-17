@@ -14,7 +14,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { request } from '../api'
+import { request, isNative } from '../api'
 import { connectApp } from '../mcp-apps'
 import { currentTokens } from '../preferences'
 
@@ -36,7 +36,8 @@ const fallback = computed(() => {
 const linkHost = computed(() => { try { return new URL(pendingLink.value).hostname } catch { return '' } })
 const hostContext = () => ({
   theme: window.getComputedStyle(window.document.documentElement).colorScheme === 'dark' ? 'dark' : 'light',
-  displayMode: 'inline', availableDisplayModes: ['inline'], platform: 'web',
+  displayMode: 'inline', availableDisplayModes: ['inline'],
+  platform: isNative ? (globalThis.denkzeugDesktop || globalThis.nautionetteDesktop ? 'desktop' : 'mobile') : 'web',
   locale: navigator.language, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   containerDimensions: { maxHeight: 1400 },
   styles: { variables: {

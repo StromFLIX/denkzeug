@@ -5,6 +5,7 @@ import security from '../desktop/security.cjs'
 import { windowChrome, OVERLAY_HEIGHT } from '../desktop/window-chrome.cjs'
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
+import { appHostOrigin } from '../src/mcp-apps.js'
 
 const { trustedRenderer, externalURL, assetPath } = security
 
@@ -60,6 +61,16 @@ test('desktop only trusts its bundled origin and opens web URLs externally', () 
   for (const url of ['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html,test', 'ms-settings:', 'garbage']) {
     assert.equal(externalURL(url), false)
   }
+})
+
+test('MCP Apps native host serialization matches the pinned desktop/iOS/Android asset origins', () => {
+  const config = JSON.parse(readFileSync(new URL('../capacitor.config.json', import.meta.url), 'utf8'))
+  assert.equal(config.server.hostname, 'localhost')
+  assert.equal(config.server.iosScheme, 'capacitor')
+  assert.equal(config.server.androidScheme, 'https')
+  assert.equal(appHostOrigin(security.APP_ORIGIN), 'capacitor://localhost')
+  assert.equal(appHostOrigin(`${config.server.iosScheme}://${config.server.hostname}/chats/one`), 'capacitor://localhost')
+  assert.equal(appHostOrigin(`${config.server.androidScheme}://${config.server.hostname}/chats/one`), 'https://localhost')
 })
 
 test('desktop asset handler never reads outside dist', () => {

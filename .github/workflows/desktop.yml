@@ -56,6 +56,9 @@ jobs:
         # Electron bundles its own Chromium; Playwright's browser/font installer
         # is unnecessary here. Missing runtime libraries still fail this smoke.
         run: xvfb-run -a node scripts/smoke-desktop.mjs
+      - name: Test packaged MCP Apps desktop and Android-origin handshake
+        if: matrix.platform == 'linux'
+        run: xvfb-run -a node scripts/smoke-mcp-apps-desktop.mjs
       - uses: actions/upload-artifact@v7
         with:
           name: denkzeug-desktop-${{ matrix.platform }}-${{ matrix.arch }}

@@ -12,6 +12,8 @@
     }
   },
   "server": {
+    "hostname": "localhost",
+    "iosScheme": "capacitor",
     "androidScheme": "https"
   }
 }

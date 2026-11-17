@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { appHeight, sandboxAddress, externalAppLink, AppFrameTransport } from './mcp-apps.js'
+import { appHeight, appHostOrigin, sandboxAddress, externalAppLink, AppFrameTransport } from './mcp-apps.js'
 
 test('sandbox requires an isolated, credential-free secure origin', () => {
   const url = sandboxAddress('https://sandbox.example', 'https://app.example', { resourceDomains: ['https://cdn.example'] })
@@ -11,6 +11,23 @@ test('sandbox requires an isolated, credential-free secure origin', () => {
     assert.throws(() => sandboxAddress(bad, 'https://app.example'))
   }
   assert.equal(sandboxAddress('http://localhost:8092', 'http://localhost:9000').origin, 'http://localhost:8092')
+})
+
+test('bundled desktop/iOS and Android host origins never become opaque null', () => {
+  assert.equal(new URL('capacitor://localhost/chats/one').origin, 'null')
+  assert.equal(appHostOrigin('capacitor://localhost/chats/one?private=value#result'), 'capacitor://localhost')
+  assert.equal(appHostOrigin('https://localhost/chats/one'), 'https://localhost')
+  assert.equal(appHostOrigin('https://app.example/chats/one'), 'https://app.example')
+  for (const host of ['capacitor://localhost/chats/one', 'https://localhost/chats/one']) {
+    const url = sandboxAddress('https://sandbox.example', host)
+    assert.equal(url.searchParams.get('parent'), host.startsWith('capacitor:') ? 'capacitor://localhost' : 'https://localhost')
+    assert.ok(!url.href.includes('private'))
+  }
+  for (const host of ['null', 'file:///tmp/app.html', 'data:text/html,hi', 'javascript:alert(1)', 'capacitor://evil', 'capacitor://localhost.evil', 'capacitor://localhost:443', 'capacitor://user@localhost', 'http://remote.example']) {
+    assert.throws(() => appHostOrigin(host))
+  }
+  assert.throws(() => sandboxAddress('capacitor://localhost', 'https://app.example'))
+  assert.throws(() => sandboxAddress('https://localhost', 'https://localhost/chats/one'))
 })
 
 test('layout and external links are bounded', () => {
