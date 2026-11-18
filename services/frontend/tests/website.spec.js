@@ -59,8 +59,10 @@ for (const width of [1440, 390, 320]) {
 }
 
 test('evolving patterns keep the title and definition clear on desktop and phones', async ({ page }) => {
-  await website(page)
+  // Install before the site queues its first frame, so runFor advances the
+  // actual animation rather than racing an outstanding native callback.
   await page.clock.install()
+  await website(page)
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 })
     for (const [locale, advance] of [['en', 100], ['de', 3000], ['ar', 3500]]) {
@@ -90,8 +92,8 @@ test('activity reading masks follow position-only layout changes without waiting
   // A fixed field puts an active cell where the title moves. ResizeObserver does
   // not report transforms, and queued layout notifications can also lag a frame.
   await page.addInitScript(() => { crypto.getRandomValues = values => { values[0] = 2; return values } })
-  await website(page)
   await page.clock.install()
+  await website(page)
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.getByLabel('Definition language').selectOption('en')
   await page.clock.runFor(100)
