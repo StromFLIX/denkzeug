@@ -115,15 +115,16 @@ recognize audio as it arrives; Stop flushes only the remaining audio and finaliz
 an editable draft, never an automatically sent message. No cloud STT, model cleanup
 calls, provider keys or dictation feature flags. See [Chat dictation](dictation.md)
 for privacy, language selection, limits and verification.
-Open Settings with **Ctrl/Command + ,** and focus its search with **/**.
+Open Settings with **Ctrl/Command + ,** and open the Settings search filter with **/**.
 See [Frontend design system](frontend-design.md) for the extension points,
 persistence model and testing guidance.
 
-## Conversation search
+## Workspace search
 
-On desktop, **Ctrl/Command + K** opens chat and settings search. Chats use **SQLite
-FTS5 + sqlite-vec** to search titles and full saved conversations by words and
-meaning. Results include matching passages and jump to the relevant message.
+**Ctrl/Command + K** opens workspace search. **Search chats**, **Search workflows**,
+**Search runs**, and **Search settings** open the same screen with a filter already
+selected. On mobile, use the same search buttons. Chats use **SQLite FTS5 + sqlite-vec**
+to search titles and full saved conversations by words and meaning. Results include matching passages and jump to the relevant message.
 Embeddings run locally on CPU with a pinned model bundled in the backend image;
 no provider key or separate search server is needed. Keyword search remains
 available during background semantic indexing. See [Conversation search](conversation-search.md)

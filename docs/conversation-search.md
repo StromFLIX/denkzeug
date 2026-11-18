@@ -1,12 +1,23 @@
-# Conversation search
+# Workspace and conversation search
 
-On desktop, **Ctrl/Command + K** or **Expand chat search** opens the global palette.
-A non-empty query searches every saved chat, independent of sidebar agent/activity
-filters and the sidebar's 200-chat list. Settings keep their existing local search.
-An empty query still shows recent chats. The compact mobile sidebar filter is
-unchanged; it remains a local title/latest-preview filter.
+**Ctrl/Command + K** opens workspace search at **All**. The search buttons in
+Chats, Workflows, Runs, and Settings open the same palette with the corresponding
+filter selected. Changing filters keeps the query. On phones the palette fills
+normal app space and the results scroll beneath the search box and filters.
 
-## What is searched
+**All** combines chats, workflows, runs, and settings. A non-empty chat query searches
+all saved chats the account can access, independent of the sidebar's agent or
+activity filters and its limited recent list. Chats use keyword and semantic
+ranking. Workflows (including visible drafts) and settings match their metadata;
+Runs search saved run IDs and workflow names through the paginated run API. The
+Runs entry point starts with its active workflow, status and trigger filters.
+Selecting a result opens the relevant message, workflow, run, or setting.
+
+The **Pi packages** filter is an explicit opt-in search of the public npm catalog.
+Typing in **All**, **Settings**, or any other filter never sends that query to npm.
+Package results open the installation form but don't install anything automatically.
+
+## What is searched in chats
 
 - Chat titles and complete saved **user/assistant message content**.
 - FTS5 provides case/diacritic-insensitive, word-prefix keyword search. All query
@@ -53,7 +64,8 @@ bounded semantic budget, a small query-vector cache, and keyword fallback while
 the model is loading, busy, disabled, or unavailable. The UI shows indexing/loading
 state. If the search API itself fails, the palette explicitly reports that only
 local title/latest-preview matches are being shown. Requests are debounced and
-cancelled when a query, scope, or dialog changes; stale responses are ignored.
+cancelled when the query or dialog changes, or a filter excludes their result type.
+Switching between **All** and **Chats** keeps the same chat request and ranking.
 
 Embeddings and indexed text are part of the backend database backup. Deleting a
 message/chat removes its indexed text and vector rows in the same transaction.
@@ -112,5 +124,5 @@ SEARCH_TEST_MODEL_CACHE=/tmp/search-model uv run python -c \
 SEARCH_TEST_MODEL_CACHE=/tmp/search-model uv run pytest tests/backend/test_chat_search_model.py
 cd services/frontend
 npm test
-npx playwright test tests/command-palette.spec.js tests/hybrid-search.spec.js
+npx playwright test tests/command-palette.spec.js tests/hybrid-search.spec.js tests/mobile-design.spec.js
 ```

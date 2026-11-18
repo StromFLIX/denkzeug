@@ -4,7 +4,7 @@
       <div class="row side__heading">
         <h1 class="side__title grow truncate" :title="heading">{{ heading }}</h1>
         <button
-          v-if="showCollapseButton" type="button" class="btn btn--icon"
+          v-if="!mobile" type="button" class="btn btn--icon"
           aria-label="Collapse sidebar" title="Collapse sidebar"
           aria-expanded="true" aria-controls="shell-sidebar"
           @click="$emit('collapse-sidebar')"
@@ -15,7 +15,7 @@
           v-if="section === 'chats'" type="button" class="btn btn--icon"
           :class="{ 'side__filter--active': groupBy !== 'none' || activeMinutes }"
           aria-label="Group" title="Group and filter chats"
-          :aria-expanded="showGroupControls" aria-controls="chat-group-controls"
+          :aria-expanded="showGroupControls" :aria-controls="mobile ? undefined : 'chat-group-controls'" :aria-haspopup="mobile ? 'dialog' : undefined"
           @click="showGroupControls = !showGroupControls"
         >
           <span class="material-icons" aria-hidden="true">tune</span>
@@ -41,17 +41,18 @@
           <span v-if="health !== 'ok'" class="dot side__cog-dot" :class="{ 'dot--bad': health === 'degraded' }" />
         </RouterLink>
       </div>
-      <div class="side__search">
-        <span class="material-icons">search</span>
-        <input v-model="query" class="side__search-input" :placeholder="`Search ${section}`" :aria-label="`Search ${section}`" />
-        <button v-if="section === 'chats'" type="button" class="side__search-expand" aria-label="Expand chat search" title="Search chats and settings (⌘K / Ctrl+K)" aria-keyshortcuts="Meta+K Control+K" @click="$emit('open-search', query)">
-          <kbd>{{ searchShortcut }}</kbd>
-        </button>
-        <button v-if="query" class="btn btn--icon btn--sm" aria-label="Clear search" @click="query = ''">
-          <span class="material-icons" style="font-size: 1rem">close</span>
-        </button>
+      <WorkspaceSearchButton class="side__search" :scope="section" :label="`Search ${section}`" :shortcut="mobile ? '' : searchShortcut" />
+      <div v-if="mobile && filterSummary.length" class="side__filter-summary">
+        <span v-for="filter in filterSummary" :key="filter" class="chip">{{ filter }}</span>
       </div>
-      <div v-if="section === 'chats'" v-show="showGroupControls" id="chat-group-controls" class="side__controls">
+      <template v-if="section === 'chats'">
+      <component v-if="mobile || showGroupControls" :is="mobile ? QDialog : 'div'"
+        v-bind="mobile ? { modelValue: showGroupControls, position: 'bottom', 'aria-label': 'Chat list filters' } : {}" @update:model-value="showGroupControls = $event">
+      <div id="chat-group-controls" class="side__controls" :class="{ 'side__controls--sheet': mobile }">
+        <div v-if="mobile" class="side__sheet-head">
+          <h2>Chat list filters</h2>
+          <button type="button" class="btn btn--icon" aria-label="Close filters" @click="showGroupControls = false"><span class="material-icons" aria-hidden="true">close</span></button>
+        </div>
         <div class="side__control">
           <span class="side__control-label">Group</span>
           <div class="seg" role="group" aria-label="Group chats by">
@@ -72,7 +73,10 @@
             >{{ opt.label }}</button>
           </div>
         </div>
+        <button v-if="mobile" type="button" class="btn btn--primary side__done" @click="showGroupControls = false">Show chats</button>
       </div>
+      </component>
+      </template>
     </header>
 
     <div class="side__list scroll-y grow" :class="{ 'side__list--grouped': section === 'chats' && groupBy !== 'none' }">
@@ -85,7 +89,7 @@
           </h2>
 
           <ChatTree v-for="chat in group.chats" :key="chat.id" :node="chat.treeNode"
-            :expanded="query.trim() ? searchExpandedChats : expandedChats"
+            :expanded="expandedChats"
             :active-route-id="route.params.id" :read-busy="readBusy"
             @toggle-tree="toggleChatTree" @toggle-unread="setUnread" />
         </div>
@@ -99,7 +103,7 @@
         </button>
         <p v-if="readError" class="side__error caption" role="alert">{{ readError }}</p>
         <p v-if="!filteredChats.length" class="side__empty caption">
-          {{ query ? 'Nothing matches that.' : 'No chats yet.' }}
+          No chats yet.
         </p>
         <p v-else-if="!visibleCount && !showOlder" class="side__empty caption">
           Nothing active in the last {{ activeLabel }}.
@@ -110,10 +114,10 @@
       <!-- workflows -->
       <template v-else-if="section === 'workflows'">
         <RouterLink to="/workflows?view=runs" class="row-item" :class="{ 'row-item--active': route.query.view === 'runs' }"><span class="material-icons" aria-hidden="true">history</span><span>All runs</span></RouterLink>
-        <template v-if="filteredDrafts.length">
+        <template v-if="store.drafts.length">
           <div class="side__group section-label">Waiting for review</div>
           <RouterLink
-            v-for="draft in filteredDrafts" :key="draft.name" :to="`/workflows/${draft.name}`"
+            v-for="draft in store.drafts" :key="draft.name" :to="`/workflows/${draft.name}`"
             class="row-item" :class="{ 'row-item--active': route.params.name === draft.name }"
           >
             <div class="avatar avatar--square avatar--draft">
@@ -129,7 +133,7 @@
         </template>
 
         <RouterLink
-          v-for="workflow in filteredWorkflows" :key="workflow.name" :to="`/workflows/${workflow.name}`"
+          v-for="workflow in workflowRows" :key="workflow.name" :to="`/workflows/${workflow.name}`"
           class="row-item" :class="{ 'row-item--active': route.params.name === workflow.name }"
         >
           <div class="avatar avatar--square avatar--workflow">
@@ -151,9 +155,7 @@
             </div>
           </div>
         </RouterLink>
-        <p v-if="!filteredWorkflows.length && !filteredDrafts.length" class="side__empty caption">
-          {{ query ? 'Nothing matches that.' : 'No workflows yet.' }}
-        </p>
+        <p v-if="!store.workflows.length && !store.drafts.length" class="side__empty caption">No workflows yet.</p>
       </template>
 
     </div>
@@ -163,6 +165,8 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { QDialog } from 'quasar'
+import WorkspaceSearchButton from './WorkspaceSearchButton.vue'
 import { scheduleTime } from '../format'
 import { nextWorkflowSchedule, workflowSchedules } from '../workflow-schedules'
 import { actions, health, store } from '../store'
@@ -176,15 +180,13 @@ import { belongsToAgent } from '../agent-config'
 import { chatLocation } from '../router'
 
 const props = defineProps({
-  showCollapseButton: { type: Boolean, default: false },
+  mobile: Boolean,
   isChatActive: { type: Function, required: true }
 })
-defineEmits(['collapse-sidebar', 'open-search'])
-defineExpose({ getChatQuery: () => section.value === 'chats' ? query.value : '' })
+defineEmits(['collapse-sidebar'])
 
 const route = useRoute()
 const router = useRouter()
-const query = ref('')
 const searchShortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 const readBusy = ref('')
 const readError = ref('')
@@ -211,13 +213,11 @@ const activeLabel = computed(() =>
   ({ 60: 'hour', 1440: '24 hours', 10080: '7 days', 43200: '30 days' }[activeMinutes.value] || 'selected range'))
 
 const expandedChats = ref(new Set())
-const searchExpandedChats = ref(new Set())
 function toggleChatTree (id) {
-  const expansion = query.value.trim() ? searchExpandedChats : expandedChats
-  const next = new Set(expansion.value)
+  const next = new Set(expandedChats.value)
   if (next.has(id)) next.delete(id)
   else next.add(id)
-  expansion.value = next
+  expandedChats.value = next
 }
 
 // Reveal the selected conversation on direct navigation, but let users collapse
@@ -257,29 +257,20 @@ const section = computed(() => route.meta.section || route.name || 'chats')
 const selectedAgent = computed(() => section.value === 'chats' ? store.agentNavigation.agents.find(agent => agent.id === route.query.agent) : null)
 const heading = computed(() => selectedAgent.value?.name || ({ chats: 'Chats', workflows: 'Workflows', runs: 'Runs' }[section.value]))
 
-const matches = (haystack) => haystack.toLowerCase().includes(query.value.trim().toLowerCase())
+const filterSummary = computed(() => section.value === 'chats' ? [
+  groupBy.value !== 'none' && `Grouped by ${groupOptions.find(item => item.value === groupBy.value)?.label.toLowerCase()}`,
+  activeMinutes.value && `Active: ${activeOptions.find(item => item.value === activeMinutes.value)?.label}`
+].filter(Boolean) : [])
 
 const filteredChats = computed(() =>
-  filterChatForest(chatForest(store.chats), chat =>
-    belongsToAgent(chat, route.query.agent) && matches(`${chat.title} ${chat.last_message?.preview || ''}`))
+  filterChatForest(chatForest(store.chats), chat => belongsToAgent(chat, route.query.agent))
     .map(treeNode => ({ ...treeNode.summary, treeNode })))
+watch([section, () => props.mobile], () => { showGroupControls.value = false })
 
-// Search reveals context paths without discarding the normal disclosure state.
-// Track IDs rather than reactive objects so list polling cannot reopen a tree.
-watch(() => JSON.stringify([query.value.trim(), filteredChats.value.flatMap(chat =>
-  chatTreeRows(chat.treeNode, new Set(), true).filter(node => node.children.length).map(node => node.chat.id))]), () => {
-  searchExpandedChats.value = new Set(filteredChats.value.flatMap(chat =>
-    chatTreeRows(chat.treeNode, new Set(), true).filter(node => node.children.length).map(node => node.chat.id)))
-}, { immediate: true })
-
-const filteredWorkflows = computed(() =>
-  store.workflows.filter((workflow) => matches(`${workflow.name} ${workflow.title || ''} ${workflow.description || ''}`)).map(workflow => {
-    const schedules = workflowSchedules(workflow)
-    return { ...workflow, nextSchedule: nextWorkflowSchedule(schedules), scheduleCount: schedules.length }
-  }))
-
-const filteredDrafts = computed(() =>
-  store.drafts.filter((draft) => matches(`${draft.name} ${draft.description || ''}`)))
+const workflowRows = computed(() => store.workflows.map(workflow => {
+  const schedules = workflowSchedules(workflow)
+  return { ...workflow, nextSchedule: nextWorkflowSchedule(schedules), scheduleCount: schedules.length }
+}))
 
 async function startChat () {
   // Keep the list beneath the draft even if clicked during initial lazy routing.
@@ -340,61 +331,21 @@ function refresh () {
   border: 2px solid var(--surface-panel);
 }
 
-.side__search {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 6px 0 10px;
-  min-height: 40px;
-  margin-top: 18px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-raised);
-  border: 1px solid var(--border-strong);
-  transition: border-color var(--transition);
-}
-
-.side__search:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft);
-}
-
-.side__search .material-icons {
-  font-size: 1.0625rem;
-  color: var(--text-dim);
-}
-
-.side__search-input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  background: none;
-  outline: none;
-  color: var(--text);
-  font: inherit;
-  font-size: 0.8125rem;
-}
-
-.side__search-input::placeholder {
-  color: var(--text-muted);
-  opacity: 1;
-}
-@media (pointer: coarse) {
-  .side__search { min-height: 44px; }
-  .side__search-input { font-size: max(16px, .8125rem); }
-}
-
-.side__search-expand { display: flex; flex: none; padding: 2px; border: 0; background: transparent; color: var(--text-dim); cursor: pointer; }
-.side__search-expand:hover { color: var(--accent); }
-.side__search-expand kbd { font-size: 0.6875rem; white-space: nowrap; }
-@media (max-width: 900px) {
-  .side__search-expand { display: none; }
-}
+.side__search { margin-top: 18px; }
+.side__filter-summary { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+@media (max-height: 420px) { .side__search { margin-top: 8px; } }
 
 .side__controls {
   display: grid;
   gap: 6px;
   padding: 8px 2px 0;
 }
+
+.side__controls--sheet { width: min(100%, 560px); max-height: min(75dvh, 500px); overflow-y: auto; overscroll-behavior-y: contain; gap: 12px; padding: 12px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); background: var(--surface-overlay); }
+.side__sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.side__sheet-head h2 { font-size: 1rem; font-weight: 600; }
+.side__controls--sheet .seg__btn { min-height: 44px; }
+.side__done { min-height: 44px; }
 
 .side__control {
   display: flex;

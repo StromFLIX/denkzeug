@@ -1,6 +1,6 @@
 import { test, expect } from './account-fixture.js'
 import { mockAgents, projectId } from './agent-fixture.js'
-import { openChatConfiguration, closeChatConfiguration } from './helpers.js'
+import { openChatConfiguration, closeChatConfiguration, searchWorkspace, workspaceSearch } from './helpers.js'
 
 async function dismiss (page) {
   await page.keyboard.press('Escape')
@@ -392,8 +392,8 @@ test('new settings are searchable and deep-link to their controls', async ({ pag
   await mockAgents(context)
   await page.goto('/settings/general')
   for (const [query, target] of [['default reasoning', 'default-reasoning'], ['default projects', 'default-projects'], ['saved agents', 'agent-profiles']]) {
-    await page.getByRole('searchbox', { name: 'Search settings' }).fill(query)
-    await page.getByRole('region', { name: 'Settings search results' }).getByRole('link').first().click()
+    await searchWorkspace(page, 'settings', query)
+    await workspaceSearch(page).getByRole('option').first().click()
     await expect(page.locator(`#${target}`)).toBeVisible()
     await expect(page).toHaveURL(new RegExp(`#${target}$`))
   }

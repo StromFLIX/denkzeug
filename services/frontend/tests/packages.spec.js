@@ -1,4 +1,5 @@
 import { test, expect } from './account-fixture.js'
+import { searchWorkspace, workspaceSearch } from './helpers.js'
 import { mockAgents } from './agent-fixture.js'
 import { closeChatConfiguration } from './helpers.js'
 
@@ -172,11 +173,14 @@ test('shared search links to a source installation, with retryable registry outa
   const { state, writes } = await mockPackages(context)
   state.searchFailure = true
   await page.goto('/settings/general')
-  await page.getByRole('searchbox', { name: 'Search settings' }).fill('pi')
-  await expect(page.getByRole('alert')).toContainText('npm package search is unavailable')
+  const field = await searchWorkspace(page, 'settings', 'pi')
+  const dialog = workspaceSearch(page)
+  await dialog.getByRole('button', { name: 'Pi packages', exact: true }).click()
+  await expect(field).toHaveValue('pi')
+  await expect(dialog.getByRole('alert')).toContainText('npm package search is unavailable')
   state.searchFailure = false
-  await page.getByRole('button', { name: 'Retry', exact: true }).click()
-  await page.getByRole('button', { name: 'View package', exact: true }).click()
+  await dialog.getByRole('button', { name: 'Retry', exact: true }).click()
+  await dialog.getByRole('option', { name: 'pi-test-prompts', exact: true }).click()
   await expect(page).toHaveURL(/\/settings\/packages\?source=/)
   await expect(page.getByLabel('Package source', { exact: true })).toHaveValue('npm:pi-test-prompts@1.2.3')
   await page.getByRole('button', { name: 'Install source', exact: true }).click()

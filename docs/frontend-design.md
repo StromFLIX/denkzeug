@@ -54,8 +54,9 @@ Scope is explicit: **Instance**, **This device**, or **Per workflow**. Individua
 entries can override their section's scope. Automation links to the actual
 workflow's Run controls rather than duplicating scheduling or delivery forms.
 
-Keyboard entry points are **Ctrl/Command + ,** for Settings and **/** to focus its
-search field. On narrow screens, a grouped category selector replaces the tree.
+**Ctrl/Command + ,** opens Settings. **/** or **Search settings** opens workspace
+search with the Settings filter selected; **Ctrl/Command + K** opens it at All.
+On narrow screens, a grouped category selector replaces the tree.
 
 **Run & manage → Usage** shows token composition, a time chart and filtered
 model/agent/workflow/account breakdowns. Workflow drilldowns show runs; members
@@ -151,8 +152,9 @@ off the switch to restore filtering solely by activity, running and unread state
 Both controls are in **Settings → Workspace → Chat list**, saved per device and
 restored to their defaults by **Reset workspace**.
 
-Retention only bypasses the activity window: search, grouping and completed-activity order
-still apply. The app shell owns transient, per-tab selection history so moving
+Retention only bypasses the activity window: grouping and completed-activity order
+still apply. Workspace search is independent of the list and activity window.
+The app shell owns transient, per-tab selection history so moving
 to Settings (which unmounts the sidebar), another section or the mobile chat list
 counts as leaving the chat without losing or restarting the timer. Reloading
 clears that transient history, but an open chat is immediately retained again.

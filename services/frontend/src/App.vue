@@ -13,7 +13,7 @@
     <AgentRail v-if="showAgentRail" v-show="!sideCollapsed" class="shell__agents" />
     <template v-if="!fullPage">
       <aside v-show="!sideCollapsed" data-skin-part="sidebar" id="shell-sidebar" class="shell__side" :style="{ width: `${sideWidth}px` }">
-        <SidePanel ref="sidePanel" :show-collapse-button="!mobile" :is-chat-active="isChatActive" @collapse-sidebar="collapseSidebar" @open-search="openSearch" />
+        <SidePanel :mobile="mobile" :is-chat-active="isChatActive" @collapse-sidebar="collapseSidebar" />
         <div
           class="shell__grip"
           :class="{ 'shell__grip--active': dragging }"
@@ -29,7 +29,7 @@
       <RouterView />
     </main>
 
-    <CommandPalette v-model="searchOpen" :initial-query="searchQuery" />
+    <CommandPalette v-model="searchOpen" :entry="searchEntry" :mobile="mobile" />
     <McpLoginDialog />
 
   </div>
@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EnvironmentBanner from './components/EnvironmentBanner.vue'
 import NavRail from './components/NavRail.vue'
@@ -53,6 +53,7 @@ import { actions, store } from './store'
 import { currentTokens, preferences } from './preferences'
 import { syncSystemBars } from './system-bars'
 import { useChatActivity } from './chat-activity'
+import { provideWorkspaceSearch } from './workspace-search.js'
 
 const desktopOverlay = (globalThis.denkzeugDesktop || globalThis.nautionetteDesktop)?.windowControlsOverlay === true
 const DEFAULT_WIDTH = 320
@@ -61,9 +62,8 @@ const router = useRouter()
 const selectedChatId = computed(() => route.name === 'chats' ? route.params.id || '' : '')
 const isChatActive = useChatActivity(selectedChatId, preferences, () => route.fullPath)
 const navRail = ref(null)
-const sidePanel = ref(null)
 const searchOpen = ref(false)
-const searchQuery = ref('')
+const searchEntry = ref({ scope: 'all' })
 const sideWidth = computed({ get: () => preferences.sideWidth, set: value => { preferences.sideWidth = value } })
 const dragging = ref(false)
 const authFragment = ref(initialAuthFragment)
@@ -130,20 +130,21 @@ function resizeKeys (event) {
   else sideWidth.value = Math.min(560, Math.max(260, sideWidth.value + (event.key === 'ArrowRight' ? 10 : -10)))
 }
 
-async function openSearch (query = sidePanel.value?.getChatQuery() || '') {
-  // The sidebar can paint before initial lazy routing has settled.
-  await router.isReady()
-  await nextTick()
-  if (mobile.value || gate.value) return
-  searchQuery.value = query
+function openSearch (scope = 'all', options = {}) {
+  if (gate.value) return
+  searchEntry.value = { ...options, scope }
   searchOpen.value = true
 }
-
-watch([mobile, gate], ([narrow, gated]) => { if (narrow || gated) searchOpen.value = false })
+provideWorkspaceSearch(openSearch)
+watch([gate, () => account.epoch], () => { searchOpen.value = false })
 
 function shortcuts (event) {
-  if (event.defaultPrevented || event.isComposing) return
-  if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'k' && !mobile.value && !gate.value) {
+  if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return
+  if (!gate.value && !searchOpen.value && route.name === 'settings' && event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey &&
+      !event.target.closest?.('input, textarea, select, [contenteditable], [role="dialog"]')) {
+    event.preventDefault()
+    if (!event.repeat) openSearch('settings')
+  } else if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'k' && !gate.value) {
     event.preventDefault()
     if (event.repeat) return
     if (searchOpen.value) searchOpen.value = false

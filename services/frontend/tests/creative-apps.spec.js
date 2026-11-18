@@ -1,4 +1,5 @@
 import { test, expect } from './account-fixture.js'
+import { searchWorkspace, workspaceSearch } from './helpers.js'
 import { mockAgents } from './agent-fixture.js'
 
 const names = ['PhotoCraft', 'VectorCraft', 'FilmCraft', 'LightCraft', 'PdfCraft', 'EffectCraft', 'DesignCraft', 'FigCraft', 'WordCraft', 'SoundCraft', 'DeckCraft', 'CADCraft', 'GridCraft']
@@ -188,8 +189,8 @@ test('an open pane follows background checks and updates from other clients with
 test('settings search discovers native apps without visiting the pane first', async ({ page, context }) => {
   await mockApps(context)
   await page.goto('/settings/general')
-  await page.getByRole('searchbox', { name: 'Search settings', exact: true }).fill('CADCraft')
-  await page.getByRole('link').filter({ hasText: 'ArtCraft applications' }).click()
+  await searchWorkspace(page, 'settings', 'CADCraft')
+  await workspaceSearch(page).getByRole('option', { name: 'ArtCraft applications', exact: true }).click()
   await expect(page).toHaveURL(/\/settings\/creative-apps#creative-apps/)
   await expect(page.getByRole('article', { name: 'CADCraft', exact: true })).toBeVisible()
 })

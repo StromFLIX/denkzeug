@@ -1,4 +1,5 @@
 import { test, expect } from './account-fixture.js'
+import { searchWorkspace, workspaceSearch } from './helpers.js'
 import { mockAgents } from './agent-fixture.js'
 import { openChatConfiguration, closeChatConfiguration } from './helpers.js'
 import { THEMES, resolveTheme, contrastRatio } from '../src/themes.js'
@@ -57,9 +58,10 @@ for (const width of [1440, 390, 320]) {
     await select(page, 'Ada')
     await expect(rows(page)).toHaveCount(2)
     await expect(rows(page).filter({ hasText: 'Research discussion' })).toHaveCount(1)
-    await page.getByRole('textbox', { name: 'Search chats' }).fill('Customized')
-    await expect(rows(page)).toHaveCount(1)
-    await page.getByRole('button', { name: 'Clear search' }).click()
+    const search = await searchWorkspace(page, 'chats', 'Customized')
+    await expect(workspaceSearch(page).getByRole('option', { name: /Customized/ })).toBeVisible()
+    await search.press('Escape')
+    await expect(rows(page)).toHaveCount(2)
     await page.reload()
     await expect(page.getByRole('button', { name: 'Chats with Ada' })).toHaveAttribute('aria-pressed', 'true')
     await expect(rows(page)).toHaveCount(2)
@@ -133,10 +135,10 @@ for (const width of [1440, 390, 320]) {
     await expect(ada.locator('.agent-activity__badge--queued')).toHaveText('1')
     await expect(grace).toHaveAccessibleDescription('1 agent running · 120 messages waiting')
     // These are server-wide counts, unaffected by list scope or search.
-    await page.getByRole('textbox', { name: 'Search chats' }).fill('No matches')
-    await expect(rows(page)).toHaveCount(0)
+    const search = await searchWorkspace(page, 'chats', 'No matches')
+    await expect(workspaceSearch(page)).toContainText('No results')
+    await search.press('Escape')
     await expect(all(page)).toHaveAccessibleDescription('4 agents running · 123 messages waiting')
-    await page.getByRole('button', { name: 'Clear search' }).click()
     await select(page, writer.name)
     await expect(ada).toHaveAccessibleDescription('2 agents running · 1 message waiting')
     await page.screenshot({ path: test.info().outputPath(`agent-activity-${width}.png`), fullPage: true })

@@ -35,9 +35,8 @@
   </section>
   <section v-if="tab === 'discover'" aria-label="Discover packages">
     <p class="caption library-warning">Third-party extensions run with the agent’s access to tools, projects and supplied secrets. Only install code you trust. Terminal-only UI, interactive setup and background work across turns are not supported.</p>
-    <label class="setting__label" for="package-query">Search packages</label>
-    <input id="package-query" v-model="query" class="field library-query" type="search" placeholder="Search the Pi npm catalog…" />
-    <PackageSearch :query="query" action-label="Install" :disabled="busy" :installations="installations" @select="install($event)" />
+    <WorkspaceSearchButton label="Search Pi packages" scope="packages" />
+    <PackageSearch action-label="Install" :disabled="busy" :installations="installations" @select="install($event)" />
     <details class="settings-disclosure library-source" :open="Boolean(source)">
       <summary>Install from npm or public GitHub</summary>
       <div class="library-source__body">
@@ -54,9 +53,10 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '../../api'
 import PackageSearch from './PackageSearch.vue'
+import WorkspaceSearchButton from '../WorkspaceSearchButton.vue'
 import PackageConfiguration from './PackageConfiguration.vue'
 const route = useRoute()
-const tab = ref('installed'), installations = ref([]), revisions = ref({}), source = ref(''), query = ref(''), allowScripts = ref(false), busy = ref(false), loading = ref(true), error = ref('')
+const tab = ref('installed'), installations = ref([]), revisions = ref({}), source = ref(''), allowScripts = ref(false), busy = ref(false), loading = ref(true), error = ref('')
 let timer, disposed = false
 watch(() => route.query.source, value => { if (typeof value === 'string' && value) { source.value = value; tab.value = 'discover' } }, { immediate: true })
 function resources (item) { return Object.keys(item.metadata?.resources || {}).join(' · ') || item.source }
@@ -105,7 +105,6 @@ onUnmounted(() => { disposed = true; clearTimeout(timer) })
 .library-card pre { max-height: 180px; overflow: auto; font-size: 0.6875rem; }
 .library-next { margin-top: 24px; line-height: 1.7; }
 .library-warning { padding: 12px 14px; border-radius: var(--radius-sm); background: var(--warning-soft); color: var(--text-muted); margin: 0 0 20px; }
-.library-query { width: 100%; }
 .library-source { margin-top: 24px; }
 .library-source__body { padding: 4px 0 16px 24px; }
 .library-source__input { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 14px; }

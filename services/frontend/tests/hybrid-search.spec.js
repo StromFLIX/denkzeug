@@ -1,13 +1,12 @@
 import { test, expect } from './account-fixture.js'
 import { mockDesign } from './design-fixture.js'
 
-const palette = page => page.getByRole('dialog', { name: 'Search chats and settings', exact: true })
-const search = page => palette(page).getByRole('combobox', { name: 'Search chats and settings' })
+import { workspaceSearch as palette, workspaceQuery as search } from './helpers.js'
 const result = (extra = {}) => ({ chat_id: 'alpha', title: 'Design review', message_id: 'question', excerpt: 'A passage from an older message', match: 'keyword', ...extra })
 const response = (results, state = 'ready') => ({ results, semantic: { state, pending: state === 'indexing' ? 100 : 0 } })
 
 async function open (page) {
-  await expect(page.getByRole('button', { name: 'Expand chat search', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Search chats', exact: true })).toBeVisible()
   await page.keyboard.press('Control+k')
   await expect(search(page)).toBeFocused()
 }

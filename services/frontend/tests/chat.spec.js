@@ -1,6 +1,6 @@
 import { test, expect, fulfillAccount } from './account-fixture.js'
 import { createSSEFixture, snapshotFrame } from './sse-fixture.js'
-import { openChatConfiguration, closeChatConfiguration } from './helpers'
+import { openChatConfiguration, closeChatConfiguration, searchWorkspace, workspaceSearch } from './helpers'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 
 function refreshReadState (data) {
@@ -398,7 +398,7 @@ test('agent timeout exemption reports failed saves without showing it as enabled
   expect(state.chats.alpha.chat.timeout_exempt).toBeFalsy()
 })
 
-test('opening an old unread chat keeps it in the grouped list after acknowledgement without bypassing search', async ({ page, context }) => {
+test('opening an old unread chat keeps it in the grouped list without affecting search results', async ({ page, context }) => {
   const state = await filteredChats(context, { chatGroupBy: 'project' })
   const timestamp = state.chats.alpha.chat.updated_at
   state.chats.alpha.messages = [{ id: 'reply', role: 'assistant', content: 'Please read this old reply', meta: {} }]
@@ -414,10 +414,9 @@ test('opening an old unread chat keeps it in the grouped list after acknowledgem
   await expect(alpha).toHaveClass(/row-item--active/)
   await expect(page.locator('.side__group-count')).toHaveText('2 chats')
   await expect(page.getByRole('button', { name: 'Show 1 older', exact: true })).toHaveCount(0)
-  const search = page.getByRole('textbox', { name: 'Search chats', exact: true })
-  await search.fill('beta')
-  await expect(alpha).toHaveCount(0)
-  await search.fill('')
+  const search = await searchWorkspace(page, 'chats', 'beta')
+  await expect(workspaceSearch(page).getByRole('option', { name: /alpha/i })).toHaveCount(0)
+  await search.press('Escape')
   await expect(alpha).toBeVisible()
   expect(state.chats.alpha.chat.updated_at).toBe(timestamp)
 })

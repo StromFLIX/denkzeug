@@ -1,4 +1,5 @@
 import { expect, test, fixtureAccount } from './account-fixture.js'
+import { searchWorkspace, workspaceSearch } from './helpers.js'
 import { mockDesign } from './design-fixture.js'
 
 async function setup (page, context, { member = false, empty = false, clipboardFails = false } = {}) {
@@ -61,9 +62,9 @@ for (const width of [1440, 390]) {
     await page.goto('/settings/api-keys')
     await expect(page.getByRole('heading', { name: 'API keys', exact: true })).toBeVisible()
     await expect(page.getByText('No keys yet', { exact: true })).toBeVisible()
-    await page.getByRole('searchbox', { name: 'Search settings' }).fill('webhook revoke')
-    await expect(page.getByRole('link', { name: /Webhook tokens/ })).toBeVisible()
-    await page.getByRole('searchbox', { name: 'Search settings' }).press('Escape')
+    const search = await searchWorkspace(page, 'settings', 'webhook revoke')
+    await expect(workspaceSearch(page).getByRole('option', { name: /Webhook tokens/ })).toBeVisible()
+    await search.press('Escape')
     await page.getByRole('button', { name: 'Create API key', exact: true }).click()
     const dialog = page.locator('.q-dialog')
     await expect(dialog.getByLabel('Expires in (days)')).toHaveValue('90')

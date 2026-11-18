@@ -1,6 +1,7 @@
 <template>
   <div class="composer" data-skin-part="composer" :class="[`composer--${variant}`, { 'composer--focus': focused && !configurationOpen, 'composer--running': running && !configurationOpen, 'composer--configuration': configurationOpen }]">
     <div v-show="!configurationOpen" class="composer__draft" @dragover.prevent @drop.prevent="drop" @paste="paste">
+    <div class="composer__editor scroll-y">
     <div v-if="attachments.length" class="composer__attachments">
       <div v-for="image in attachments" :key="image.id" class="composer__attachment">
         <ChatAttachment :attachment="image" />
@@ -25,6 +26,7 @@
       @beforeinput="(busy || voiceActive) && $event.preventDefault()" @input="onInput"
       @focus="focused = true" @blur="focused = false" @keydown="onKeydown" />
 
+    </div>
     <input ref="fileInput" type="file" :disabled="busy" multiple hidden @change="chooseFiles" />
     <div class="composer__bar">
       <button class="pick pick--icon" type="button" :disabled="busy" :title="attachmentNotice" aria-label="Attach files" @click="fileInput?.click()">
@@ -299,9 +301,10 @@ defineExpose({
 <style scoped>
 .composer { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; max-height: 100%; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--surface-panel); transition: border-color var(--transition), box-shadow var(--transition); }
 /* Keep the draft mounted so switching views preserves text, attachments and height. */
-.composer__draft { display: flex; flex-direction: column; min-height: 0; }
+.composer__draft, .composer__editor { display: flex; flex-direction: column; min-height: 0; }
+.composer__editor > * { flex-shrink: 0; }
 .composer--configuration { overflow: hidden; }
-.composer--docked .composer__input { flex: 0 1 auto; min-height: calc(var(--chat-font-size) * 1.6 + 28px); }
+.composer--docked .composer__input { min-height: calc(var(--chat-font-size) * 1.6 + 28px); }
 .composer--focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .composer--welcome { border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
 .composer--running { border-color: var(--agent-color); box-shadow: 0 0 0 1px var(--accent-soft); }
@@ -368,11 +371,27 @@ defineExpose({
 .composer__configuration-foot a { display: flex; align-items: center; gap: 4px; color: var(--text-muted); text-decoration: none; }
 .composer__configuration-foot .material-icons { font-size: 0.75rem; }
 @media (max-width: 1100px) { .composer__options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) {
+  .composer__attachments { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; gap: 8px; padding: var(--attachment-strip-top, 6px) 10px 0; }
+  .composer__attachment { display: flex; align-items: center; flex: none; max-width: 180px; padding: 0; }
+  .composer__attachment > button { position: static; background: transparent; }
+  .composer__attachment :deep(.chat-image__open img) { height: var(--attachment-preview-size, 48px); }
+  .composer__attachment :deep(.chat-file__download) { height: var(--attachment-preview-size, 48px); padding-block: 4px; }
+  .composer__attachment :deep(.chat-file__details) { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .composer__attachment :deep(.chat-file__details .caption) { display: block; }
+  /* Use app height rather than viewport height: some keyboards overlay the
+     viewport and only --app-height shrinks. Keep the editor before previews. */
+  .composer--docked .composer__editor { flex: 1 1 auto; }
+  .composer--docked .composer__input { order: -1; --editor-budget: clamp(44px, calc(var(--app-height) * .28), 220px); max-height: var(--editor-budget); }
+  .composer--docked:has(.composer__attachments) .composer__input { max-height: min(var(--attachment-editor-budget, 220px), var(--editor-budget)); }
+}
 @media (max-width: 640px) {
   .composer__bar { padding: 6px 8px 10px; gap: 3px; }
+  .composer--docked:has(.composer__attachments) .composer__bar { padding-block: 2px 4px; }
   .composer__bar:has(.composer__actions--recording) > .pick { display: none; }
   .composer__quick-agent .composer__agent-avatar { display: none; }
-  .composer__input, .composer--welcome .composer__input { padding: 14px 14px 8px; }
+  .composer__input, .composer--welcome .composer__input { padding: 10px 14px 6px; }
+  .composer--docked .composer__input { min-height: 44px; }
   .composer__configuration-head { padding: 14px; }
   .composer__configuration-body { padding: 14px 14px 0; }
   .composer__configuration-foot { margin: 14px -14px 0; padding: 12px 14px; }

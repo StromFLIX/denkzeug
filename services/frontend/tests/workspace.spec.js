@@ -2,7 +2,7 @@ import { test, expect } from './account-fixture.js'
 import { THEMES } from '../src/themes.js'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 import { mockDesign } from './design-fixture.js'
-import { openChatConfiguration, closeChatConfiguration } from './helpers.js'
+import { openChatConfiguration, closeChatConfiguration, searchWorkspace, workspaceSearch } from './helpers.js'
 
 for (const theme of THEMES) {
   test(`${theme.name} keeps mobile chat controls and source code usable`, async ({ page, context }) => {
@@ -227,9 +227,8 @@ test('chat visibility settings are searchable, validated, persisted and reset wi
   await page.getByRole('button', { name: 'Reset workspace', exact: true }).click()
   await expect(keepSelected).toBeChecked()
   await expect(grace).toHaveValue('60')
-  const search = page.getByRole('searchbox', { name: 'Search settings', exact: true })
-  await search.fill('grace period')
-  await page.getByRole('link', { name: /Chat visibility grace period/ }).click()
+  await searchWorkspace(page, 'settings', 'grace period')
+  await workspaceSearch(page).getByRole('option', { name: /Chat visibility grace period/ }).click()
   await expect(page.locator('#chatSelectionGraceSeconds')).toBeFocused()
   await expect(grace).toBeInViewport()
   expect(state.writes).toEqual([])

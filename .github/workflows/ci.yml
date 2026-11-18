@@ -176,7 +176,7 @@ jobs:
         run: >-
           npx playwright test
           tests/account-auth.spec.js tests/speech.spec.js tests/chat.spec.js tests/chat-branch.spec.js tests/chat-row.spec.js tests/chat-tree.spec.js tests/chat-ordering.spec.js tests/live-connection.spec.js tests/appearance.spec.js tests/workspace.spec.js
-          tests/projects.spec.js tests/settings-navigation.spec.js tests/usage.spec.js tests/command-palette.spec.js tests/hybrid-search.spec.js tests/website.spec.js
+          tests/projects.spec.js tests/settings-navigation.spec.js tests/usage.spec.js tests/command-palette.spec.js tests/hybrid-search.spec.js tests/mobile-design.spec.js tests/website.spec.js
           tests/branding.spec.js tests/settings-redesign.spec.js tests/process-redesign.spec.js tests/skins.spec.js tests/sidebar.spec.js
           tests/workspace-polish.spec.js tests/build-version.spec.js tests/mcp-apps.spec.js tests/apps.spec.js
           tests/git-authorship.spec.js tests/system.spec.js tests/agent-profiles.spec.js tests/composer-agent.spec.js tests/agent-views.spec.js tests/subagents.spec.js
@@ -195,7 +195,7 @@ jobs:
         run: npx playwright test tests/website.spec.js --browser=webkit --grep 'actual screenshot targets|missing tour screenshot' --workers=1 --reporter=dot,github
 
       - name: Live stream recovery and navigation (WebKit)
-        run: npx playwright test tests/live-connection.spec.js tests/navigation.spec.js tests/back-navigation.spec.js tests/workflow-workspace.spec.js --browser=webkit --workers=1 --reporter=dot,github
+        run: npx playwright test tests/live-connection.spec.js tests/navigation.spec.js tests/back-navigation.spec.js tests/workflow-workspace.spec.js tests/mobile-design.spec.js --browser=webkit --workers=1 --reporter=dot,github
 
       - name: Streaming text selection and copying (WebKit)
         run: npx playwright test tests/clipboard.spec.js --browser=webkit --grep 'selection survives|a drag is protected' --workers=1 --reporter=dot,github

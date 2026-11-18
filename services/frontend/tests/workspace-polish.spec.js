@@ -1,4 +1,5 @@
 import { test, expect } from './account-fixture.js'
+import { searchWorkspace, workspaceSearch } from './helpers.js'
 import { THEMES, contrastRatio, resolveTheme } from '../src/themes.js'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 import { mockAgents } from './agent-fixture.js'
@@ -22,10 +23,8 @@ for (const theme of THEMES) {
       await expect(field).toHaveCSS('border-top-style', 'solid')
       expect(tokens['surface-raised']).not.toBe(tokens['surface-panel'])
       expect(contrastRatio(tokens['text-muted'], tokens['surface-raised'])).toBeGreaterThanOrEqual(4.5)
-      const query = page.getByRole('textbox', { name: 'Search chats', exact: true })
-      await query.fill('Design')
-      await expect(page.locator('.side__list')).toContainText('Design review')
-      await expect(field).toHaveCSS('border-top-color', rgb(tokens.accent))
+      await searchWorkspace(page, 'chats', 'Design')
+      await expect(workspaceSearch(page).getByRole('option', { name: 'Design review', exact: true })).toBeVisible()
       expect(await page.locator('.side__list').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
     })
   }

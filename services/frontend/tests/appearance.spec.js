@@ -1,4 +1,5 @@
 import { test, expect } from './account-fixture.js'
+import { searchWorkspace, workspaceSearch } from './helpers.js'
 import { readFile } from 'node:fs/promises'
 import { THEMES, resolveTheme } from '../src/themes.js'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
@@ -88,9 +89,8 @@ for (const width of [1440, 320]) {
     await agentSet.click()
     await page.locator('.q-menu').getByRole('button', { name: 'research', exact: true }).click()
     await expect(page.locator('.q-menu')).toHaveCount(0)
-    const search = page.getByRole('searchbox', { name: 'Search settings' })
-    await search.fill('compaction')
-    await expect(page.getByRole('region', { name: 'Settings search results' })).toContainText('Conversation memory')
+    const search = await searchWorkspace(page, 'settings', 'compaction')
+    await expect(workspaceSearch(page).getByRole('option', { name: 'Conversation memory', exact: true })).toBeVisible()
     await search.press('Escape')
     await expect(agentSet).toContainText('research')
     await page.locator('h1').click()

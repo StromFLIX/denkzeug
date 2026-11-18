@@ -6,7 +6,7 @@ const collapseButton = page => page.getByRole('button', { name: 'Collapse sideba
 const chatsLink = page => page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Chats', exact: true })
 const savedPreferences = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), PREFERENCES_KEY)
 
-test('header collapse button makes room for the chat without losing its draft, search or resized width', async ({ page, context }) => {
+test('header collapse button makes room for the chat without losing its draft or resized width', async ({ page, context }) => {
   await mockDesign(context)
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
@@ -15,8 +15,6 @@ test('header collapse button makes room for the chat without losing its draft, s
   const main = page.getByRole('main')
   const grip = page.getByRole('separator', { name: 'Resize sidebar' })
   const input = page.getByRole('textbox', { name: 'Message', exact: true })
-  const search = page.getByRole('textbox', { name: 'Search chats', exact: true })
-  await search.fill('Design')
   await input.fill('Keep this draft while I focus')
   await grip.press('ArrowRight')
   await expect(grip).toHaveAttribute('aria-valuenow', '330')
@@ -49,7 +47,7 @@ test('header collapse button makes room for the chat without losing its draft, s
   await expect(page).toHaveURL(/\/chats\/alpha$/)
   await expect(chatsLink(page)).toBeFocused()
   await expect(sidebar).toHaveCSS('width', '330px')
-  await expect(search).toHaveValue('Design')
+  await expect(page.getByRole('button', { name: 'Search chats', exact: true })).toBeVisible()
   await expect(input).toHaveValue('Keep this draft while I focus')
   expect((await main.boundingBox()).width).toBeCloseTo(expandedWidth)
   await collapseButton(page).press('Space')
