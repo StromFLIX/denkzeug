@@ -23,9 +23,13 @@ async function mockSystem (context) {
       agent_sets: [{ name: 'default', image: 'nautionette/default:dev', ready: true }, { name: 'research', image: 'nautionette/research:dev', ready: false }]
     }
   }
-  await context.route('**/api/**', route => {
-    const path = new URL(route.request().url()).pathname
-    if (path === '/api/system') return route.fulfill({ status: state.fail ? 503 : 200, json: state.fail ? { detail: 'unavailable' } : state.payload })
+  await context.route('**/api/**', async route => {
+    const url = new URL(route.request().url())
+    const path = url.pathname
+    if (path === '/api/system') {
+      const payload = (url.searchParams.get('refresh') === 'true' && await state.live) || state.payload
+      return route.fulfill({ status: state.fail ? 503 : 200, json: state.fail ? { detail: 'unavailable' } : payload })
+    }
     if (path === '/api/events') return route.fulfill({ contentType: 'text/event-stream', body: ': connected\n\n' })
     const key = path.split('/').pop()
     return route.fulfill({ json: key === 'catalog' ? { models: [], tools: [], agent_sets: [] } : { [key]: [] } })
@@ -77,7 +81,9 @@ test('refresh preserves old diagnostics on failure and recovers', async ({ page,
   const refresh = page.getByRole('button', { name: 'Refresh system health' })
   await expect(refresh).toBeEnabled()
   state.fail = true
+  const liveRequest = page.waitForRequest(request => new URL(request.url()).searchParams.get('refresh') === 'true')
   await refresh.click()
+  await liveRequest
   await expect(page.getByRole('alert')).toContainText('Showing the last available results.')
   await expect(page.getByText('Health check unavailable', { exact: true })).toBeVisible()
   await expect(page.getByText('Image build failed: registry unavailable', { exact: true })).toBeVisible()
@@ -89,6 +95,24 @@ test('refresh preserves old diagnostics on failure and recovers', async ({ page,
   await expect(page.getByText('All services healthy', { exact: true })).toBeVisible()
   await expect(page.getByText('Disabled', { exact: true })).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)
+})
+
+test('a stale snapshot stays visible while waiting for live health', async ({ page, context }) => {
+  const state = await mockSystem(context)
+  const component = { name: 'temporal', status: 'ok' }
+  state.payload = { components: [component], checked_at: '2026-11-18T12:00:00Z', stale: true }
+  let finish
+  state.live = new Promise(resolve => { finish = resolve })
+  await page.goto('/settings/system')
+  try {
+    await expect(page.getByText('Showing last check', { exact: true })).toBeVisible()
+    await expect(page.getByText('1 of 1 services healthy at last check')).toBeVisible()
+  } finally {
+    finish({ components: [component], checked_at: '2026-11-18T13:00:00Z', stale: false })
+  }
+  await expect(page.getByText('All services healthy', { exact: true })).toBeVisible()
+  const checkedAt = await page.evaluate(() => new Date('2026-11-18T13:00:00Z').toLocaleTimeString())
+  await expect(page.getByText(`Last checked ${checkedAt}`, { exact: true })).toBeVisible()
 })
 
 test('empty health response is unknown, not healthy', async ({ page, context }) => {

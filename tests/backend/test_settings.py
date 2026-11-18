@@ -74,7 +74,7 @@ def test_a_history_of_zero_or_less_means_work_it_out_from_the_model(client):
 def test_saving_settings_drops_the_catalog_cache(client):
     runtime.cache_catalog({"stale": True})
     client.put("/api/settings", json={"default_agent_set": "default"})
-    assert runtime.cached_catalog() is None
+    assert runtime.catalog_snapshot()[1] is None
 
 
 def test_the_budget_follows_the_model_window(db):

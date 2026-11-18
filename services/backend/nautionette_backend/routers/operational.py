@@ -19,7 +19,7 @@ router = APIRouter(dependencies=[Depends(require_internal)], include_in_schema=F
 
 @router.get("/internal/system")
 async def system_status() -> dict[str, Any]:
-    return await system.system_status()
+    return system.status_payload(await system.probe_components())
 
 
 @router.get("/internal/settings/storage")

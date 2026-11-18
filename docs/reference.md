@@ -1338,8 +1338,15 @@ falling back to a local build. Empty (the default) keeps local-only builds. See
 visibility/authentication and staging verification. Exact local images are reused
 without any registry request, and forced rebuilds still build locally.
 
-`/api/system` exposes the broker's live image status, missing images, desired/ready worker counts,
-container states, and readiness errors. An HTTP-successful but degraded broker is not shown as healthy.
+`/api/system` reports the broker's image status, missing images, desired/ready worker counts,
+container states, and readiness errors. Reads reuse the last component check (`checked_at`); after
+30 seconds, a read serves the result with `stale: true` and starts a shared background refresh.
+`?refresh=true` waits for a new check, and `/internal/system` always probes live for deployment
+readiness. An HTTP-successful but degraded broker is not shown as healthy.
+
+`/api/catalog` similarly serves its last snapshot while a single rebuild runs after the 60-second
+TTL. `?refresh=true` waits for discovery. A failed gateway refresh keeps the previous catalog, but
+settings and integration changes invalidate it immediately.
 Pi containers themselves remain intentionally ephemeral: there is no idle Pi container to keep alive.
 
 Recovery is eventual, not uninterrupted availability: allow for the reconciliation interval, image

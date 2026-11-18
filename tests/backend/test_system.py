@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
+
 import pytest
 from nautionette_backend.events import bus
+from nautionette_backend.routers import operational, system
 
 
 def _component(payload, name):
@@ -22,6 +26,55 @@ def test_every_component_reports_in(client):
     }
     assert all(item["status"] == "ok" for item in payload["components"])
     assert payload["agent_sets"] == [{"name": "default", "image": "pi-agent:test", "ready": True}]
+
+
+@pytest.mark.asyncio
+async def test_system_snapshot_does_not_replace_manual_or_internal_checks(backend, live, monkeypatch):
+    checked = await system.system_status()
+    assert _component(checked, "broker")["status"] == "ok"
+    monkeypatch.setattr(system, "_snapshot", (time.monotonic() - system.HEALTH_TTL, system._snapshot[1]))
+    entered, finish = asyncio.Event(), asyncio.Event()
+    calls = 0
+
+    async def refuse():
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            entered.set()
+            await finish.wait()
+        raise RuntimeError("broker offline")
+
+    monkeypatch.setattr(live.broker, "health", refuse)
+    for result in await asyncio.gather(*(system.system_status() for _ in range(5))):
+        assert result["stale"] is True
+        assert result["checked_at"] == checked["checked_at"]
+        assert _component(result, "broker")["status"] == "ok"
+    await asyncio.wait_for(entered.wait(), 1)
+    manual = asyncio.create_task(system.system_status(refresh=True))
+    await asyncio.sleep(0)
+    assert not manual.done()
+
+    private = await operational.system_status()
+    assert _component(private, "broker")["status"] == "down"
+    assert private["stale"] is False
+    finish.set()
+    refreshed = await manual
+    assert _component(refreshed, "broker")["status"] == "down"
+    assert refreshed["stale"] is False
+    assert refreshed["checked_at"] >= checked["checked_at"]
+    assert await system.system_status() == refreshed
+    assert calls == 2
+
+
+@pytest.mark.asyncio
+async def test_system_times_out_an_unresponsive_probe(backend, live, monkeypatch):
+    async def never():
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(system, "PROBE_TIMEOUT", 0.02)
+    monkeypatch.setattr(live.gateway, "health", never)
+    component = _component(await system.system_status(refresh=True), "agentgateway")
+    assert component == {"name": "agentgateway", "status": "down", "detail": "Health check timed out"}
 
 
 def test_a_component_that_raises_is_reported_not_fatal(client, live, monkeypatch: pytest.MonkeyPatch):

@@ -18,6 +18,7 @@ from nautionette_backend import background, clients, main, output_storage, runs,
 from nautionette_backend.auth_store import PASSWORDS, digest
 from nautionette_backend.db import db as database
 from nautionette_backend.integrations.registry import INITIALIZED_SETTING
+from nautionette_backend.routers import system
 from nautionette_backend.security import Principal, current_principal
 
 from ..conftest import APP_TOKEN, INTERNAL_TOKEN
@@ -119,6 +120,8 @@ def db(monkeypatch: pytest.MonkeyPatch):
     background._chat_turns.clear()
     monkeypatch.setattr(background, "_draining", False)
     monkeypatch.setattr(runtime, "_agent_answered", False)
+    monkeypatch.setattr(system, "_snapshot", None)
+    monkeypatch.setattr(system, "_refresh_task", None)
     try:
         yield database
     finally:

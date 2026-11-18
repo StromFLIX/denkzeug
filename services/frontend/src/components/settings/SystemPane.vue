@@ -5,7 +5,7 @@
         <h2 id="system-title" class="settings__title">System health</h2>
         <p class="caption dim" role="status">{{ loading ? 'Checking services...' : checkedAt ? `Last checked ${checkedAt}` : 'Not checked yet' }}</p>
       </div>
-      <button class="btn btn--icon" title="Refresh system health" aria-label="Refresh system health" :disabled="loading" @click="refresh">
+      <button class="btn btn--icon" title="Refresh system health" aria-label="Refresh system health" :disabled="loading" @click="refresh(true)">
         <span class="material-icons" :class="{ 'system-health__refreshing': loading }" aria-hidden="true">refresh</span>
       </button>
     </header>
@@ -18,7 +18,7 @@
       <span class="material-icons" aria-hidden="true">{{ overall.icon }}</span>
       <div>
         <strong>{{ overall.label }}</strong>
-        <p class="caption dim">{{ healthyCount }} of {{ components.length }} services healthy</p>
+        <p class="caption dim">{{ healthyCount }} of {{ components.length }} services healthy{{ store.system.stale ? ' at last check' : '' }}</p>
       </div>
     </div>
 
@@ -77,13 +77,14 @@ import BuildVersion from '../BuildVersion.vue'
 const clientBuildInfo = __CLIENT_BUILD_INFO__
 const loading = ref(false)
 const error = ref('')
-const checkedAt = ref('')
+const checkedAt = computed(() => store.system.checked_at ? new Date(store.system.checked_at).toLocaleTimeString() : '')
 const components = computed(() => store.system.components || [])
 const agentSets = computed(() => store.system.agent_sets || [])
 const healthyCount = computed(() => components.value.filter(component => tone(component) === 'success').length)
 const overall = computed(() => {
   if (error.value) return { tone: 'warning', icon: 'cloud_off', label: 'Health check unavailable' }
   if (!components.value.length) return { tone: 'muted', icon: 'monitor_heart', label: 'Awaiting health data' }
+  if (store.system.stale) return { tone: 'muted', icon: 'monitor_heart', label: 'Showing last check' }
   if (healthyCount.value !== components.value.length) return { tone: 'warning', icon: 'warning_amber', label: 'Services need attention' }
   return { tone: 'success', icon: 'check_circle', label: 'All services healthy' }
 })
@@ -110,20 +111,20 @@ function statusLabel (component) {
   const value = status(component)
   return value === 'ok' ? 'Healthy' : value.charAt(0).toUpperCase() + value.slice(1)
 }
-async function refresh () {
+async function refresh (live = false) {
   if (loading.value) return
   loading.value = true
   error.value = ''
   try {
-    store.system = await api.system()
-    checkedAt.value = new Date().toLocaleTimeString()
+    store.system = await api.system(live)
+    if (!live && store.system.stale) store.system = await api.system(true)
   } catch (failure) {
     error.value = 'Could not refresh system health. Check your connection and try again.'
   } finally {
     loading.value = false
   }
 }
-onMounted(refresh)
+onMounted(() => refresh())
 </script>
 
 <style scoped>

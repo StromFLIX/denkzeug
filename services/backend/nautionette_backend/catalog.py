@@ -9,12 +9,15 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import logging
+import time
 from typing import Any
 
 from fastapi import HTTPException
 from nautionette.artcraft import TOOL_NAMES as CRAFT_TOOL_NAMES
 
 from . import agent_profiles
+from .background import spawn
 from .chat_outputs import RESERVED_TOOL_NAMES
 from .clients import broker, gateway
 from .config import settings
@@ -24,7 +27,20 @@ from .gateway_config import attempt
 from .integrations import configured_instances, discover_models, ensure_defaults, instance_label
 from .integrations.registry import RESOURCE_PREFIX
 from .model_capabilities import model_capabilities
-from .runtime import cache_catalog, cache_models, cached_catalog, cached_models, context_hints, runtime
+from .runtime import (
+    CATALOG_TTL,
+    cache_catalog,
+    cache_models,
+    cached_models,
+    catalog_snapshot,
+    context_hints,
+    runtime,
+)
+
+log = logging.getLogger(__name__)
+REFRESH_RETRY_DELAY = 15.0
+_refresh: tuple[int, asyncio.Task[dict[str, Any] | None]] | None = None
+_retry_after: tuple[int, float] | None = None
 
 EMPTY_CONFIG: dict[str, Any] = {
     "providers": [],
@@ -53,9 +69,9 @@ def route_for_model(model_id: str, config: dict[str, Any]) -> dict[str, Any] | N
     return winner
 
 
-async def model_catalog(config: dict[str, Any]) -> list[dict[str, Any]]:
+async def model_catalog(config: dict[str, Any], *, strict: bool = False) -> list[dict[str, Any]]:
     """Models the gateway will serve, tagged with who owns them and who fronts them."""
-    listed = await attempt(gateway.models(), [])
+    listed = await (gateway.models() if strict else attempt(gateway.models(), []))
     instances = configured_instances(config)
     discoveries = await asyncio.gather(*(attempt(discover_models(instance), []) for instance in instances))
     # Metadata from a losing integration must not certify the winning route.
@@ -96,7 +112,11 @@ async def model_catalog(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 async def tool_catalog(
-    config: dict[str, Any], *, selected_targets: list[str] | None = None
+    config: dict[str, Any],
+    *,
+    selected_targets: list[str] | None = None,
+    strict: bool = False,
+    generation: int | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Federated tools, each attributed to the MCP server it came from."""
     from .mcp_selection import target_headers
@@ -109,7 +129,7 @@ async def tool_catalog(
     )
     federated = [
         tool
-        for tool in await attempt(discovery, [])
+        for tool in await (discovery if strict and targets else attempt(discovery, []))
         if tool["name"] not in RESERVED_TOOL_NAMES | CRAFT_TOOL_NAMES
     ]
 
@@ -150,7 +170,8 @@ async def tool_catalog(
     tools = [{**tool, "server": server_for(tool["name"])} for tool in federated]
     from . import mcp_auth_wait
 
-    mcp_auth_wait.remember_tools(tools)
+    if generation is None or generation == catalog_snapshot()[0]:
+        mcp_auth_wait.remember_tools(tools)
     live_names = {tool["name"] for tool in tools}
     tools.extend(tool for tool in mcp_auth_wait.unavailable_tools() if tool["name"] not in live_names)
     servers = [
@@ -205,31 +226,77 @@ async def tool_catalog(
     return tools, servers
 
 
-async def build(refresh: bool = False) -> dict[str, Any]:
-    if not refresh and (cached := cached_catalog()):
-        return cached
-
+async def _discover(generation: int, *, strict: bool) -> dict[str, Any]:
     with contextlib.suppress(HTTPException):
         await ensure_defaults()
-    config = await attempt(gateway.config(), dict(EMPTY_CONFIG))
-    agent_sets, models, (tools, servers) = await asyncio.gather(
+    config = await (gateway.config() if strict else attempt(gateway.config(), dict(EMPTY_CONFIG)))
+    results = await asyncio.gather(
         attempt(broker.agent_sets(), []),
-        model_catalog(config),
-        tool_catalog(config),
+        model_catalog(config, strict=strict),
+        tool_catalog(config, strict=strict, generation=generation),
+        return_exceptions=True,
     )
-    return cache_catalog(
-        {
-            "agent_sets": agent_sets or [{"name": settings.default_agent_set, "ready": True}],
-            "default_agent_set": runtime("default_agent_set"),
-            "models": models,
-            "default_model": runtime("default_model"),
-            "gateways": sorted({model["gateway"] for model in models}),
-            "tools": tools,
-            "tool_servers": servers,
-            "context": context_hints(),
-            **agent_profiles.catalog_entries(),
-        }
-    )
+    for result in results:
+        if isinstance(result, BaseException):
+            raise result
+    agent_sets, models, (tools, servers) = results
+    return {
+        "agent_sets": agent_sets or [{"name": settings.default_agent_set, "ready": True}],
+        "default_agent_set": runtime("default_agent_set"),
+        "models": models,
+        "default_model": runtime("default_model"),
+        "gateways": sorted({model["gateway"] for model in models}),
+        "tools": tools,
+        "tool_servers": servers,
+        "context": context_hints(),
+        **agent_profiles.catalog_entries(),
+    }
+
+
+async def _rebuild(generation: int, *, has_snapshot: bool) -> dict[str, Any] | None:
+    global _retry_after
+    try:
+        value = await _discover(generation, strict=has_snapshot)
+    except Exception as exc:
+        if generation != catalog_snapshot()[0]:
+            return None
+        if not has_snapshot:
+            raise
+        _retry_after = (generation, time.monotonic() + REFRESH_RETRY_DELAY)
+        log.warning("Catalog refresh failed (%s); keeping the previous snapshot", type(exc).__name__)
+        return None
+    cache_catalog(value, generation=generation)
+    return value
+
+
+def _start_refresh(generation: int, *, has_snapshot: bool) -> asyncio.Task[dict[str, Any] | None]:
+    global _refresh
+    if _refresh is None or _refresh[0] != generation or _refresh[1].done():
+        task = spawn(_rebuild(generation, has_snapshot=has_snapshot), name="catalog-refresh")
+        _refresh = (generation, task)
+    return _refresh[1]
+
+
+async def build(refresh: bool = False) -> dict[str, Any]:
+    while True:
+        generation, snapshot = catalog_snapshot()
+        if snapshot is not None and not refresh:
+            checked, value = snapshot
+            now = time.monotonic()
+            if now - checked >= CATALOG_TTL and not (
+                _retry_after and _retry_after[0] == generation and now < _retry_after[1]
+            ):
+                _start_refresh(generation, has_snapshot=True)
+            return value
+        task = _start_refresh(generation, has_snapshot=snapshot is not None)
+        value = await asyncio.shield(task)
+        if generation != catalog_snapshot()[0]:
+            # A settings/integration mutation superseded the in-flight discovery.
+            # Even explicit refresh callers must not receive the invalidated result.
+            continue
+        if value is None:
+            raise HTTPException(503, "Could not refresh the catalog; the previous catalog is still available")
+        return value
 
 
 async def model_info(model: str | None) -> dict[str, Any]:

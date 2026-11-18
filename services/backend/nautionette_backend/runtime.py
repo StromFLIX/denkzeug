@@ -9,6 +9,7 @@ the other.
 from __future__ import annotations
 
 import time
+from threading import Lock
 from typing import Any
 
 from .agent import DEFAULT_HISTORY_CHARS
@@ -28,7 +29,9 @@ CATALOG_TTL = 60.0
 # Context length per model id, refreshed whenever the catalog is built.
 model_windows: dict[str, int] = {}
 
-_catalog_cache: dict[str, Any] = {"at": 0.0, "value": None}
+_catalog_lock = Lock()
+_catalog_generation = 0
+_catalog_cache: tuple[float, dict[str, Any]] | None = None
 _model_catalog_cache: dict[str, Any] = {"at": 0.0, "value": None}
 
 # Flipped by the first agent call that comes back clean, so the status page can
@@ -82,11 +85,9 @@ def context_hints() -> dict[str, Any]:
 # ------------------------------------------------------------- catalog cache
 
 
-def cached_catalog() -> dict[str, Any] | None:
-    value = _catalog_cache["value"]
-    if value and time.time() - _catalog_cache["at"] < CATALOG_TTL:
-        return value
-    return None
+def catalog_snapshot() -> tuple[int, tuple[float, dict[str, Any]] | None]:
+    with _catalog_lock:
+        return _catalog_generation, _catalog_cache
 
 
 def cached_models() -> list[dict[str, Any]] | None:
@@ -104,15 +105,20 @@ def cache_models(models: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return models
 
 
-def cache_catalog(value: dict[str, Any]) -> dict[str, Any]:
-    _catalog_cache.update(at=time.time(), value=value)
-    cache_models(value.get("models", []))
-    return value
+def cache_catalog(value: dict[str, Any], *, generation: int | None = None) -> None:
+    global _catalog_cache
+    with _catalog_lock:
+        if generation is None or generation == _catalog_generation:
+            _catalog_cache = (time.monotonic(), value)
+            cache_models(value.get("models", []))
 
 
 def forget_catalog() -> None:
-    _catalog_cache.update(at=0.0, value=None)
-    _model_catalog_cache.update(at=0.0, value=None)
+    global _catalog_cache, _catalog_generation
+    with _catalog_lock:
+        _catalog_generation += 1
+        _catalog_cache = None
+        _model_catalog_cache.update(at=0.0, value=None)
 
 
 # --------------------------------------------------------- has a model answered

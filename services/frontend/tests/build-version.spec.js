@@ -71,7 +71,7 @@ for (const width of [1440, 320]) {
 test('matching versions collapse to the server segment and refresh reactively', async ({ page, context }) => {
   await mockDesign(context)
   let payload = { ...clientMetadata, components: [], agent_sets: [] }
-  await context.route('**/api/system', route => route.fulfill({ json: payload }))
+  await context.route(url => url.pathname === '/api/system', route => route.fulfill({ json: payload }))
   await page.goto('/settings/system')
   const pill = page.getByRole('button', { name: 'Build versions', exact: true })
   await expect(pill.locator('.version-pill__segment')).toHaveText([client.label])

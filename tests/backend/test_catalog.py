@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
+
 import pytest
+from fastapi import HTTPException
 from nautionette_backend import catalog, runtime
 
 OPENAI_ROUTE = {
@@ -100,6 +104,77 @@ def test_the_catalog_is_cached_and_refresh_bypasses_it(client, stocked):
     assert len(client.get("/api/catalog", params={"refresh": "true"}).json()["models"]) == 3
 
 
+@pytest.mark.asyncio
+async def test_expired_catalog_serves_cached_value_and_coalesces_refreshes(db, monkeypatch):
+    entered, finish = asyncio.Event(), asyncio.Event()
+    calls = 0
+
+    async def discover(_generation, *, strict):
+        nonlocal calls
+        assert strict
+        calls += 1
+        entered.set()
+        await finish.wait()
+        return {"tools": ["new"]}
+
+    monkeypatch.setattr(catalog, "_discover", discover)
+    previous = {"tools": ["old"]}
+    monkeypatch.setattr(runtime, "_catalog_cache", (time.monotonic() - runtime.CATALOG_TTL, previous))
+
+    assert await asyncio.gather(*(catalog.build() for _ in range(5))) == [previous] * 5
+    await asyncio.wait_for(entered.wait(), 1)
+    live = asyncio.create_task(catalog.build(refresh=True))
+    await asyncio.sleep(0)
+    assert not live.done()
+    finish.set()
+    assert await live == {"tools": ["new"]}
+    assert await catalog.build() == {"tools": ["new"]}
+    assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_catalog_invalidation_fences_inflight_results(db, monkeypatch):
+    entered, finish = asyncio.Event(), asyncio.Event()
+    generation = runtime.catalog_snapshot()[0]
+
+    async def discover(started, *, strict):
+        if started == generation:
+            entered.set()
+            await finish.wait()
+            return {"tools": ["removed-tool"]}
+        return {"tools": []}
+
+    monkeypatch.setattr(catalog, "_discover", discover)
+    first = asyncio.create_task(catalog.build())
+    second = asyncio.create_task(catalog.build(refresh=True))
+    await asyncio.wait_for(entered.wait(), 1)
+    runtime.forget_catalog()
+    assert await catalog.build() == {"tools": []}
+    finish.set()
+    assert await asyncio.gather(first, second) == [{"tools": []}, {"tools": []}]
+    assert await catalog.build() == {"tools": []}
+
+
+@pytest.mark.asyncio
+async def test_failed_catalog_refresh_keeps_snapshot_and_backs_off(db, monkeypatch):
+    async def unavailable(_generation, *, strict):
+        assert strict
+        raise RuntimeError("gateway unreachable")
+
+    monkeypatch.setattr(catalog, "_discover", unavailable)
+    previous = {"tools": ["known-tool"]}
+    monkeypatch.setattr(runtime, "_catalog_cache", (time.monotonic() - runtime.CATALOG_TTL, previous))
+    assert await catalog.build() == previous
+    attempt = catalog._refresh[1]
+    assert await attempt is None
+    assert await catalog.build() == previous
+    assert catalog._refresh[1] is attempt
+    with pytest.raises(HTTPException) as exc:
+        await catalog.build(refresh=True)
+    assert exc.value.status_code == 503
+    assert await catalog.build() == previous
+
+
 def test_a_gateway_that_cannot_be_reached_yields_an_empty_picker(client, stocked, live, monkeypatch):
     async def refuse(*_args, **_kwargs):
         raise RuntimeError("gateway is down")
@@ -195,7 +270,7 @@ async def test_cold_model_admission_never_discovers_unselected_mcp_sources(stock
     assert (await catalog.model_info("openai/gpt-4o"))["id"] == "openai/gpt-4o"
     assert (await catalog.model_info("openai/gpt-4o-mini"))["id"] == "openai/gpt-4o-mini"
     assert calls == ["openai"]
-    assert runtime.cached_catalog() is None  # The actual tool picker still needs its own discovery.
+    assert runtime.catalog_snapshot()[1] is None  # The actual tool picker still needs its own discovery.
     runtime.forget_catalog()
     await catalog.model_info("openai/gpt-4o")
     assert calls == ["openai", "openai"]

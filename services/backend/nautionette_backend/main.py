@@ -43,7 +43,7 @@ from .config import settings
 from .conversations import recover_chat_agents, recover_interrupted
 from .events import bus
 from .integrations import bootstrap
-from .routers import ROUTERS
+from .routers import ROUTERS, system
 from .security import AccountBoundaryMiddleware
 
 install_access_logging()
@@ -99,6 +99,7 @@ async def lifespan(_: FastAPI):
     bus.publish("system.start", {"version": settings.version})
     async with backend_mcp.http_app.router.lifespan_context(backend_mcp.http_app):
         spawn(mcp_servers.bootstrap_backend(), name="backend-mcp-bootstrap")
+        system.refresh_snapshot()
         try:
             yield
         finally:

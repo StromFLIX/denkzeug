@@ -106,7 +106,7 @@ export const api = {
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
     return connectSpeechStream(url.href, ticket, { signal, onEvent })
   },
-  system: () => request('/api/system'),
+  system: (refresh = false) => request(refresh ? '/api/system?refresh=true' : '/api/system'),
   catalog: (refresh = false) => request(`/api/catalog${refresh ? '?refresh=true' : ''}`),
   events: () => request('/api/events/recent'),
   tokenCatalog: () => request('/api/tokens/catalog'),

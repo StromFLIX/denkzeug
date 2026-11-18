@@ -315,15 +315,15 @@ def test_duplicate_names_validation_and_authentication(client, anonymous):
 
 def test_agent_mutations_invalidate_the_catalog_and_expose_resolved_defaults(client):
     client.get("/api/catalog")
-    assert runtime.cached_catalog()
+    assert runtime.catalog_snapshot()[1] is not None
     agent = create(client, {"tools": []})
-    assert runtime.cached_catalog() is None
+    assert runtime.catalog_snapshot()[1] is None
     save_defaults(client, default_agent_id=agent["id"])
     result = client.get("/api/catalog").json()
     assert result["chat_defaults"]["tools"] == []
     assert result["agents"][0]["config"] == {"tools": []}
     assert client.delete(f"/api/agents/{agent['id']}").is_success
-    assert runtime.cached_catalog() is None
+    assert runtime.catalog_snapshot()[1] is None
     assert client.get("/api/catalog").json()["chat_defaults"]["tools"] is None
 
 
