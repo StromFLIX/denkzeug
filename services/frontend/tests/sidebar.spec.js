@@ -23,7 +23,7 @@ test('header collapse button makes room for the chat without losing its draft, s
   const expandedWidth = (await main.boundingBox()).width
   await expect(sidebar.locator('.side__head').getByRole('button', { name: 'Collapse sidebar', exact: true })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Collapse sidebar', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Account menu', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Settings', exact: true })).toBeVisible()
   const agentColumn = page.getByRole('navigation', { name: 'Chats by agent' })
   const agentWidth = (await agentColumn.boundingBox()).width
   const collapseBox = await collapseButton(page).boundingBox()

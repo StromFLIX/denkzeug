@@ -3,11 +3,19 @@
     <header><h2 class="settings__title">{{ title }}</h2><p class="muted">{{ subtitle }}</p></header>
     <p v-if="error" role="alert" class="account-error">{{ error }}</p>
     <p v-if="notice" role="status" class="account-notice">{{ notice }}</p>
+    <section v-if="tab === 'account'" class="account-section">
+      <h3>This session</h3>
+      <p class="caption muted">Signed in as {{ account.user.username }} · {{ account.user.role }}</p>
+      <div class="row account-session-actions">
+        <button class="btn" :disabled="busy" @click="perform(() => accountApi.logout())">Sign out</button>
+        <button v-if="isNative" class="btn" :disabled="busy" @click="perform(() => accountApi.switchServer(''))">Switch workspace</button>
+      </div>
+    </section>
     <div v-if="loading" role="status">Loading account settings…</div>
     <template v-else-if="tab === 'account'">
       <section id="account-profile" class="account-section">
         <h3>Profile</h3>
-        <p class="caption muted">Signed in as {{ account.user.username }} · {{ account.user.role }} · {{ !account.user.email ? 'No recovery email (optional)' : account.user.email_verified ? 'Recovery email verified' : 'Recovery email not verified' }}</p>
+        <p class="caption muted">{{ !account.user.email ? 'No recovery email (optional)' : account.user.email_verified ? 'Recovery email verified' : 'Recovery email not verified' }}</p>
         <form class="account-form" @submit.prevent="saveProfile">
           <label>Display name<input v-model="displayName" class="field" autocomplete="name" maxlength="100" :disabled="busy" /></label>
           <label>Recovery email (optional)<input v-model="email" class="field" type="email" autocomplete="email" :disabled="busy" /></label>
@@ -34,7 +42,7 @@
         <h3>Devices & sessions</h3>
         <p class="muted caption">End sessions you no longer recognize. Signing out here also closes your private workspace on this device.</p>
         <ul class="account-list"><li v-for="session in sessions" :key="session.id"><div class="grow"><strong>{{ session.device || 'Browser or app' }}{{ session.current ? ' (this session)' : '' }}</strong><p class="caption muted">Last active {{ date(session.last_seen_at) }} · Expires {{ date(session.expires_at) }}</p></div><button class="btn" :disabled="busy" @click="endSession(session)">End session</button></li></ul>
-        <div class="row"><button class="btn" :disabled="busy" @click="perform(() => accountApi.logout())">Sign out</button><button class="btn" :disabled="busy" @click="perform(() => accountApi.logout(true))">Sign out all devices</button></div>
+        <button class="btn" :disabled="busy" @click="perform(() => accountApi.logout(true))">Sign out all devices</button>
       </section>
     </template>
     <template v-else-if="isAdmin && tab === 'users'">
@@ -78,7 +86,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { account, clearAccount } from '../../auth-session.js'
+import { account, clearAccount, isNative } from '../../auth-session.js'
 import { accountApi } from '../../account.js'
 import { copyText } from '../../clipboard.js'
 import AccessSharing from './AccessSharing.vue'
@@ -124,6 +132,7 @@ onMounted(async () => { try { await load() } catch (e) { error.value = e.message
 .account-settings { max-width: 48rem; gap: 1.5rem; }
 .account-section { border-top: 1px solid var(--border); padding-top: 1.5rem; }
 .account-section h3 { font-size: 1rem; margin: 0 0 .75rem; font-weight: 600; }
+.account-session-actions { flex-wrap: wrap; margin-top: .75rem; }
 .account-section .account-form { max-width: 27rem; margin: 1rem 0 1.5rem; }
 .account-section .account-form .btn { justify-self: start; }
 .account-list { list-style: none; padding: 0; margin: 1rem 0; }

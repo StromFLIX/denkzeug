@@ -23,6 +23,7 @@ for (const width of [1440, 901, 900, 390]) {
       const settings = page.getByRole('link', { name: 'Settings', exact: true })
       await expect(settings).toHaveCount(1)
       await expect(settings).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Account menu' })).toHaveCount(0)
       await expect(page.locator(desktop ? '.side__cog' : '.rail__settings')).toBeHidden()
       await expect(settings).toHaveCSS('text-decoration-line', 'none')
       await settings.hover()
@@ -38,9 +39,6 @@ for (const width of [1440, 901, 900, 390]) {
         const rail = await page.locator('.rail').boundingBox()
         expect(box.x).toBeGreaterThanOrEqual(rail.x)
         expect(box.x + box.width).toBeLessThanOrEqual(rail.x + rail.width)
-        const account = await page.getByRole('button', { name: 'Account menu' }).boundingBox()
-        expect(account.y - box.y - box.height).toBeLessThan(20)
-        expect(account.y).toBeGreaterThanOrEqual(box.y + box.height)
       } else {
         const header = await page.locator('.side__head').boundingBox()
         expect(box.y).toBeGreaterThanOrEqual(header.y)
@@ -50,9 +48,27 @@ for (const width of [1440, 901, 900, 390]) {
 
       await settings.press('Enter')
       await expect(page).toHaveURL(`/settings/${health === 'degraded' ? 'system' : 'account'}`)
+      if (health !== 'degraded') {
+        await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeInViewport()
+        await expect(page.getByRole('button', { name: 'Switch workspace' })).toHaveCount(0)
+      }
     })
   }
 }
+
+test('native workspace switching is available from the Settings session section', async ({ context, page }) => {
+  await mockApi(context, 'ok')
+  await context.addInitScript(() => {
+    globalThis.denkzeugDesktop = {}
+    localStorage.setItem('nautionette.server', location.origin)
+  })
+  await page.goto('/settings/account')
+  const logout = page.waitForRequest(request => new URL(request.url()).pathname === '/api/auth/logout')
+  await page.getByRole('button', { name: 'Switch workspace' }).click()
+  expect((await logout).postDataJSON()).toEqual({ all_devices: false })
+  await expect(page.getByRole('textbox', { name: 'Server address' })).toBeVisible()
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('nautionette.server'))).toBeNull()
+})
 
 test('settings moves between header and rail when resizing', async ({ page, context }) => {
   await mockApi(context, 'ok')

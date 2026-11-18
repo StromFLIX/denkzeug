@@ -27,7 +27,6 @@
       <span class="rail__label">Settings</span>
       <span v-if="health !== 'ok'" class="dot rail__settings-dot" :class="{ 'dot--bad': health === 'degraded' }" />
     </RouterLink>
-    <AccountMenu />
   </nav>
 </template>
 
@@ -36,7 +35,6 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { draftCount, health, store } from '../store'
 import BrandMark from './BrandMark.vue'
-import AccountMenu from './AccountMenu.vue'
 import { account } from '../auth-session.js'
 import { brand } from '../brand'
 import { chatLocation } from '../router'
