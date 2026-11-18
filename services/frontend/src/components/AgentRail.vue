@@ -1,5 +1,5 @@
 <template>
-  <nav class="agents" :class="{ 'agents--embedded': embedded }" aria-label="Chats by agent">
+  <nav class="agents" aria-label="Chats by agent">
     <div class="agents__list">
       <button class="agents__item agents__all" type="button" aria-label="Show all chats" aria-describedby="agent-activity-all" :aria-pressed="!selectedId" @click="select(null)">
         <AgentAvatar icon="forum" /><span class="sr-only">All</span>
@@ -36,7 +36,6 @@ import AgentAvatar from './AgentAvatar.vue'
 import AgentActivity from './AgentActivity.vue'
 import { agentActivity, activityLabel } from '../agent-activity'
 
-defineProps({ embedded: Boolean })
 const route = useRoute(), router = useRouter()
 const agents = computed(() => store.agentNavigation.agents)
 const selectedId = computed(() => typeof route.query.agent === 'string' ? route.query.agent : null)
@@ -68,12 +67,13 @@ watch([agents, () => store.agentNavigation.loaded, selectedId], () => {
 </script>
 
 <style scoped>
-.agents { display: flex; width: 100%; min-width: 0; padding: calc(4px + env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) 4px max(6px, env(safe-area-inset-left)); border-bottom: 1px solid var(--border); background: var(--surface-panel); }
-.agents--embedded { margin-top: 12px; padding: 0; border: 0; }
+.agents { display: flex; width: 100%; min-width: 0; margin-top: 12px; background: var(--surface-panel); }
 .agents__list { display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; }
 .agents__people { display: flex; align-items: center; gap: 4px; overflow-x: auto; min-width: 0; scrollbar-width: thin; }
-.agents__item { position: relative; display: grid; place-items: center; flex: none; width: 44px; height: 48px; padding: 4px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); font: inherit; cursor: pointer; --agent-avatar-size: 36px; }
-.agents--embedded .agents__item { width: 40px; height: 44px; --agent-avatar-size: 32px; }
+.agents__item { position: relative; display: grid; place-items: center; flex: none; width: 40px; height: 44px; padding: 4px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); font: inherit; cursor: pointer; --agent-avatar-size: 32px; }
+@media (max-width: 900px) {
+  .agents__item { width: 44px; height: 48px; --agent-avatar-size: 36px; }
+}
 .agents__divider { flex: none; width: 1px; height: 24px; margin: 0 3px; background: var(--border-strong); }
 .agents__item::before { content: ''; position: absolute; bottom: 0; width: 0; height: 3px; border-radius: var(--radius-pill); background: var(--text-muted); transition: width var(--transition); }
 .agents__item:hover::before { width: 12px; }

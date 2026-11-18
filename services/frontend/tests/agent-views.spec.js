@@ -89,7 +89,18 @@ for (const width of [1440, 390, 320]) {
     await expect(agentButton).toBeVisible()
     const bounds = await rail.boundingBox()
     expect(bounds.height).toBeLessThanOrEqual(60)
-    if (width > 900) await expect(page.locator('.side__head').getByRole('navigation', { name: 'Chats by agent' })).toBeVisible()
+    const header = page.locator('.side__head')
+    await expect(header.getByRole('navigation', { name: 'Chats by agent' })).toBeVisible()
+    if (width <= 900) {
+      const heading = await header.getByRole('heading', { name: 'Chats', exact: true }).boundingBox()
+      const search = await header.getByRole('button', { name: 'Search chats', exact: true }).boundingBox()
+      const firstRow = rows(page).first()
+      await expect(firstRow).toBeVisible()
+      const firstChat = await firstRow.boundingBox()
+      expect(search.y).toBeGreaterThanOrEqual(heading.y + heading.height)
+      expect(bounds.y).toBeGreaterThanOrEqual(search.y + search.height)
+      expect(firstChat.y).toBeGreaterThanOrEqual(bounds.y + bounds.height)
+    }
     expect((await agentButton.boundingBox()).height).toBeLessThanOrEqual(48)
     // All-chats icon, uploaded portraits and initials share the same rounded shape.
     for (const avatar of await rail.locator('.agent-avatar').all()) await expectRoundedAvatar(avatar)

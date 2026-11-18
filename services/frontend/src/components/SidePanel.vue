@@ -378,7 +378,7 @@ function refresh () {
 
 @media (max-width: 900px) {
   .side__head {
-    padding-top: calc(10px + var(--list-safe-top, env(safe-area-inset-top)));
+    padding-top: calc(10px + env(safe-area-inset-top));
     padding-right: max(12px, env(safe-area-inset-right));
     padding-left: max(12px, env(safe-area-inset-left));
   }

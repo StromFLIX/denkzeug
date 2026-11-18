@@ -8,14 +8,13 @@
       {{ store.liveStatus === 'failed' ? 'Live updates are disconnected.' : 'Connection interrupted. Reconnecting automatically…' }}
       <button v-if="store.liveStatus === 'failed'" class="btn" @click="actions.connect()">Reconnect</button>
     </div>
-  <div v-if="!gate" :key="account.user.id" class="shell" data-skin-part="shell" :class="{ 'shell--detail': hasSelection, 'shell--full': fullPage, 'shell--collapsed': sideCollapsed, 'shell--agents': showAgentRail }">
+  <div v-if="!gate" :key="account.user.id" class="shell" data-skin-part="shell" :class="{ 'shell--detail': hasSelection, 'shell--full': fullPage, 'shell--collapsed': sideCollapsed }">
     <NavRail class="shell__rail" :mobile="mobile" :show-sidebar-toggle="!fullPage" :sidebar-collapsed="sideCollapsed"
       @open-sidebar="openSidebar" @toggle-sidebar="preferences.sideCollapsed = !sideCollapsed" />
-    <AgentRail v-if="showAgentRail && mobile" class="shell__agents" />
     <template v-if="!fullPage">
       <aside v-show="!sideCollapsed" data-skin-part="sidebar" id="shell-sidebar" class="shell__side" :style="{ width: `${sideWidth}px` }">
         <SidePanel :mobile="mobile" :is-chat-active="isChatActive">
-          <template v-if="showAgentRail && !mobile" #agents><AgentRail embedded /></template>
+          <template v-if="showAgentRail" #agents><AgentRail /></template>
         </SidePanel>
         <div
           class="shell__grip"
@@ -260,21 +259,9 @@ onUnmounted(() => {
 
 @media (max-width: 900px) {
   .shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
   }
-
-  .shell--agents {
-    --list-safe-top: 0px;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr) auto;
-  }
-
-  .shell--agents .shell__agents { grid-row: 1; }
-  .shell--agents:not(.shell--detail) .shell__side { grid-row: 2; }
-  .shell--agents .shell__rail { grid-row: 3; }
-  .shell--agents.shell--detail { grid-template-rows: minmax(0, 1fr); }
-  .shell--detail .shell__agents { display: none; }
 
   .shell--full {
     grid-template-columns: minmax(0, 1fr);
