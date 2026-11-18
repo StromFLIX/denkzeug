@@ -156,7 +156,8 @@
           <div v-if="latestRun" class="latest-run">
             <span class="chip" :class="`chip--${RUN_TONE[latestRun.status] || ''}`">{{ latestRun.status }}</span>
             <p class="caption dim">{{ fullTime(latestRun.created_at) }} · {{ latestRun.trigger }}</p>
-            <p v-if="latestSummary" class="latest-summary">{{ latestSummary }}</p>
+            <ExecutionOutput :key="latestRun.workflow_id" class="latest-output" preview :workflow-id="latestRun.workflow_id"
+              :result="latestRun.result" :app="latestRun.app" :app-diagnostic="latestRun.app_diagnostic" />
             <RouterLink class="btn btn--outline" :to="runLocation(name, latestRun.workflow_id)">View result</RouterLink>
           </div>
           <p v-else class="caption dim">No runs yet. Run this workflow to create its first execution record.</p>
@@ -319,6 +320,7 @@ import EmptyState from '../components/EmptyState.vue'
 import TriggerSnippet from '../components/TriggerSnippet.vue'
 import WorkflowGraph from '../components/WorkflowGraph.vue'
 import ExecutionFlow from '../components/ExecutionFlow.vue'
+import ExecutionOutput from '../components/ExecutionOutput.vue'
 import WorkflowInputForm from '../components/WorkflowInputForm.vue'
 import WorkflowRuns from '../components/WorkflowRuns.vue'
 import { initialInputs, inputKey, runLocation } from '../workflow-inputs'
@@ -393,10 +395,6 @@ const name = computed(() => route.params.name || '')
 const inputSchema = computed(() => workflow.value?.manifest?.inputs || {})
 const hasResourceInputs = computed(() => Object.values(inputSchema.value.properties || {}).some(field => field.x_resource))
 const latestRun = computed(() => workflow.value?.runs?.[0])
-const latestSummary = computed(() => {
-  const result = latestRun.value?.result
-  return typeof result?.summary === 'string' ? result.summary : typeof result === 'string' ? result : ''
-})
 const disabled = computed(() => Boolean(workflow.value?.settings?.disabled))
 const chatMode = computed(() => workflow.value?.settings?.chat_mode || 'same')
 const scheduleReady = computed(() => {
@@ -640,7 +638,7 @@ onUnmounted(() => { loadVersion++; refreshVersion++; off() })
 .overview-intro h2 { font-size: 1.25rem; margin: 0 0 12px; }
 .overview-schedule { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-panel); }
 .latest-run { padding: 22px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-panel); }
-.latest-summary { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.875rem; line-height: 1.6; }
+.latest-output { margin-block: 12px; }
 .definition-tabs { background: var(--surface-panel); }
 .process-pane > .tabs { min-width: 0; overflow-x: auto; }
 @media (max-width: 560px) { .process-pane > .tabs { padding-inline: 4px; } .process-pane > .tabs .tab { padding-inline: 8px; font-size: 0.75rem; min-height: 44px; } }

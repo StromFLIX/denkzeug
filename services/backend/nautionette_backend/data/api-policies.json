@@ -421,6 +421,11 @@
     "authentication": "account",
     "resource": "run:workflow_id"
   },
+  "GET /api/runs/{workflow_id}/app": {
+    "scope": "runs:read",
+    "authentication": "account",
+    "resource": "run:workflow_id"
+  },
   "GET /api/runs/{workflow_id}/graph": {
     "scope": "runs:read",
     "authentication": "account",

@@ -418,6 +418,39 @@ def attach_workflow(conn, run_id: str, chat_id: str, body: str, meta: dict) -> t
     return body, meta
 
 
+def workflow_view(workflow_id: str, user: str) -> dict:
+    """Return lightweight display metadata without reading executable HTML or app data."""
+    from .db import db
+
+    row = db.one(
+        "SELECT i.id, i.title, d.code FROM runs r "
+        "LEFT JOIN app_instances i ON i.run_id=r.id AND i.owner_user_id=r.owner_user_id "
+        "LEFT JOIN workflow_app_diagnostics d ON d.run_id=r.id "
+        "WHERE r.workflow_id=? AND r.owner_user_id=?",
+        (workflow_id, user),
+    )
+    if row and row["id"]:
+        return {"app": {"id": row["id"], "title": row["title"]}}
+    if row and row["code"]:
+        return {"app_diagnostic": row["code"]}
+    return {}
+
+
+def get_workflow_instance(workflow_id: str) -> dict:
+    from .db import db
+
+    row = db.one(
+        "SELECT i.*,r.html,r.html_sha256 FROM app_instances i JOIN local_app_revisions r "
+        "ON r.owner_user_id=i.owner_user_id AND r.app_id=i.app_id AND r.revision=i.revision "
+        "JOIN runs w ON w.id=i.run_id AND w.owner_user_id=i.owner_user_id "
+        "WHERE w.workflow_id=? AND w.owner_user_id=?",
+        (workflow_id, owner()),
+    )
+    if not row:
+        raise HTTPException(404, "Interactive result not found")
+    return _instance_document(row)
+
+
 def get_instance(chat_id: str, instance_id: str) -> dict:
     from .db import db
 
@@ -432,6 +465,10 @@ def get_instance(chat_id: str, instance_id: str) -> dict:
         from .mcp_app_results import get_instance as get_mcp_instance
 
         return get_mcp_instance(chat_id, instance_id)
+    return _instance_document(row)
+
+
+def _instance_document(row: dict) -> dict:
     return {
         "html": row["html"],
         "input": {},

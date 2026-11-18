@@ -151,7 +151,7 @@ def test_owner_private_even_for_admin_and_service(backend):
         current_principal.reset(token)
 
 
-async def test_workflow_pins_source_data_and_title_at_finish_before_delivery(backend, client):
+async def test_workflow_pins_source_data_and_title_at_finish_before_delivery(backend, client, anonymous):
     publish()
     record(backend)
     run_delivery.finish("report-1", "completed", result(), notify=True)
@@ -167,6 +167,23 @@ async def test_workflow_pins_source_data_and_title_at_finish_before_delivery(bac
         assert reopened.one("SELECT revision FROM app_instances")["revision"] == 1
     finally:
         reopened._conn.close()
+    # The run view uses the same pinned document before chat delivery and after
+    # Temporal history expires. The detail response carries only metadata.
+    run_url = "/api/runs/report-1"
+    detail = client.get(run_url).json()
+    assert detail["history_status"] == "expired"
+    assert detail["app"] == {"id": instance["id"], "title": "Daily report"}
+    assert anonymous.get(f"{run_url}/app").status_code == 401
+    run_app = client.get(f"{run_url}/app")
+    assert run_app.status_code == 200
+    token = current_principal.set(Principal("other-admin", "admin"))
+    try:
+        assert local_apps.workflow_view("report-1", "other-admin") == {}
+        with pytest.raises(HTTPException) as error:
+            local_apps.get_workflow_instance("report-1")
+        assert error.value.status_code == 404
+    finally:
+        current_principal.reset(token)
     await runs.retry_deliveries()
     await runs.retry_deliveries()
     run_delivery.finish("report-1", "completed", result(summary="Overwrite"), notify=True)
@@ -180,6 +197,7 @@ async def test_workflow_pins_source_data_and_title_at_finish_before_delivery(bac
     response = client.get(f"/api/chats/{chat['id']}/apps/{app['id']}")
     assert response.status_code == 200
     value = response.json()
+    assert run_app.json() == value
     assert value["html"] == HTML
     assert value["input"] == {}
     assert value["source"] == "workflow"
@@ -192,6 +210,7 @@ async def test_workflow_pins_source_data_and_title_at_finish_before_delivery(bac
     # Run retention must not delete an executable revision already attached to
     # an independent, durable chat message.
     backend.db.execute("DELETE FROM runs WHERE workflow_id='report-1'")
+    assert client.get(f"{run_url}/app").status_code == 404
     assert client.get(f"/api/chats/{chat['id']}/apps/{app['id']}").json() == value
     token = current_principal.set(Principal("other-admin", "admin"))
     try:

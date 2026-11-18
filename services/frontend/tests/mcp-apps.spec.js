@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { rolldown } from 'rolldown'
 import { mockAgents } from './agent-fixture.js'
+import { mockDesign } from './design-fixture.js'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 
 let appHtml
@@ -159,6 +160,28 @@ test('saved workflow results and tool results share the inline host without repl
   await page.reload()
   await expect(view.locator('#result')).toHaveText('# A useful release')
   expect(mutations).toEqual([])
+})
+
+test('latest execution and run details open the saved app independently of chat', async ({ page, context }) => {
+  const state = await mockDesign(context)
+  const app = { id: 'snapshot-1', title: 'Release notes' }
+  const run = { workflow_id: 'digest-1', workflow: 'digest', status: 'completed', trigger: 'manual', created_at: 1700000000, result: { summary: '**Release prepared.**' } }
+  state.workflow.runs = [{ ...run, app }]
+  await context.route('**/api/runs/digest-1', route => route.fulfill({ json: { run, app, history_status: 'expired' } }))
+  await context.route('**/api/mcp-apps/runtime', route => route.fulfill({ json: { sandbox_url: 'http://127.0.0.1:8092' } }))
+  let loads = 0
+  await context.route('**/api/runs/digest-1/app', route => {
+    loads++
+    return route.fulfill({ json: { html: appHtml, input: {}, title: app.title, result: { content: [], structuredContent: { notes: '# Pinned release notes' } } } })
+  })
+  await page.goto('/workflows/digest')
+  const view = page.frameLocator('iframe[title="Release notes"]').frameLocator('iframe')
+  await expect(page.locator('.execution-output strong')).toHaveText('Release prepared.')
+  await expect(view.locator('#result')).toHaveText('# Pinned release notes')
+  await page.getByRole('link', { name: 'View result' }).click()
+  await expect(page.getByRole('heading', { name: 'Output', exact: true })).toBeVisible()
+  await expect(view.locator('#result')).toHaveText('# Pinned release notes')
+  expect(loads).toBe(2)
 })
 
 test('cards lazy-load once and retain dark frame surfaces and local state while scrolling', async ({ page, context }) => {

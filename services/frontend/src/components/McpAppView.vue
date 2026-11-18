@@ -22,6 +22,7 @@ const props = defineProps({
   app: { type: Object, default: null },
   instance: { type: Object, default: null },
   chatId: { type: String, default: '' },
+  workflowId: { type: String, default: '' },
   sandboxUrl: { type: String, default: '' }
 })
 const root = ref(null), frame = ref(null), document = ref(null), visible = ref(false)
@@ -60,7 +61,9 @@ async function load () {
   loading.value = true; failure.value = ''; pendingLink.value = ''
   try {
     const signal = controller.signal
-    const data = props.app || await request(`/api/chats/${encodeURIComponent(props.chatId)}/apps/${encodeURIComponent(props.instance.id)}`, { signal })
+    const data = props.app || await request(props.workflowId
+      ? `/api/runs/${encodeURIComponent(props.workflowId)}/app`
+      : `/api/chats/${encodeURIComponent(props.chatId)}/apps/${encodeURIComponent(props.instance.id)}`, { signal })
     if (mine !== generation || destroyed) return
     document.value = data
     const config = props.sandboxUrl ? { sandbox_url: props.sandboxUrl } : await request('/api/mcp-apps/runtime', { signal })
@@ -88,7 +91,7 @@ async function load () {
 function restart () { document.value = null; load() }
 // Compare stable identities individually: live chat snapshots replace descriptor
 // objects without changing the saved app instance or its mounted local state.
-watch([() => props.app, () => props.instance?.id, () => props.chatId, () => props.sandboxUrl], load)
+watch([() => props.app, () => props.instance?.id, () => props.chatId, () => props.workflowId, () => props.sandboxUrl], load)
 // Preferences apply color-scheme in a post-flush watcher. Wait for that DOM
 // update so new palette tokens are never paired with the previous light/dark mode.
 watch(currentTokens, async () => { await nextTick(); bridge?.setContext(hostContext()) }, { deep: true })

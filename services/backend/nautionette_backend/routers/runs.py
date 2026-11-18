@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 
-from .. import access, run_statistics, runs
+from .. import access, local_apps, run_statistics, runs
 from ..clients import temporal
 from ..db import db
 from ..events import bus
@@ -98,8 +98,11 @@ async def list_runs(
 @router.get("/api/runs/{workflow_id}", dependencies=[Depends(require_user)])
 async def get_run(workflow_id: str) -> dict[str, Any]:
     row, info = await runs.describe_run(workflow_id)
+    owner = access.human_id()
+    view = local_apps.workflow_view(workflow_id, owner) if row and owner else {}
     if info is None:
         return {
+            **view,
             "run": row,
             "temporal": None,
             "history_status": "expired",
@@ -120,11 +123,17 @@ async def get_run(workflow_id: str) -> dict[str, Any]:
         if not chat or chat["owner_user_id"] != access.human_id():
             delivery["chat_id"] = None
     return {
+        **view,
         "run": row,
         "temporal": info,
         "delivery": delivery,
         "statistics": run_statistics.statistics(workflow_id, row),
     }
+
+
+@router.get("/api/runs/{workflow_id}/app", dependencies=[Depends(require_user)])
+def get_run_app(workflow_id: str) -> dict[str, Any]:
+    return local_apps.get_workflow_instance(workflow_id)
 
 
 @router.get("/api/runs/{workflow_id}/graph", dependencies=[Depends(require_user)])
