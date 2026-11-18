@@ -60,6 +60,23 @@ async function signIn (page, username = 'alice') {
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 }
 
+test('widescreen sign-in keeps the introduction and form together at the center', async ({ page }, testInfo) => {
+  const width = 3295
+  await page.setViewportSize({ width, height: 1285 })
+  await fixture(page)
+  await page.goto('/')
+  const panel = page.getByRole('region', { name: 'Welcome back' })
+  await expect(panel).toBeVisible()
+  const intro = await page.getByRole('heading', { level: 1 }).boundingBox()
+  const form = await panel.boundingBox()
+  const gap = form.x - (intro.x + intro.width)
+  const center = (intro.x + form.x + form.width) / 2
+  expect(gap).toBeGreaterThan(0)
+  expect(gap).toBeLessThan(160)
+  expect(Math.abs(center - width / 2)).toBeLessThan(32)
+  await page.screenshot({ path: testInfo.outputPath('account-widescreen.png'), scale: 'css' })
+})
+
 test('unauthenticated startup probes only auth, signs in with cookies, then logs out', async ({ page }) => {
   const state = await fixture(page)
   await page.goto('/settings/account')

@@ -171,8 +171,7 @@ onMounted(async () => {
 </script>
 
 <style>
-.account-entry { display: grid; grid-template-columns: minmax(0, 1fr) minmax(20rem, 32rem); align-items: center; gap: clamp(2rem, 6vw, 7rem); flex: 1; min-height: 0; height: 100%; overflow-y: auto; padding: max(2rem, env(safe-area-inset-top)) max(2rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(2rem, env(safe-area-inset-left)); background: var(--surface-app); }
-.account-entry__intro { max-width: 32rem; justify-self: center; }
+.account-entry { display: grid; grid-template-columns: minmax(0, 30rem) minmax(20rem, 32rem); justify-content: center; align-items: center; gap: clamp(2rem, 6vw, 5rem); flex: 1; min-height: 0; height: 100%; overflow-y: auto; padding: max(2rem, env(safe-area-inset-top)) max(2rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(2rem, env(safe-area-inset-left)); background: var(--surface-app); }
 .account-entry__brand { display: flex; align-items: center; gap: .75rem; font-size: 1.4rem; font-weight: 600; letter-spacing: -.05em; }
 .account-entry__brand .brand-mark { width: 2.5rem; height: 2.5rem; }
 .account-entry__intro h1 { margin: 3rem 0 1.5rem; font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 500; line-height: 1.15; letter-spacing: -.06em; }
@@ -196,7 +195,6 @@ onMounted(async () => {
 .account-entry__server { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
 @media (max-width: 850px) {
   .account-entry { grid-template-columns: minmax(0, 1fr); align-content: start; gap: 16px; padding: max(16px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
-  .account-entry__intro { justify-self: start; }
   .account-entry__brand .brand-mark { width: 36px; height: 36px; }
   .account-entry__intro h1, .account-entry__intro p { display: none; }
   .account-entry__panel { width: min(100%, 30rem); padding: 16px; justify-self: center; }
