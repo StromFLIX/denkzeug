@@ -60,11 +60,12 @@ for (const width of [1440, 901, 320]) {
     ]
     for (const [name, heading] of categories) {
       if (width <= 760) {
-        const category = page.getByRole('button', { name: 'Settings category', exact: true })
+        const category = page.getByRole('button', { name: /^Settings categor/ })
+        const nav = page.getByRole('navigation', { name: 'Settings categories' })
         await category.click()
         await expect(category).toHaveAttribute('aria-expanded', 'true')
-        await page.locator('.q-menu').getByRole('button', { name, exact: true }).click()
-        await expect(page.locator('.q-menu')).toHaveCount(0)
+        await nav.getByRole('link', { name, exact: true }).click()
+        await expect(nav).toBeHidden()
         await expect(category).toContainText(name)
         await expect(category).toHaveAttribute('aria-expanded', 'false')
       } else await page.getByRole('navigation', { name: 'Settings categories' }).getByRole('link', { name, exact: true }).click()

@@ -150,6 +150,7 @@ test.describe('touch settings', () => {
     await expect(nav).toBeHidden()
 
     await toggle.tap()
+    await expect(profile).toBeFocused()
     await nav.evaluate(element => { element.scrollTop = element.scrollHeight })
     await expect(below).toBeHidden()
     await expect(page.locator('.settings__edge--top')).toBeVisible()

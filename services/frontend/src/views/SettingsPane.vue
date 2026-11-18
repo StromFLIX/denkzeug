@@ -194,7 +194,9 @@ onMounted(() => {
   observer.observe(body.value, { childList: true, subtree: true })
   treeObserver = new ResizeObserver(() => {
     const visible = tree.value.clientHeight > 0
-    if (visible && !treeVisible) revealCategory()
+    // Opening the mobile picker already focuses and scrolls to the active link.
+    // Don't override a scroll the user makes before this observer fires.
+    if (visible && !treeVisible && !categoriesOpen.value) revealCategory()
     treeVisible = visible
     measureTree()
   })
