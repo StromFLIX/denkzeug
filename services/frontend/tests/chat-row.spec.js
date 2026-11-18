@@ -118,7 +118,7 @@ test('keyboard focus reveals options and an open popover keeps its trigger visib
   await expect(markUnread).toBeHidden()
   await expect(menu).toBeFocused()
   await expect(menu).toHaveAttribute('aria-expanded', 'false')
-  await page.getByRole('textbox', { name: 'Search chats', exact: true }).focus()
+  await page.getByRole('button', { name: 'Search chats', exact: true }).focus()
   await expect(menu).toHaveCSS('opacity', '0')
 })
 

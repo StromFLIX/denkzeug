@@ -828,11 +828,14 @@ onUnmounted(() => {
 }
 
 @media (max-width: 900px) {
+  .thread { container: chat / size; }
+
   .pane-head__back {
     display: grid;
   }
 
   .thread__body {
+    min-height: min(72px, 16%);
     padding-top: 12px;
     padding-bottom: 12px;
   }
@@ -842,15 +845,21 @@ onUnmounted(() => {
     padding-left: max(12px, env(safe-area-inset-left));
   }
 
+  .thread:has(.composer--configuration) .thread__body { min-height: 0; }
+
   .thread__foot {
-    padding: 10px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+    padding: 8px max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   }
 }
 
-@media (max-height: 480px) {
+@container chat (max-height: 480px) {
   .thread__body { padding-block: 0; }
-  .pane-head { min-height: 56px; }
+  .pane-head { min-height: calc(56px + env(safe-area-inset-top)); }
   .pane-head__identity > .caption { display: none; }
+}
+@container chat (max-height: 360px) {
+  .thread__foot { --attachment-preview-size: 32px; --attachment-strip-top: 0px; --attachment-editor-budget: 44px; padding-block: 4px max(4px, env(safe-area-inset-bottom)); }
+  .thread__tabs > button { padding-block: 6px; min-height: 38px; }
 }
 
 @media (max-width: 420px) {

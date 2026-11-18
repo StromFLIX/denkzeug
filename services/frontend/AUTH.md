@@ -4,6 +4,14 @@ The web client always talks to its same origin. A previously saved
 `nautionette.server` does not redirect web credentials. Legacy `nautionette.token`
 is removed on startup and is never imported as an account credential.
 
+## Connecting a native client
+
+On first launch, enter the HTTPS address and select **Connect**. The client
+checks account availability and version compatibility before offering sign-in,
+invitation, recovery, or first-administrator setup. **Change server** returns to
+the connection form and clears the previous server's credentials and codes from
+the form. An unsuccessful connection does not replace the saved server.
+
 ## Session transport
 
 - Web: HttpOnly server session cookie, `credentials: same-origin`, and

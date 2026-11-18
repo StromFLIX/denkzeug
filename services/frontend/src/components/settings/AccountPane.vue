@@ -137,7 +137,8 @@ onMounted(async () => { try { await load() } catch (e) { error.value = e.message
 .account-section .account-form .btn { justify-self: start; }
 .account-list { list-style: none; padding: 0; margin: 1rem 0; }
 .account-list li { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
-.account-list .grow { min-width: 12rem; overflow-wrap: anywhere; }
+.account-list .grow { min-width: min(12rem, 100%); overflow-wrap: anywhere; }
+@media (max-width: 420px) { .account-session-actions .btn { flex: 1 1 100%; justify-content: flex-start; white-space: normal; text-align: left; } }
 .account-list p { margin: .4rem 0 0; }
 .account-inline { display: grid; gap: .3rem; font-size: .75rem; }
 .account-inline select { min-height: 44px; font-size: max(16px, .875rem); }

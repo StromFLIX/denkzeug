@@ -7,6 +7,15 @@
     </section>
     <section class="account-entry__panel" aria-labelledby="account-title">
       <div v-if="!account.ready || loading" role="status">Opening your workspace…</div>
+      <template v-else-if="!connected">
+        <h2 id="account-title">Connect to your workspace</h2>
+        <p class="muted">Enter the HTTPS address of your Denkzeug server.</p>
+        <p v-if="error" class="account-error" role="alert">{{ error }}</p>
+        <form class="account-form" @submit.prevent="connect">
+          <label>Server address<input v-model="serverUrl" class="field" type="url" inputmode="url" required autocapitalize="none" spellcheck="false" autocomplete="url" placeholder="https://denkzeug.example.com" :disabled="busy" /></label>
+          <button class="btn btn--primary" :disabled="busy">{{ busy ? 'Connecting…' : 'Connect' }}</button>
+        </form>
+      </template>
       <template v-else>
         <h2 id="account-title">{{ titles[mode] }}</h2>
         <p v-if="mode === 'login'" class="muted">Sign in with your workspace username.</p>
@@ -18,7 +27,6 @@
         <p v-if="error" class="account-error" role="alert">{{ error }}</p>
         <p v-if="notice" class="account-notice" role="status">{{ notice }}</p>
         <form v-if="!['setup', 'verify'].includes(mode) && (mode !== 'forgot' || meta.mail_available)" class="account-form" @submit.prevent="submit">
-          <label v-if="isNative && !account.user">Server address<input v-model="serverUrl" class="field" type="url" inputmode="url" required autocomplete="url" placeholder="https://denkzeug.example.com" :disabled="busy" /></label>
           <label v-if="mode === 'invite'">Invitation code or link<input v-model="code" class="field" required autocapitalize="none" autocomplete="off" spellcheck="false" :disabled="busy" @change="checkInvitation" /></label>
           <label v-if="mode === 'bootstrap' && !entryToken">Setup code<input v-model="setupCode" class="field" required autocomplete="off" autocapitalize="none" spellcheck="false" :disabled="busy" /></label>
           <label v-if="mode === 'reset' && !entryToken">Reset code or link<input v-model="resetCode" class="field" required autocomplete="off" autocapitalize="none" spellcheck="false" :disabled="busy" /></label>
@@ -40,8 +48,12 @@
           <button v-if="mode === 'forgot'" class="btn btn--primary" @click="changeMode('reset')">Use a reset code</button>
           <button v-if="mode === 'setup'" class="btn" @click="changeMode('bootstrap')">Enter setup code</button>
           <button v-if="!['login', 'change', 'setup'].includes(mode)" class="btn" @click="changeMode('login')">Back to sign in</button>
-          <button v-if="mode === 'setup' || error && !busy" class="btn" @click="loadMeta">Try connection again</button>
+          <button v-if="(mode === 'setup' || error) && !busy" class="btn" @click="loadMeta">Try connection again</button>
           <button v-if="account.user" class="btn" @click="logout">Sign out</button>
+        </div>
+        <div v-if="isNative && !account.user" class="account-entry__server">
+          <span class="caption muted">{{ serverUrl }}</span>
+          <button type="button" class="btn btn--sm" :disabled="busy" @click="changeServer">Change server</button>
         </div>
       </template>
     </section>
@@ -63,20 +75,44 @@ const fragment = props.fragment || consumeAuthFragment()
 const entryToken = ref(fragment?.token || ''), setupCode = ref(''), resetCode = ref('')
 const mode = ref(account.user?.must_change_password ? 'change' : fragment?.flow === 'invite' ? 'invite' : fragment?.flow || 'login')
 const passwordVisible = ref(false)
+const connected = ref(!isNative || Boolean(account.user))
 const meta = ref({}), loading = ref(false), busy = ref(false), error = ref(account.error), notice = ref(''), invitation = ref(null)
 const serverUrl = ref(server.url), username = ref(''), email = ref(''), password = ref(''), confirmation = ref(''), currentPassword = ref(''), code = ref(fragment?.flow === 'invite' ? fragment.token : '')
 const date = value => new Date(typeof value === 'number' && value < 1e12 ? value * 1000 : value).toLocaleString()
 function changeMode (value) { passwordVisible.value = false; if (value !== fragment?.flow) entryToken.value = ''; mode.value = value; error.value = notice.value = password.value = confirmation.value = currentPassword.value = ''; invitation.value = null }
 async function loadMeta () {
   error.value = ''
-  if (isNative && !serverUrl.value) return
+  if (isNative && !serverUrl.value) return false
   try {
-    if (isNative) server.url = serverUrl.value
-    meta.value = await accountApi.meta()
-    if (isNative && meta.value.native_min_version > 1) throw new Error('Update the app to sign in to this workspace.')
-    if (meta.value.setup_required && !fragment && mode.value === 'login') mode.value = 'setup'
-    else if (!meta.value.setup_required && mode.value === 'setup') mode.value = 'login'
-  } catch (e) { error.value = e.message }
+    // Validate the candidate before saving it or sending any account payload.
+    const data = isNative && !connected.value
+      ? await accountApi.probeServer(serverUrl.value)
+      : await accountApi.meta()
+    if (isNative && data.native_min_version > 1) throw new Error('Update the app to sign in to this workspace.')
+    meta.value = data
+    if (data.setup_required && mode.value === 'login') mode.value = 'setup'
+    else if (!data.setup_required && mode.value === 'setup') mode.value = 'login'
+    if (isNative) {
+      if (!connected.value) server.url = serverUrl.value
+      serverUrl.value = server.url
+    }
+    return true
+  } catch (e) {
+    error.value = e.message
+    return false
+  }
+}
+function changeServer () {
+  connected.value = false
+  changeMode('login')
+  username.value = email.value = code.value = setupCode.value = resetCode.value = entryToken.value = ''
+}
+async function connect () {
+  if (busy.value) return
+  busy.value = true
+  try {
+    if (await loadMeta()) { connected.value = true; await completeEntryLink() }
+  } finally { busy.value = false }
 }
 function invitationCode () {
   const value = code.value.trim()
@@ -103,7 +139,6 @@ async function submit () {
   if (mode.value !== 'login' && mode.value !== 'forgot' && password.value !== confirmation.value) { error.value = 'Passwords do not match.'; return }
   busy.value = true
   try {
-    if (isNative && !account.user) { server.url = serverUrl.value; meta.value = await accountApi.meta(); if (meta.value.native_min_version > 1) throw new Error('Update the app to continue.') }
     if (mode.value === 'login') await accountApi.login(username.value.trim(), password.value)
     else if (mode.value === 'bootstrap') await accountApi.bootstrap({ token: entryToken.value || setupCode.value.trim(), username: username.value.trim(), ...(email.value.trim() ? { email: email.value.trim() } : {}), password: password.value })
     else if (mode.value === 'invite') {
@@ -118,15 +153,19 @@ async function submit () {
   } catch (e) { error.value = e.message } finally { busy.value = false }
 }
 async function logout () { try { await accountApi.logout(); changeMode('login') } catch (e) { error.value = e.message } }
-onMounted(async () => {
-  loading.value = true
-  if (!account.ready) await new Promise(resolve => { const stop = watch(() => account.ready, ready => { if (ready) { stop(); resolve() } }) })
-  await loadMeta()
-  if (!error.value && account.error) error.value = account.error
+async function completeEntryLink () {
   if (mode.value === 'invite' && code.value) await checkInvitation()
   if (mode.value === 'verify') {
     try { await accountApi.verify(entryToken.value); entryToken.value = ''; changeMode('login'); notice.value = 'Optional recovery email verified.'; if (account.user) { await accountApi.me(); emit('done') } } catch (e) { error.value = e.message }
   }
+}
+onMounted(async () => {
+  loading.value = true
+  if (!account.ready) await new Promise(resolve => { const stop = watch(() => account.ready, ready => { if (ready) { stop(); resolve() } }) })
+  const available = await loadMeta()
+  if (available) connected.value = true
+  if (!error.value && account.error) error.value = account.error
+  if (available) await completeEntryLink()
   loading.value = false
 })
 </script>
@@ -154,5 +193,21 @@ onMounted(async () => {
 .account-entry :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .account-error { color: var(--danger, #b42332); border-left: 3px solid currentColor; padding-left: .75rem; overflow-wrap: anywhere; }
 .account-notice { color: var(--text); background: var(--surface-raised); padding: .75rem; border-radius: var(--radius-sm); }
-@media (max-width: 850px) { .account-entry { grid-template-columns: minmax(0, 1fr); align-content: start; gap: 2rem; } .account-entry__intro { justify-self: start; } .account-entry__intro h1, .account-entry__intro p { display: none; } .account-entry__panel { width: min(100%, 30rem); justify-self: center; } }
+.account-entry__server { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
+@media (max-width: 850px) {
+  .account-entry { grid-template-columns: minmax(0, 1fr); align-content: start; gap: 16px; padding: max(16px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+  .account-entry__intro { justify-self: start; }
+  .account-entry__brand .brand-mark { width: 36px; height: 36px; }
+  .account-entry__intro h1, .account-entry__intro p { display: none; }
+  .account-entry__panel { width: min(100%, 30rem); padding: 16px; justify-self: center; }
+  .account-entry .account-form { gap: 12px; margin-top: 16px; }
+  .account-entry__links { margin-top: 12px; }
+  .account-entry__links .btn { padding-inline: 8px; }
+}
+@media (max-width: 380px) {
+  .account-entry__intro { min-height: 36px; }
+  .account-entry__panel { padding: 14px; }
+  .account-entry__panel h2 { margin-bottom: 8px; }
+  .account-entry__panel p { margin-block: 8px 12px; }
+}
 </style>

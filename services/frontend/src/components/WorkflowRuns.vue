@@ -2,7 +2,8 @@
   <section class="workflow-runs">
     <header class="runs-heading"><h2>{{ preview ? 'Recent runs' : workflow ? 'Runs' : 'All runs' }}</h2><p>Each execution records its inputs, steps and outcome.</p></header>
     <div v-if="!preview" class="runs-filters">
-      <input :value="route.query.runSearch || ''" class="field" aria-label="Search runs" placeholder="Search workflows or run IDs" @input="search($event.target.value)" />
+      <WorkspaceSearchButton class="runs-search" label="Search runs" scope="runs" :options="searchOptions" />
+      <button v-if="route.query.runSearch" type="button" class="btn runs-search" @click="filter('runSearch', '')">Clear search: {{ route.query.runSearch }}</button>
       <select class="field" aria-label="Run outcome" :value="route.query.runStatus || ''" @change="filter('runStatus', $event.target.value)">
         <option value="">All outcomes</option><option v-for="status in ['running', 'completed', 'failed', 'canceled', 'terminated', 'timed_out']" :key="status">{{ status }}</option>
       </select>
@@ -30,13 +31,19 @@ import { api } from '../api'
 import { onLiveEvent, store } from '../store'
 import { RUN_TONE, fullTime } from '../format'
 import { runLocation } from '../workflow-inputs'
+import WorkspaceSearchButton from './WorkspaceSearchButton.vue'
 const props = defineProps({ workflow: { type: String, default: '' }, preview: Boolean })
 defineEmits(['run'])
 const route = useRoute(), router = useRouter(), rows = ref([]), cursor = ref(''), loading = ref(false), error = ref('')
-let version = 0, controller, timer, eventTimer
+let version = 0, controller, eventTimer
 const hasFilters = computed(() => route.query.runStatus || route.query.runTrigger || route.query.runSearch)
+const searchOptions = computed(() => ({
+  query: typeof route.query.runSearch === 'string' ? route.query.runSearch : '',
+  runFilters: (props.workflow || route.query.runStatus || route.query.runTrigger) ? {
+    workflow: props.workflow, status: route.query.runStatus, trigger: route.query.runTrigger
+  } : null
+}))
 function filter (key, value) { router.replace({ query: { ...route.query, [key]: value || undefined } }) }
-function search (value) { clearTimeout(timer); timer = setTimeout(() => filter('runSearch', value), 250) }
 function duration (row) {
   if (row.status === 'running' || !row.updated_at) return '—'
   const seconds = Math.max(0, Math.round(row.updated_at - row.created_at))
@@ -61,7 +68,7 @@ const off = onLiveEvent(event => {
     clearTimeout(eventTimer); eventTimer = setTimeout(() => { if (!document.hidden) load(false, true) }, 300)
   }
 })
-onUnmounted(() => { version++; controller?.abort(); off(); clearTimeout(timer); clearTimeout(eventTimer) })
+onUnmounted(() => { version++; controller?.abort(); off(); clearTimeout(eventTimer) })
 </script>
 <style scoped>
 .workflow-runs { min-width: 0; }
@@ -81,5 +88,6 @@ onUnmounted(() => { version++; controller?.abort(); off(); clearTimeout(timer); 
 .runs-error { color: var(--danger); font-size: 0.8125rem; }
 @media (hover: hover) and (pointer: fine) { a.runs-row:hover { background: var(--surface-hover); } }
 @media (max-width: 1100px) { .runs-row { grid-template-columns: 110px minmax(0, 1fr) 80px 20px; } .runs-row > :nth-child(4) { display: none; } }
-@media (max-width: 560px) { .runs-filters { grid-template-columns: 1fr 1fr; } .runs-filters input { grid-column: 1 / -1; } .runs-row { grid-template-columns: 100px minmax(0, 1fr) 18px; padding: 14px; gap: 8px; } .runs-row > :nth-child(3) { display: none; } .runs-row--head { display: none; } }
+.runs-filters .btn.runs-search { grid-column: 1 / -1; white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .runs-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .runs-search { grid-column: 1 / -1; } .runs-row { grid-template-columns: 100px minmax(0, 1fr) 18px; padding: 14px; gap: 8px; } .runs-row > :nth-child(3) { display: none; } .runs-row--head { display: none; } }
 </style>

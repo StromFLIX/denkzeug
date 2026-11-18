@@ -196,9 +196,6 @@ test.describe('local date grouping', () => {
     await expect(page.locator('.side__group .truncate')).toHaveText(['October 1, 2026', 'September 30, 2026'])
     await expect(page.locator('.side__group-count')).toHaveText(['1 chat', '2 chats'])
     await expect(titles(page)).toHaveText(['After local midnight', 'Before local midnight', 'Same local day, different UTC day'])
-    await page.getByRole('textbox', { name: 'Search chats', exact: true }).fill('Before local')
-    await expect(page.locator('.side__group-count')).toHaveText('1 chat')
-    await expect(titles(page)).toHaveText(['Before local midnight'])
   })
 })
 

@@ -10,16 +10,7 @@
     </header>
 
     <div class="settings__searchbar">
-      <div class="settings__search">
-        <span class="material-icons" aria-hidden="true">search</span>
-        <input ref="searchInput" v-model="query" type="search" placeholder="Search settings…" aria-label="Search settings"
-          autocomplete="off" spellcheck="false" @input="categoriesOpen = false" @keydown.esc.stop.prevent="clearSearch" />
-        <span v-if="searching" class="settings__result-count" role="status">{{ results.length }} found</span>
-        <button v-if="query" class="btn btn--icon" aria-label="Clear settings search" @click="clearSearch">
-          <span class="material-icons" aria-hidden="true">close</span>
-        </button>
-        <kbd v-else class="settings__search-key">/</kbd>
-      </div>
+      <WorkspaceSearchButton label="Search settings" scope="settings" shortcut="/" />
       <button ref="categoryToggle" type="button" class="settings__mobile-nav field field--button"
         :aria-label="categoriesOpen ? 'Settings categories' : `Settings category: ${section.label}`"
         aria-controls="settings-categories" :aria-expanded="categoriesOpen" @click="toggleCategories">
@@ -36,12 +27,11 @@
             <section v-for="group in SETTINGS_GROUPS" :key="group" class="settings__group">
               <h2>{{ group }}</h2>
               <RouterLink v-for="item in sectionsIn(group)" :key="item.key" :to="`/settings/${item.key}`" replace
-                class="settings__category" :class="{ 'settings__category--active': !searching && tab === item.key }"
-                :aria-current="!searching && tab === item.key ? 'page' : undefined" @click="selectCategory">
+                class="settings__category" :class="{ 'settings__category--active': tab === item.key }"
+                :aria-current="tab === item.key ? 'page' : undefined" @click="selectCategory">
                 <span class="material-icons" aria-hidden="true">{{ item.icon }}</span>
                 <span class="grow">{{ item.label }}</span>
-                <span v-if="searching && resultCount(item.key)" class="settings__count">{{ resultCount(item.key) }}</span>
-                <span v-else-if="item.key === 'system' && health === 'degraded'" class="dot dot--bad" aria-label="Needs attention" />
+                <span v-if="item.key === 'system' && health === 'degraded'" class="dot dot--bad" aria-label="Needs attention" />
               </RouterLink>
             </section>
           </div>
@@ -56,23 +46,7 @@
 
       <div ref="body" class="settings__body scroll-y" tabindex="-1">
         <div class="settings__inner">
-          <section v-if="searching" aria-label="Settings search results">
-            <div class="settings__section-head"><h2 class="settings__title">Search results</h2><span class="caption dim">All categories</span></div>
-            <p v-if="!results.length" class="settings__no-results">No settings match “{{ query }}”. <button class="btn btn--sm" @click="clearSearch">Clear search</button></p>
-            <RouterLink v-for="item in results" :key="`${item.section.key}-${item.id}-${item.label}`"
-              :to="{ path: `/settings/${item.section.key}`, hash: `#${item.id}` }" replace class="settings__result" @click="query = ''">
-              <span class="material-icons settings__result-icon" aria-hidden="true">{{ item.section.icon }}</span>
-              <div class="grow">
-                <span class="settings__result-path">{{ item.section.group }} / {{ item.section.label }}</span>
-                <h3>{{ item.label }}</h3><p>{{ item.description }}</p>
-              </div>
-              <span class="settings__scope">{{ item.scope }}</span>
-              <span class="material-icons settings__result-arrow" aria-hidden="true">arrow_forward</span>
-            </RouterLink>
-            <PackageSearch v-if="account.user?.role === 'admin' && query.trim().length >= 2" :query="query" @select="choosePackage" />
-          </section>
-          <!-- Search never discards the current pane's in-progress form. -->
-          <div v-show="!searching" class="settings__pane">
+          <div class="settings__pane">
             <div class="settings__scope-line"><span class="settings__scope">{{ section.scope }}</span><p>{{ scopeNote }}</p></div>
             <component :is="panes[tab]" ref="pane" :key="tab" />
           </div>
@@ -86,17 +60,17 @@
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { health, store } from '../store'
-import { SETTINGS_SECTIONS, searchSettings } from '../settings-registry'
+import { SETTINGS_SECTIONS } from '../settings-registry'
 import { account } from '../auth-session.js'
 import { memberSettingKeys } from '../account.js'
-import PackageSearch from '../components/settings/PackageSearch.vue'
+import WorkspaceSearchButton from '../components/WorkspaceSearchButton.vue'
+import { useWorkspaceSearch } from '../workspace-search.js'
 import BuildVersionPill from '../components/BuildVersionPill.vue'
 
 const clientBuildInfo = __CLIENT_BUILD_INFO__
 const route = useRoute()
 const router = useRouter()
-const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
-const searchInput = ref(null)
+const openSearch = useWorkspaceSearch()
 const body = ref(null)
 const pane = ref(null)
 const categoryToggle = ref(null)
@@ -111,17 +85,13 @@ const SETTINGS_GROUPS = computed(() => [...new Set(visibleSections.value.map(ite
 const section = computed(() => visibleSections.value.find(item => item.key === route.params.tab) || visibleSections.value[0])
 const tab = computed(() => section.value.key)
 const scopeNote = computed(() => section.value.scopeNote || 'Shared across this instance, independent of this device.')
-const searching = computed(() => Boolean(query.value.trim()))
-const results = computed(() => searchSettings(query.value, visibleSections.value))
 const sectionsIn = group => visibleSections.value.filter(item => item.group === group)
-const resultCount = key => results.value.filter(item => item.section.key === key).length
 
 function back () {
-  if (/^\/(chats|workflows|runs|apps)(\/|$)/.test(window.history.state?.back || '')) router.back()
+  const previous = window.history.state?.back
+  if (previous && ['chats', 'workflows', 'runs', 'workflow-run'].includes(router.resolve(previous).name)) router.back()
   else router.push('/chats')
 }
-function choosePackage (source) { query.value = ''; router.replace({ path: '/settings/packages', query: { source } }) }
-function clearSearch () { query.value = ''; searchInput.value?.focus() }
 function measureTree () {
   const { scrollTop, scrollHeight, clientHeight } = tree.value
   moreAbove.value = scrollTop > 1
@@ -146,23 +116,16 @@ async function toggleCategories () {
 }
 function selectCategory (event) {
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-  query.value = ''
   if (!categoriesOpen.value) return
   categoriesOpen.value = false
   if (categoryToggle.value?.getClientRects().length) nextTick(() => body.value?.focus({ preventScroll: true }))
 }
-function shortcuts (event) {
-  if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || event.target.closest('input, textarea, select, [contenteditable="true"]')) return
-  event.preventDefault()
-  searchInput.value?.focus()
-}
-
 let observer
 let treeObserver
 let treeVisible = false
 let revealed = ''
 function revealTarget () {
-  if (!route.hash || searching.value || revealed === `${tab.value}${route.hash}`) return
+  if (!route.hash || revealed === `${tab.value}${route.hash}`) return
   let id
   try { id = decodeURIComponent(route.hash.slice(1)) } catch { return }
   const target = document.getElementById(id)
@@ -178,7 +141,7 @@ function revealTarget () {
   target.scrollIntoView({ block: 'center', behavior: 'instant' })
   revealed = `${tab.value}${route.hash}`
 }
-watch([tab, () => route.hash, searching], async () => {
+watch([tab, () => route.hash], async () => {
   revealed = ''
   await nextTick()
   if (body.value) body.value.scrollTop = 0
@@ -186,9 +149,11 @@ watch([tab, () => route.hash, searching], async () => {
   revealTarget()
 })
 watch(pane, () => nextTick(revealTarget))
-watch(() => route.query.q, value => { query.value = typeof value === 'string' ? value : '' })
+function openLinkedSearch (query) {
+  if (typeof query === 'string' && query.trim()) openSearch('settings', { query })
+}
+watch(() => route.query.q, openLinkedSearch)
 onMounted(() => {
-  document.addEventListener('keydown', shortcuts)
   // Lazy-loaded panes (and asynchronous forms) can mount after navigation.
   observer = new MutationObserver(revealTarget)
   observer.observe(body.value, { childList: true, subtree: true })
@@ -203,9 +168,9 @@ onMounted(() => {
   treeObserver.observe(tree.value)
   treeObserver.observe(groups.value)
   revealTarget()
+  openLinkedSearch(route.query.q)
 })
 onUnmounted(() => {
-  document.removeEventListener('keydown', shortcuts)
   observer?.disconnect()
   treeObserver?.disconnect()
 })
@@ -215,19 +180,12 @@ onUnmounted(() => {
 .settings { min-width: 0; overflow: hidden; }
 .settings__head { gap: 14px; }
 .settings__head button, .settings__category, .settings__mobile-nav { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-.settings__category:focus-visible, .settings__result:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.settings__category:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .settings__category:active { background: var(--surface-hover); }
 .settings__breadcrumb { display: flex; align-items: center; gap: 12px; font-size: 0.8125rem; color: var(--text-dim); }
 .settings__breadcrumb h1 { color: var(--text); font-weight: 600; }
 .settings__shortcut { margin-right: 12px; }
 .settings__searchbar { padding: 18px 24px; border-bottom: 1px solid var(--border); background: var(--surface-app); }
-.settings__search { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 10px 0 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface-input); }
-.settings__search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-.settings__search > .material-icons { color: var(--text-dim); font-size: 1.25rem; }
-.settings__search input { flex: 1; width: 100%; min-width: 0; background: transparent; color: var(--text); border: 0; outline: 0; font: inherit; font-size: 0.875rem; }
-.settings__search input::placeholder { color: var(--text-dim); }
-.settings__search input::-webkit-search-cancel-button { display: none; }
-.settings__result-count { font-size: 0.6875rem; white-space: nowrap; color: var(--text-muted); }
 .settings__workspace { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 0; }
 .settings__navigator { position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; min-width: 0; border-right: 1px solid var(--border); background: var(--surface-app); }
 .settings__tree { min-height: 0; background: var(--surface-app); overscroll-behavior-y: contain; scrollbar-gutter: stable; scrollbar-color: var(--text-dim) var(--surface-app); scroll-padding-block: 18px; }
@@ -245,26 +203,15 @@ onUnmounted(() => {
 .settings__category > .material-icons { font-size: 1.0625rem; }
 @media (hover: hover) and (pointer: fine) {
   .settings__category:hover { background: var(--surface-hover); color: var(--text); }
-  .settings__result:hover { background: var(--surface-hover); }
 }
 .settings__category--active { color: var(--accent); background: var(--accent-soft); }
-.settings__count { font-size: 0.625rem; color: var(--accent); }
 .settings__body { min-width: 0; min-height: 0; padding: 32px 40px 48px; scroll-padding: 28px; overscroll-behavior-y: contain; }
 .settings__inner { width: 100%; max-width: 880px; margin: 0 auto; }
 .settings__scope-line { display: flex; align-items: flex-start; gap: 10px; color: var(--text-muted); margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
 .settings__scope-line p { margin: 3px 0 0; max-width: 66ch; font-size: 0.75rem; line-height: 1.6; }
 .settings__scope { display: inline-flex; align-items: center; flex: none; min-height: 26px; padding: 3px 8px; color: var(--text-muted); background: var(--surface-panel); border-radius: var(--radius-xs); font-size: 0.6875rem; font-weight: 500; white-space: nowrap; }
-.settings__section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
-.settings__result { display: flex; align-items: center; gap: 16px; padding: 18px 8px; border-bottom: 1px solid var(--border); border-radius: var(--radius-xs); text-decoration: none; color: var(--text); }
-.settings__result-icon { color: var(--text-dim); font-size: 1.25rem; }
-.settings__result-path { font-size: 0.625rem; color: var(--text-dim); }
-.settings__result h3 { margin: 4px 0; font-weight: 600; font-size: 0.875rem; }
-.settings__result p { margin: 0; color: var(--text-muted); font-size: 0.75rem; }
-.settings__result-arrow { font-size: 1rem; color: var(--accent); }
-.settings__no-results { color: var(--text-muted); overflow-wrap: anywhere; }
 .settings__mobile-nav { display: none; }
 @media (pointer: coarse) {
-  .settings__search input { font-size: max(16px, 1rem); }
   .settings__category, .settings__mobile-nav { min-height: 44px; }
 }
 @media (max-width: 1100px) {
@@ -273,7 +220,7 @@ onUnmounted(() => {
 }
 @media (max-width: 760px) {
   .settings__workspace { grid-template-columns: minmax(0, 1fr); }
-  .settings__navigator, .settings__shortcut, .settings__search-key, .settings__breadcrumb > span { display: none; }
+  .settings__navigator, .settings__shortcut, .settings__breadcrumb > span { display: none; }
   .settings__workspace--categories .settings__navigator { display: grid; }
   .settings__workspace--categories .settings__body { display: none; }
   .settings__navigator { border-right: 0; }
@@ -285,10 +232,7 @@ onUnmounted(() => {
   .settings__mobile-nav .material-icons { font-size: 1.125rem; }
   .settings__body { padding: 20px max(16px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
   .settings__head { gap: 8px; }
-  .settings__scope-line { gap: 8px; margin-bottom: 20px; padding-bottom: 16px; }
-  .settings__scope-line p { margin-top: 2px; }
-  .settings__result-count { display: none; }
-  .settings__result { gap: 10px; padding: 16px 0; }
-  .settings__result .settings__scope, .settings__result-arrow { display: none; }
+  .settings__scope-line { flex-direction: column; gap: 6px; margin-bottom: 20px; padding-bottom: 16px; }
+  .settings__scope-line p { margin-top: 0; }
 }
 </style>

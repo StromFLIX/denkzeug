@@ -1,5 +1,15 @@
 import { expect } from '@playwright/test'
 
+export const workspaceSearch = page => page.getByRole('dialog', { name: 'Search workspace', exact: true })
+export const workspaceQuery = page => workspaceSearch(page).getByRole('combobox', { name: 'Search workspace' })
+export async function searchWorkspace (page, scope, query = '') {
+  await page.getByRole('button', { name: `Search ${scope}`, exact: true }).click()
+  const field = workspaceQuery(page)
+  await expect(field).toBeFocused()
+  await field.fill(query)
+  return field
+}
+
 export async function openChatConfiguration (page) {
   const panel = page.getByRole('region', { name: 'Chat preferences' })
   if (!await panel.isVisible()) await page.getByRole('button', { name: 'Chat configuration', exact: true }).click()

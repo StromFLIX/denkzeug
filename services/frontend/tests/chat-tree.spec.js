@@ -1,4 +1,5 @@
 import { test, expect } from './account-fixture.js'
+import { searchWorkspace, workspaceSearch } from './helpers.js'
 import { mockDesign } from './design-fixture.js'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 
@@ -77,15 +78,13 @@ for (const [width, theme, interfaceSize] of [[1440, 'orbit', 100], [320, 'orbit'
   })
 }
 
-test('search reveals matching descendants with ancestors and direct links reveal the selected chat', async ({ page, context }) => {
+test('opening a descendant from search reveals the selected chat and its ancestors', async ({ page, context }) => {
   await fixture(context)
   await page.goto('/chats')
   const titles = page.locator('.side__list .row-item__title')
-  await page.getByRole('textbox', { name: 'Search chats', exact: true }).fill('accessible colours')
-  await expect(titles).toHaveText(['Build the website', 'Design website branding', 'Research accessible colours'])
-  await page.getByRole('textbox', { name: 'Search chats', exact: true }).clear()
-  await expect(titles).toHaveText(['Build the website', 'Plan next release'])
-  await page.goto('/chats/research')
+  await searchWorkspace(page, 'chats', 'accessible colours')
+  await workspaceSearch(page).getByRole('option', { name: 'Research accessible colours', exact: true }).click()
+  await expect(page).toHaveURL('/chats/research')
   await expect(page.locator('.side__list a[href="/chats/research"]')).toHaveClass(/row-item--active/)
   await expect(page.getByRole('button', { name: 'Collapse agent chats for Build the website (3)', exact: true })).toHaveAttribute('aria-expanded', 'true')
   await page.getByRole('button', { name: 'Collapse agent chats for Build the website (3)', exact: true }).click()

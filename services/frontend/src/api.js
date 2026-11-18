@@ -11,19 +11,23 @@ export function setRefreshHandler (handler) { refreshSession = handler }
 
 const SERVER_KEY = 'nautionette.server'
 
+export function normalizeServerOrigin (value) {
+  const trimmed = (value || '').trim().replace(/\/+$/, '')
+  if (!trimmed) return ''
+  let url
+  try { url = new URL(trimmed) } catch { /* report the same guidance for malformed URLs */ }
+  if (url?.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new Error('Use an HTTPS server origin, without a path or credentials.')
+  return url.origin
+}
+
 export const server = {
   get url () {
     return isNative ? localStorage.getItem(SERVER_KEY) || '' : ''
   },
   set url (value) {
     if (!isNative) return
-    let trimmed = (value || '').trim().replace(/\/+$/, '')
-    if (trimmed) {
-      const url = new URL(trimmed)
-      if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new Error('Use an HTTPS server origin, without a path or credentials.')
-      trimmed = url.origin
-    }
-    if (trimmed) localStorage.setItem(SERVER_KEY, trimmed)
+    const origin = normalizeServerOrigin(value)
+    if (origin) localStorage.setItem(SERVER_KEY, origin)
     else localStorage.removeItem(SERVER_KEY)
   }
 }

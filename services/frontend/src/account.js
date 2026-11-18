@@ -1,4 +1,4 @@
-import { request, server, setRefreshHandler } from './api.js'
+import { normalizeServerOrigin, request, server, setRefreshHandler } from './api.js'
 import { account, auth, acceptAccount, clearAccount, isNative, secureSession } from './auth-session.js'
 
 const send = (path, body = {}, method = 'POST') => request(`/api/auth/${path}`, { method, body: JSON.stringify(body) })
@@ -43,6 +43,20 @@ export async function refreshAccount () {
 setRefreshHandler(refreshAccount)
 export const accountApi = {
   meta: () => request('/api/auth/meta'),
+  async probeServer (address) {
+    const origin = normalizeServerOrigin(address)
+    if (!origin) throw new Error('Enter the HTTPS address of your workspace.')
+    let response
+    try {
+      response = await fetch(`${origin}/api/auth/meta`, { credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(10000) })
+    } catch { throw new Error('Could not reach this workspace. Check the server address and try again.') }
+    const data = await response.json().catch(() => null)
+    if (!response.ok) throw new Error(typeof data?.detail === 'string' ? data.detail : 'Could not connect to this workspace.')
+    if (typeof data?.setup_required !== 'boolean' || !Number.isInteger(data.native_min_version)) {
+      throw new Error('This address did not return Denkzeug account settings. Check the address or update the server.')
+    }
+    return data
+  },
   async initialize () {
     account.ready = false
     account.error = ''

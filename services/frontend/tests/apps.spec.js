@@ -1,4 +1,5 @@
 import { test, expect, fixtureAccount } from './account-fixture.js'
+import { searchWorkspace, workspaceSearch } from './helpers.js'
 import { mockAgents } from './agent-fixture.js'
 
 const initial = { id: 'report', title: 'Report', description: 'Weekly totals', html: '<!doctype html><h1>Original report</h1>', input_schema: { type: 'object' }, sample_data: { count: 4 }, change_note: 'Initial report', revision: 1 }
@@ -158,9 +159,8 @@ test('members can open their own Apps library and discover its editor through se
   await page.route('**/api/auth/me', route => route.fulfill({ json: { ...fixtureAccount, user: { ...fixtureAccount.user, role: 'member' } } }))
   await page.goto('/settings/apps')
   await expect(page.getByRole('heading', { name: 'Apps', exact: true })).toBeVisible()
-  const search = page.getByRole('searchbox', { name: 'Search settings' })
-  await search.fill('immutable')
-  await page.getByRole('link', { name: /App source & revisions/ }).click()
+  await searchWorkspace(page, 'settings', 'immutable')
+  await workspaceSearch(page).getByRole('option', { name: /App source & revisions/ }).click()
   await expect(page.getByRole('region', { name: 'App source & revisions', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Create app', exact: true }).click()
   await expect(page.getByLabel('Self-contained HTML', { exact: true })).toBeVisible()

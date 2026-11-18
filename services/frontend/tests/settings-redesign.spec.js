@@ -1,4 +1,5 @@
 import { test, expect } from './account-fixture.js'
+import { searchWorkspace, workspaceSearch } from './helpers.js'
 import { mockDesign } from './design-fixture.js'
 import { SETTINGS_GROUPS, SETTINGS_SECTIONS } from '../src/settings-registry.js'
 import { THEMES } from '../src/themes.js'
@@ -56,15 +57,15 @@ for (const width of [1440, 320]) {
     const depth = page.getByLabel('Maximum depth', { exact: true })
     await expect(depth).toBeEnabled()
     await depth.fill('7')
-    const search = page.getByRole('searchbox', { name: 'Search settings' })
-    await search.fill('devices sessions')
-    await expect(page.getByRole('region', { name: 'Settings search results' })).toContainText('Your account')
+    const search = await searchWorkspace(page, 'settings', 'devices sessions')
+    const dialog = workspaceSearch(page)
+    await expect(dialog.getByRole('option', { name: 'Devices & sessions' })).toBeVisible()
     await search.press('Escape')
     await expect(depth).toHaveValue('7')
-    await search.fill('access token')
-    await expect(page.getByRole('link', { name: /Account & workspace \/ API keys/ })).toBeVisible()
+    await searchWorkspace(page, 'settings', 'access token')
+    await expect(dialog.getByRole('option', { name: 'API keys', exact: true })).toBeVisible()
     await search.fill('conversation memory')
-    await page.getByRole('link', { name: /Conversation memory/ }).click()
+    await dialog.getByRole('option', { name: 'Conversation memory', exact: true }).click()
     await expect(page.locator('#history')).toHaveAttribute('open', '')
     await expect(page.locator('#history')).toBeFocused()
     expect(state.writes).toEqual([])
@@ -169,10 +170,12 @@ test.describe('touch settings', () => {
   test('search and account fields avoid input zoom and category control has a touch target', async ({ page, context }) => {
     await mockDesign(context)
     await page.goto('/settings/account#account-password')
-    for (const field of [page.getByRole('searchbox', { name: 'Search settings' }), page.getByLabel('New password', { exact: true })]) {
-      await expect(field).toBeVisible()
-      expect(await field.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16)
-    }
+    const password = page.getByLabel('New password', { exact: true })
+    await expect(password).toBeVisible()
+    expect(await password.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16)
+    const search = await searchWorkspace(page, 'settings')
+    expect(await search.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16)
+    await workspaceSearch(page).getByRole('button', { name: 'Close search' }).tap()
     const category = await page.getByRole('button', { name: 'Settings category: Profile & security', exact: true }).boundingBox()
     expect(category.height).toBeGreaterThanOrEqual(44)
     expect(await page.locator('.settings__body').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)

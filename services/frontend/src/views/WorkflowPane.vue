@@ -69,20 +69,20 @@
 
   <!-- a published workflow -->
   <div v-else-if="workflow" class="stack grow process-pane">
-    <header class="pane-head" data-skin-part="header">
+    <header class="pane-head workflow-head" data-skin-part="header">
       <button class="btn btn--icon pane-head__back" aria-label="Back to workflows" @click="backTo('/workflows')">
         <span class="material-icons">arrow_back</span>
       </button>
       <div class="avatar-sq" aria-hidden="true">
         <span class="material-icons">account_tree</span>
       </div>
-      <div class="grow">
+      <div class="grow workflow-head__identity">
         <div class="pane-head__title truncate">{{ workflow.title || workflow.name }}</div>
         <div class="caption dim truncate">{{ workflow.description || workflow.name }}</div>
       </div>
-      <span v-if="disabled" class="chip chip--warning">disabled</span>
+      <span v-if="disabled" class="chip chip--warning workflow-head__status">disabled</span>
       <span
-        v-else-if="workflow.schedule" class="chip chip--accent"
+        v-else-if="workflow.schedule" class="chip chip--accent workflow-head__schedule"
         :title="`${workflow.schedule.description} · ${workflow.schedule.timezone}`"
       >
         <span class="material-icons" style="font-size: 0.8125rem">schedule</span>
@@ -641,7 +641,17 @@ onUnmounted(() => { loadVersion++; refreshVersion++; off() })
 .latest-output { margin-block: 12px; }
 .definition-tabs { background: var(--surface-panel); }
 .process-pane > .tabs { min-width: 0; overflow-x: auto; }
-@media (max-width: 560px) { .process-pane > .tabs { padding-inline: 4px; } .process-pane > .tabs .tab { padding-inline: 8px; font-size: 0.75rem; min-height: 44px; } }
+@media (max-width: 560px) {
+  .process-pane > .tabs { flex-wrap: wrap; overflow: visible; padding-inline: 4px; }
+  .process-pane > .tabs .tab { padding-inline: 8px; font-size: 0.75rem; min-height: 44px; }
+  .workflow-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; padding: max(4px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left)); }
+  .workflow-head__identity { grid-row: 2; grid-column: 1 / -1; }
+  .workflow-head__identity .pane-head__title { white-space: normal; overflow-wrap: anywhere; }
+  .workflow-head__schedule { display: none; }
+  .workflow-head__status { grid-column: 2; justify-self: start; }
+  .workflow-head .run-action { grid-column: 3; }
+  .workflow-head [aria-label='Workflow actions'] { grid-column: 4; }
+}
 .scheduled-inputs { padding-top: 24px; margin-top: 24px; border-top: 1px solid var(--border); }
 .run-dialog { display: flex; flex-direction: column; width: min(820px, calc(100vw - 32px)); max-width: 820px; max-height: 90dvh; background: var(--surface-panel); color: var(--text); border-radius: var(--radius-lg); }
 .run-dialog__head { display: flex; justify-content: space-between; gap: 16px; padding: 24px; border-bottom: 1px solid var(--border); }

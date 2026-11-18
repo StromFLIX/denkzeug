@@ -1,9 +1,8 @@
-import { test, expect } from './account-fixture.js'
+import { test, expect, fixtureAccount } from './account-fixture.js'
 import { mockDesign } from './design-fixture.js'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 
-const palette = page => page.getByRole('dialog', { name: 'Search chats and settings', exact: true })
-const search = page => palette(page).getByRole('combobox', { name: 'Search chats and settings' })
+import { workspaceSearch as palette, workspaceQuery as search, searchWorkspace } from './helpers.js'
 const message = page => page.getByRole('textbox', { name: 'Message', exact: true })
 
 test('Cmd+K expands search from a composer, autofocuses, toggles, and preserves focus and drafts', async ({ page, context }) => {
@@ -35,28 +34,26 @@ test('Cmd+K expands search from a composer, autofocuses, toggles, and preserves 
   expect(errors).toEqual([])
 })
 
-test('sidebar search expands with its current query and finds chats even outside the activity filter', async ({ page, context }) => {
+test('sidebar search uses the chat scope and finds chats even outside the activity filter', async ({ page, context }) => {
   const state = await mockDesign(context)
   await context.addInitScript(key => localStorage.setItem(key, JSON.stringify({ chatActiveMinutes: 60, chatKeepSelectedVisible: false })), PREFERENCES_KEY)
   state.data.chat.updated_at = Date.now() / 1000 - 86400 * 100
   await page.goto('/chats')
-  const inlineSearch = page.getByRole('textbox', { name: 'Search chats', exact: true })
-  await inlineSearch.fill('Design')
-  await page.getByRole('button', { name: 'Expand chat search', exact: true }).click()
-  await expect(search(page)).toHaveValue('Design')
+  await searchWorkspace(page, 'chats', 'Design')
+  await expect(palette(page).getByRole('button', { name: 'Chats', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await expect(search(page)).toBeFocused()
   await expect(palette(page).locator('.q-dialog__inner')).not.toHaveClass(/--animating/)
   await page.screenshot({ path: '/tmp/nautionette-command-palette.png' })
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/chats\/alpha$/)
   await expect(palette(page)).toHaveCount(0)
-  await expect(inlineSearch).toHaveValue('Design')
+  await expect(page.getByRole('button', { name: 'Search chats', exact: true })).toBeVisible()
 })
 
 test('search works over settings and collapsed sidebars, with keyboard selection and deep links', async ({ page, context }) => {
   await mockDesign(context)
   await page.goto('/settings/general')
-  await expect(page.getByRole('searchbox', { name: 'Search settings', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Search settings', exact: true })).toBeVisible()
   await page.keyboard.press('Control+k')
   await expect(search(page)).toBeFocused()
   // Result positions are not stable until asynchronous chat discovery has arrived.
@@ -92,7 +89,7 @@ test('late chat discovery preserves the keyboard-selected result rather than its
   await context.route('**/api/chats', async route => { await discovered; await route.fallback() })
   try {
     await page.goto('/settings/general')
-    await expect(page.getByRole('searchbox', { name: 'Search settings', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Search settings', exact: true })).toBeVisible()
     await page.keyboard.press('Control+k')
     await expect(search(page)).toBeFocused()
     await expect(palette(page).locator('.q-dialog__inner')).not.toHaveClass(/--animating/)
@@ -106,7 +103,7 @@ test('late chat discovery preserves the keyboard-selected result rather than its
   } finally { releaseChats() }
 })
 
-test('palette follows the query, traps focus, and dismisses on outside click and mobile resize', async ({ page, context }) => {
+test('palette traps focus and retains search when resized to mobile', async ({ page, context }) => {
   await mockDesign(context)
   await page.goto('/chats/alpha')
   await message(page).focus()
@@ -127,11 +124,11 @@ test('palette follows the query, traps focus, and dismisses on outside click and
   await expect(message(page)).toBeFocused()
   await page.keyboard.press('Control+k')
   await expect(search(page)).toBeFocused()
+  await search(page).fill('default model')
   await page.setViewportSize({ width: 900, height: 800 })
-  await expect(palette(page)).toHaveCount(0)
+  await expect(search(page)).toHaveValue('default model')
+  await expect(page.locator('.command-palette')).toHaveClass(/command-palette--mobile/)
   await page.keyboard.press('Control+k')
-  await expect(palette(page)).toHaveCount(0)
-  await page.setViewportSize({ width: 1440, height: 1000 })
   await expect(palette(page)).toHaveCount(0)
 })
 
@@ -150,16 +147,64 @@ test('opening the current chat restores the composer and repeated keydown does n
   await expect(message(page)).toHaveValue('Still writing')
 })
 
-for (const width of [390, 900]) {
-  test(`desktop palette leaves mobile chat search unchanged at ${width}px`, async ({ page, context }) => {
+for (const width of [320, 390, 1440]) {
+  test(`chat search and global search use the same history results at ${width}px`, async ({ page, context }) => {
     await mockDesign(context)
+    const calls = []
+    await context.route('**/api/search/chats?*', route => { calls.push(new URL(route.request().url()).searchParams.get('q')); return route.fallback() })
     await page.setViewportSize({ width, height: 800 })
     await page.goto('/chats')
-    await expect(page.getByRole('button', { name: 'Expand chat search', exact: true })).toBeHidden()
-    const inlineSearch = page.getByRole('textbox', { name: 'Search chats', exact: true })
-    await inlineSearch.fill('Design')
+    await expect(page.getByRole('button', { name: 'Search chats', exact: true })).toBeVisible()
     await page.keyboard.press('Meta+k')
-    await expect(palette(page)).toHaveCount(0)
-    await expect(inlineSearch).toHaveValue('Design')
+    await expect(search(page)).toBeFocused()
+    await expect(palette(page).getByRole('button', { name: 'All', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    await search(page).fill('quieter workspace')
+    await expect(palette(page).getByRole('option', { name: 'Design review', exact: true })).toContainText('A quieter workspace')
+    await palette(page).getByRole('button', { name: 'Chats', exact: true }).click()
+    await expect(search(page)).toHaveValue('quieter workspace')
+    await expect(palette(page).getByRole('option', { name: 'Design review', exact: true })).toContainText('A quieter workspace')
+    expect(calls).toEqual(['quieter workspace'])
+    await palette(page).getByRole('button', { name: 'Close search' }).click()
+    await searchWorkspace(page, 'chats', 'quieter workspace')
+    await expect(palette(page).getByRole('button', { name: 'Chats', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    await palette(page).getByRole('option', { name: 'Design review', exact: true }).click()
+    await expect(page).toHaveURL('/chats/alpha#message-answer')
+    await expect(page.locator('#message-answer')).toBeInViewport()
+    expect(calls).toEqual(['quieter workspace', 'quieter workspace'])
   })
 }
+
+test('workflow and run entry points use the palette and carry run filters', async ({ page, context }) => {
+  await mockDesign(context)
+  const searches = []
+  await context.route('**/api/runs?*', route => {
+    const params = new URL(route.request().url()).searchParams
+    if (params.get('q')) searches.push(Object.fromEntries(params))
+    return route.fulfill({ json: { runs: [{ workflow_id: 'older-run', workflow: 'digest', status: 'completed', created_at: 1700000000 }], next_cursor: '' } })
+  })
+  await page.goto('/workflows')
+  await searchWorkspace(page, 'workflows', 'morning digest')
+  await expect(palette(page).getByRole('button', { name: 'Workflows', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await palette(page).getByRole('option', { name: 'Morning digest', exact: true }).click()
+  await expect(page).toHaveURL('/workflows/digest')
+  await page.getByRole('navigation', { name: 'Workflow views' }).getByRole('button', { name: 'Runs', exact: true }).click()
+  await page.getByLabel('Run outcome').selectOption('completed')
+  await searchWorkspace(page, 'runs', 'older-run')
+  await expect(palette(page).getByRole('button', { name: 'Runs', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(palette(page).getByRole('option', { name: 'Morning digest', exact: true })).toContainText('older-run')
+  expect(searches.at(-1)).toMatchObject({ workflow: 'digest', status: 'completed', q: 'older-run', compact: 'true' })
+})
+
+test('member search excludes restricted settings and external packages', async ({ page, context }) => {
+  await mockDesign(context)
+  await page.route('**/api/auth/me', route => route.fulfill({ json: { ...fixtureAccount, user: { ...fixtureAccount.user, role: 'member' } } }))
+  await page.goto('/settings/account')
+  await expect(page.getByRole('button', { name: 'Search settings', exact: true })).toBeVisible()
+  await page.keyboard.press('/')
+  await expect(search(page)).toBeFocused()
+  await expect(palette(page).getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await search(page).fill('settings')
+  await expect(palette(page).getByRole('option', { name: 'Profile & security', exact: true })).toBeVisible()
+  await expect(palette(page).getByRole('option', { name: 'Users', exact: true })).toHaveCount(0)
+  await expect(palette(page).getByRole('button', { name: 'Pi packages', exact: true })).toHaveCount(0)
+})
