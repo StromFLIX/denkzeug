@@ -34,7 +34,7 @@ test('Cmd+K expands search from a composer, autofocuses, toggles, and preserves 
   expect(errors).toEqual([])
 })
 
-test('sidebar search uses the chat scope and finds chats even outside the activity filter', async ({ page, context }) => {
+test('workspace search finds chats even outside the sidebar activity filter', async ({ page, context }) => {
   const state = await mockDesign(context)
   await context.addInitScript(key => localStorage.setItem(key, JSON.stringify({ chatActiveMinutes: 60, chatKeepSelectedVisible: false })), PREFERENCES_KEY)
   state.data.chat.updated_at = Date.now() / 1000 - 86400 * 100
@@ -47,14 +47,14 @@ test('sidebar search uses the chat scope and finds chats even outside the activi
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/chats\/alpha$/)
   await expect(palette(page)).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Search chats', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Search workspace', exact: true })).toBeVisible()
 })
 
 test('search works over settings and collapsed sidebars, with keyboard selection and deep links', async ({ page, context }) => {
   await mockDesign(context)
   await page.goto('/settings/general')
-  await expect(page.getByRole('button', { name: 'Search settings', exact: true })).toBeVisible()
-  await page.keyboard.press('Control+k')
+  await expect(page.getByRole('button', { name: 'Search settings', exact: true })).toBeHidden()
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Search workspace', exact: true }).click()
   await expect(search(page)).toBeFocused()
   // Result positions are not stable until asynchronous chat discovery has arrived.
   await expect(palette(page).getByRole('option', { name: 'Design review', exact: true })).toBeVisible()
@@ -89,7 +89,7 @@ test('late chat discovery preserves the keyboard-selected result rather than its
   await context.route('**/api/chats', async route => { await discovered; await route.fallback() })
   try {
     await page.goto('/settings/general')
-    await expect(page.getByRole('button', { name: 'Search settings', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Search workspace', exact: true })).toBeVisible()
     await page.keyboard.press('Control+k')
     await expect(search(page)).toBeFocused()
     await expect(palette(page).locator('.q-dialog__inner')).not.toHaveClass(/--animating/)
@@ -154,7 +154,7 @@ for (const width of [320, 390, 1440]) {
     await context.route('**/api/search/chats?*', route => { calls.push(new URL(route.request().url()).searchParams.get('q')); return route.fallback() })
     await page.setViewportSize({ width, height: 800 })
     await page.goto('/chats')
-    await expect(page.getByRole('button', { name: 'Search chats', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: width <= 900 ? 'Search chats' : 'Search workspace', exact: true })).toBeVisible()
     await page.keyboard.press('Meta+k')
     await expect(search(page)).toBeFocused()
     await expect(palette(page).getByRole('button', { name: 'All', exact: true })).toHaveAttribute('aria-pressed', 'true')
@@ -173,6 +173,31 @@ for (const width of [320, 390, 1440]) {
     expect(calls).toEqual(['quieter workspace', 'quieter workspace'])
   })
 }
+
+test('desktop workspace search lifts chats over secondary workflow and run results on any page', async ({ page, context }) => {
+  const state = await mockDesign(context)
+  state.data.chat.title = 'Digest planning chat'
+  await context.route('**/api/runs?*', route => route.fulfill({ json: {
+    runs: [{ workflow_id: 'digest-123', workflow: 'digest', status: 'completed', created_at: 1700000000 }]
+  } }))
+  await page.goto('/workflows/digest')
+  const trigger = page.getByRole('button', { name: 'Search workspace', exact: true })
+  await expect(page.getByRole('button', { name: 'Search workflows', exact: true })).toHaveCount(0)
+  await trigger.click()
+  await search(page).fill('digest')
+  await expect(palette(page).getByRole('group', { name: /^Runs/ })).toBeVisible()
+  await expect(palette(page).getByText('Other workspace matches')).toBeVisible()
+  await expect(palette(page).getByRole('option').first()).toHaveAccessibleName('Digest planning chat')
+  const filters = palette(page).getByRole('group', { name: 'Search in' })
+  await filters.getByRole('button', { name: 'Chats', exact: true }).click()
+  await expect(search(page)).toHaveValue('digest')
+  await expect(palette(page).getByRole('option')).toHaveCount(1)
+  await expect(palette(page).getByText('Other workspace matches')).toHaveCount(0)
+  await filters.getByRole('button', { name: 'Workflows', exact: true }).click()
+  await expect(palette(page).getByRole('option')).toHaveAccessibleName('Morning digest')
+  await page.keyboard.press('Escape')
+  await expect(trigger).toBeFocused()
+})
 
 test('workflow and run entry points use the palette and carry run filters', async ({ page, context }) => {
   await mockDesign(context)
@@ -199,7 +224,7 @@ test('member search excludes restricted settings and external packages', async (
   await mockDesign(context)
   await page.route('**/api/auth/me', route => route.fulfill({ json: { ...fixtureAccount, user: { ...fixtureAccount.user, role: 'member' } } }))
   await page.goto('/settings/account')
-  await expect(page.getByRole('button', { name: 'Search settings', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Search workspace', exact: true })).toBeVisible()
   await page.keyboard.press('/')
   await expect(search(page)).toBeFocused()
   await expect(palette(page).getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-pressed', 'true')

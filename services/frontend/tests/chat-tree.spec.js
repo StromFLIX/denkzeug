@@ -1,5 +1,5 @@
 import { test, expect } from './account-fixture.js'
-import { searchWorkspace, workspaceSearch } from './helpers.js'
+import { searchWorkspace, setChatListPreferences, workspaceSearch } from './helpers.js'
 import { mockDesign } from './design-fixture.js'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 
@@ -98,8 +98,7 @@ test('recent idle descendants and selected old descendants keep their ancestors 
   child.answering = false
   child.unread = false
   await page.goto('/chats')
-  await page.getByRole('button', { name: 'Group', exact: true }).click()
-  await page.getByRole('group', { name: 'Show chats active within', exact: true }).getByRole('button', { name: '1h', exact: true }).click()
+  await setChatListPreferences(page, { minutes: 60 })
   await expect(page.locator('.side__list a[href="/chats/root"]')).toBeVisible()
   for (const chat of chats) chat.updated_at = chat.created_at = 1
   await page.goto('/chats/research')
@@ -110,10 +109,8 @@ test('recent idle descendants and selected old descendants keep their ancestors 
 test('old parent stays visible when its descendant is active and grouping keeps the family together', async ({ page, context }) => {
   await fixture(context)
   await page.goto('/chats')
-  await page.getByRole('button', { name: 'Group', exact: true }).click()
-  await page.getByRole('group', { name: 'Show chats active within', exact: true }).getByRole('button', { name: '1h', exact: true }).click()
+  await setChatListPreferences(page, { group: 'activity', minutes: 60 })
   await expect(page.locator('.side__list a[href="/chats/root"]')).toBeVisible()
-  await page.getByRole('group', { name: 'Group chats by', exact: true }).getByRole('button', { name: 'Activity', exact: true }).click()
   await expect(page.locator('.side__group .truncate')).toHaveText(['Active', 'Inactive'])
   await expect(page.locator('.side__chat-group').first().locator('.row-item__title')).toHaveText(['Build the website'])
   await page.getByRole('button', { name: 'Expand agent chats for Build the website (3)', exact: true }).click()

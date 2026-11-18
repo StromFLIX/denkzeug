@@ -1,17 +1,17 @@
 <template>
-  <nav class="agents" aria-label="Chats by agent">
+  <nav class="agents" :class="{ 'agents--embedded': embedded }" aria-label="Chats by agent">
     <div class="agents__list">
       <button class="agents__item agents__all" type="button" aria-label="Show all chats" aria-describedby="agent-activity-all" :aria-pressed="!selectedId" @click="select(null)">
         <AgentAvatar icon="forum" /><span class="sr-only">All</span>
         <AgentActivity :counts="store.chatActivity" description-id="agent-activity-all" />
-        <q-tooltip anchor="center right" self="center left" :offset="[10, 10]">{{ `All · ${store.chats.length} chats · ${activityLabel(store.chatActivity)}` }}</q-tooltip>
+        <q-tooltip anchor="bottom middle" self="top middle" :offset="[0, 6]">{{ `All · ${store.chats.length} chats · ${activityLabel(store.chatActivity)}` }}</q-tooltip>
       </button>
       <div class="agents__divider" aria-hidden="true" />
       <div class="agents__people">
         <button v-for="agent in agents" :key="agent.id" class="agents__item" type="button" :aria-label="`Chats with ${agent.name}`" :aria-describedby="`agent-activity-${agent.id}`" :aria-pressed="selectedId === agent.id" @click="select(agent.id)" @keydown="openAgentMenu($event, agent.id)">
           <AgentAvatar :agent="agent" /><span class="sr-only">{{ agent.name }}</span>
           <AgentActivity :counts="agentActivity(store.chatActivity, agent.id)" :description-id="`agent-activity-${agent.id}`" />
-          <q-tooltip anchor="center right" self="center left" :offset="[10, 10]">{{ agent.name }} · {{ activityLabel(agentActivity(store.chatActivity, agent.id)) }}</q-tooltip>
+          <q-tooltip anchor="bottom middle" self="top middle" :offset="[0, 6]">{{ agent.name }} · {{ activityLabel(agentActivity(store.chatActivity, agent.id)) }}</q-tooltip>
           <q-menu :ref="menu => registerMenu(agent.id, menu)" context-menu class="pick-menu" @before-show="openAgentMenus.add(agent.id)" @hide="openAgentMenus.delete(agent.id)">
             <RouterLink v-close-popup class="pick-menu__item agents__menu-link" :to="editorLocation(agent)"><span class="material-icons" aria-hidden="true">edit</span>Edit agent</RouterLink>
             <RouterLink v-close-popup class="pick-menu__item agents__menu-link" :to="editorLocation(agent, true)"><span class="material-icons" aria-hidden="true">add_photo_alternate</span>Change image</RouterLink>
@@ -36,6 +36,7 @@ import AgentAvatar from './AgentAvatar.vue'
 import AgentActivity from './AgentActivity.vue'
 import { agentActivity, activityLabel } from '../agent-activity'
 
+defineProps({ embedded: Boolean })
 const route = useRoute(), router = useRouter()
 const agents = computed(() => store.agentNavigation.agents)
 const selectedId = computed(() => typeof route.query.agent === 'string' ? route.query.agent : null)
@@ -67,36 +68,25 @@ watch([agents, () => store.agentNavigation.loaded, selectedId], () => {
 </script>
 
 <style scoped>
-.agents { display: flex; flex-direction: column; min-height: 0; min-width: 0; width: 68px; padding: 10px 6px 8px; border-right: 1px solid var(--border); background: var(--surface-panel); }
-.agents__list { display: flex; flex-direction: column; align-items: center; flex: 1; min-height: 0; gap: 4px; }
-.agents__people { display: flex; flex-direction: column; align-items: center; gap: 4px; overflow-y: auto; min-height: 0; width: 100%; scrollbar-width: thin; }
-.agents__item { position: relative; display: grid; place-items: center; flex: none; width: 48px; height: 48px; padding: 4px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); font: inherit; cursor: pointer; --agent-avatar-size: 40px; }
-.agents__divider { flex: none; width: 24px; height: 1px; margin: 3px 0; background: var(--border-strong); }
-.agents__item::before { content: ''; position: absolute; left: 0; width: 3px; height: 0; border-radius: var(--radius-pill); background: var(--text-muted); transition: height var(--transition); }
-.agents__item:hover::before { height: 12px; }
+.agents { display: flex; width: 100%; min-width: 0; padding: calc(4px + env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) 4px max(6px, env(safe-area-inset-left)); border-bottom: 1px solid var(--border); background: var(--surface-panel); }
+.agents--embedded { margin-top: 12px; padding: 0; border: 0; }
+.agents__list { display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px; }
+.agents__people { display: flex; align-items: center; gap: 4px; overflow-x: auto; min-width: 0; scrollbar-width: thin; }
+.agents__item { position: relative; display: grid; place-items: center; flex: none; width: 44px; height: 48px; padding: 4px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); font: inherit; cursor: pointer; --agent-avatar-size: 36px; }
+.agents--embedded .agents__item { width: 40px; height: 44px; --agent-avatar-size: 32px; }
+.agents__divider { flex: none; width: 1px; height: 24px; margin: 0 3px; background: var(--border-strong); }
+.agents__item::before { content: ''; position: absolute; bottom: 0; width: 0; height: 3px; border-radius: var(--radius-pill); background: var(--text-muted); transition: width var(--transition); }
+.agents__item:hover::before { width: 12px; }
 .agents__item:hover, .agents__manage:hover { background: var(--surface-hover); color: var(--text); }
 .agents__item[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-.agents__item[aria-pressed="true"]::before { height: 26px; background: var(--accent); }
+.agents__item[aria-pressed="true"]::before { width: 24px; background: var(--accent); }
 .agents__item:focus-visible, .agents__manage:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.agents__manage { display: grid; place-items: center; flex: none; min-height: 44px; margin-top: 8px; border-radius: var(--radius-sm); color: var(--text-dim); text-decoration: none; }
+.agents__manage { display: grid; place-items: center; flex: none; min-height: 44px; width: 44px; margin-inline-start: 4px; border-radius: var(--radius-sm); color: var(--text-dim); text-decoration: none; }
 .agents__manage .material-icons { font-size: 1.25rem; }
 .agents__menu-link { text-decoration: none; }
 .agents__menu-link .material-icons { font-size: 1.125rem; }
-.agents__placeholders { display: flex; flex-direction: column; gap: 4px; }
-.agents__placeholder { display: grid; place-items: center; flex: none; width: 40px; height: 40px; margin: 4px; border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--text-dim); }
+.agents__placeholders { display: flex; gap: 4px; overflow: hidden; }
+.agents__placeholder { display: grid; place-items: center; flex: none; width: 36px; height: 36px; margin: 6px 4px; border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--text-dim); }
 .agents__status { flex: none; padding: 8px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); cursor: pointer; }
 .agents__status:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-@media (max-width: 900px) {
-  .agents { flex-direction: row; width: 100%; padding: calc(4px + env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) 4px max(6px, env(safe-area-inset-left)); border-right: 0; border-bottom: 1px solid var(--border); }
-  .agents__list { flex-direction: row; min-width: 0; }
-  .agents__people { flex-direction: row; overflow-y: hidden; overflow-x: auto; min-width: 0; }
-  .agents__placeholders { flex-direction: row; }
-  .agents__placeholder { width: 36px; height: 36px; margin: 6px 4px; }
-  .agents__item { width: 44px; height: 48px; --agent-avatar-size: 36px; }
-  .agents__item::before { left: auto; bottom: 0; width: 0; height: 3px; transition: width var(--transition); }
-  .agents__item:hover::before { width: 12px; height: 3px; }
-  .agents__item[aria-pressed="true"]::before { width: 24px; height: 3px; }
-  .agents__divider { width: 1px; height: 24px; margin: 0 3px; }
-  .agents__manage { width: 44px; margin: 0 0 0 4px; }
-}
 </style>

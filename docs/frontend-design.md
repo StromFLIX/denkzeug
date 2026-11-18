@@ -54,14 +54,22 @@ Scope is explicit: **Instance**, **This device**, or **Per workflow**. Individua
 entries can override their section's scope. Automation links to the actual
 workflow's Run controls rather than duplicating scheduling or delivery forms.
 
-**Ctrl/Command + ,** opens Settings. **/** or **Search settings** opens workspace
-search with the Settings filter selected; **Ctrl/Command + K** opens it at All.
-On narrow screens, a grouped category selector replaces the tree.
+**Ctrl/Command + ,** opens Settings. **/** or the mobile **Search settings**
+button opens workspace search with the Settings filter selected. The desktop top
+bar search and **Ctrl/Command + K** open it at **All**. On narrow screens, a
+grouped category selector replaces the tree.
 
 **Run & manage → Usage** shows token composition, a time chart and filtered
 model/agent/workflow/account breakdowns. Workflow drilldowns show runs; members
 see only their own usage. The page uses theme tokens, collapses filters on mobile,
 and supports filtered CSV downloads. See [Usage](usage.md) for the accounting and API contract.
+
+## Workspace navigation
+
+Desktop puts Chats, Workflows, and Settings in a top bar with centered workspace
+search and persistent New chat and list-toggle actions. The resizable list sits
+below, with agent selection inside its chat header. On mobile, keep the bottom
+navigation on list screens and the Back button on full-screen detail views.
 
 ## Device preferences
 
@@ -115,15 +123,15 @@ behind the separate controls, without nesting buttons inside a link. Avatars,
 latest-message previews and the separate **In progress** badge are not shown in
 the chat list. Workflow and run rows retain their existing layouts.
 
-**Group → All / Date / Activity / Project** and **Settings → Workspace → Chat list →
-Group chats by** share the same choices. Date groups use the last completed activity's
+Change grouping in **Settings → Workspace → Chat list → Group chats by**.
+The default is **Date**. Date groups use the last completed activity's
 local calendar date, with absolute date labels that remain valid across midnight.
 Activity groups have a fixed priority: **Active**, **Unread**,
 then **Inactive**; a chat moves between these groups only when its state changes.
 Multi-project chats appear once in each project, with **No project** last. Project
 groups sort by their newest completed activity, independently of activity filtering.
 Grouping persists on this device and synchronizes between tabs. Retired grouping
-values fall back to **No grouping**, also the reset default.
+values fall back to **Date**, also the reset default.
 
 Rows sort by `last_activity_at`, newest first, with an ID tie-breaker. This clock
 advances when a human message is accepted (including queued messages), when the full
@@ -142,7 +150,8 @@ activity (`updated_at`) and retains running chats and unread replies.
 
 ### Chat list activity and selection
 
-The activity window always includes unread replies and running chats.
+The activity window is set in **Settings → Workspace → Chat list** and defaults
+to **All time**. It always includes unread replies and running chats.
 By default, **Keep selected chat visible** also retains the
 open chat, even after it is read and regardless of its activity timestamp.
 **Chat visibility grace period** keeps each recently left chat in the list for

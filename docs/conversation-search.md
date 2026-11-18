@@ -1,11 +1,14 @@
 # Workspace and conversation search
 
-**Ctrl/Command + K** opens workspace search at **All**. The search buttons in
-Chats, Workflows, Runs, and Settings open the same palette with the corresponding
-filter selected. Changing filters keeps the query. On phones the palette fills
-normal app space and the results scroll beneath the search box and filters.
+The desktop top bar’s **Search workspace** and **Ctrl/Command + K** open the same
+palette at **All**, regardless of the current page. On mobile, the Chats, Workflows,
+and Settings list buttons open the corresponding filter. The Runs view keeps its
+own filtered entry point. Changing filters keeps the query. On phones the palette
+fills normal app space and results scroll beneath the search box and filters.
 
-**All** combines chats, workflows, runs, and settings. A non-empty chat query searches
+**All** puts chat matches first and shows workflows, runs, and settings as
+secondary matches. If there are matches in another category, only the first
+five chat matches are shown in **All**; the **Chats** filter shows up to 30. A non-empty chat query searches
 all saved chats the account can access, independent of the sidebar's agent or
 activity filters and its limited recent list. Chats use keyword and semantic
 ranking. Workflows (including visible drafts) and settings match their metadata;

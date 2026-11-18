@@ -9,11 +9,14 @@
       <button v-if="store.liveStatus === 'failed'" class="btn" @click="actions.connect()">Reconnect</button>
     </div>
   <div v-if="!gate" :key="account.user.id" class="shell" data-skin-part="shell" :class="{ 'shell--detail': hasSelection, 'shell--full': fullPage, 'shell--collapsed': sideCollapsed, 'shell--agents': showAgentRail }">
-    <NavRail ref="navRail" class="shell__rail" :sidebar-collapsed="sideCollapsed" @open-sidebar="openSidebar" />
-    <AgentRail v-if="showAgentRail" v-show="!sideCollapsed" class="shell__agents" />
+    <NavRail class="shell__rail" :mobile="mobile" :show-sidebar-toggle="!fullPage" :sidebar-collapsed="sideCollapsed"
+      @open-sidebar="openSidebar" @toggle-sidebar="preferences.sideCollapsed = !sideCollapsed" />
+    <AgentRail v-if="showAgentRail && mobile" class="shell__agents" />
     <template v-if="!fullPage">
       <aside v-show="!sideCollapsed" data-skin-part="sidebar" id="shell-sidebar" class="shell__side" :style="{ width: `${sideWidth}px` }">
-        <SidePanel :mobile="mobile" :is-chat-active="isChatActive" @collapse-sidebar="collapseSidebar" />
+        <SidePanel :mobile="mobile" :is-chat-active="isChatActive">
+          <template v-if="showAgentRail && !mobile" #agents><AgentRail embedded /></template>
+        </SidePanel>
         <div
           class="shell__grip"
           :class="{ 'shell__grip--active': dragging }"
@@ -61,7 +64,6 @@ const route = useRoute()
 const router = useRouter()
 const selectedChatId = computed(() => route.name === 'chats' ? route.params.id || '' : '')
 const isChatActive = useChatActivity(selectedChatId, preferences, () => route.fullPath)
-const navRail = ref(null)
 const searchOpen = ref(false)
 const searchEntry = ref({ scope: 'all' })
 const sideWidth = computed({ get: () => preferences.sideWidth, set: value => { preferences.sideWidth = value } })
@@ -82,12 +84,6 @@ const showAgentRail = computed(() => account.user?.role === 'admin' && route.nam
 
 function openSidebar () {
   if (!mobile.value) preferences.sideCollapsed = false
-}
-
-function collapseSidebar () {
-  preferences.sideCollapsed = true
-  // Keep keyboard focus on the navigation link that can reopen the hidden list.
-  navRail.value?.focusActiveItem()
 }
 
 watch([() => preferences.theme, currentTokens, hasSelection, fullPage, mobile],
@@ -205,19 +201,21 @@ onUnmounted(() => {
 .shell {
   flex: 1;
   display: grid;
-  grid-template-columns: var(--rail-width) auto minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
   min-width: 0;
   min-height: 0;
   background: var(--surface-app);
 }
 
-.shell--agents { grid-template-columns: var(--rail-width) 68px auto minmax(0, 1fr); }
-
 .shell--full,
 .shell--collapsed {
-  grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (width > 900px) {
+  .shell__rail { grid-column: 1 / -1; }
 }
 
 .shell__side {

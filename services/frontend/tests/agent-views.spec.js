@@ -88,7 +88,8 @@ for (const width of [1440, 390, 320]) {
     const agentButton = rail.getByRole('button', { name: 'Chats with Grace', exact: true })
     await expect(agentButton).toBeVisible()
     const bounds = await rail.boundingBox()
-    expect(width > 900 ? bounds.width : bounds.height).toBeLessThanOrEqual(width > 900 ? 68 : 60)
+    expect(bounds.height).toBeLessThanOrEqual(60)
+    if (width > 900) await expect(page.locator('.side__head').getByRole('navigation', { name: 'Chats by agent' })).toBeVisible()
     expect((await agentButton.boundingBox()).height).toBeLessThanOrEqual(48)
     // All-chats icon, uploaded portraits and initials share the same rounded shape.
     for (const avatar of await rail.locator('.agent-avatar').all()) await expectRoundedAvatar(avatar)

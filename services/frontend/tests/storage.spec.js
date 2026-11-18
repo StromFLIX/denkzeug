@@ -182,7 +182,7 @@ test('settings search discovers Storage and its deep links before opening the pa
   await mockStorage(context)
   await page.goto('/settings/general')
   await searchWorkspace(page, 'settings', 'storage')
-  await workspaceSearch(page).getByRole('option', { name: 'Storage usage', exact: true }).click()
+  await workspaceSearch(page).getByRole('option', { name: 'Output storage usage', exact: true }).click()
   await expect(page).toHaveURL(/\/settings\/storage#storage-overview/)
   await expect(page.getByRole('heading', { name: 'Storage', exact: true })).toBeVisible()
 })

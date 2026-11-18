@@ -9,7 +9,7 @@ const rgb = hex => `rgb(${[1, 3, 5].map(index => parseInt(hex.slice(index, index
 
 for (const theme of THEMES) {
   for (const width of [1440, 320]) {
-    test(`${theme.name} keeps chat search distinct without a repeated brand header at ${width}px`, async ({ page, context }) => {
+    test(`${theme.name} keeps search distinct without a repeated brand header at ${width}px`, async ({ page, context }) => {
       await context.addInitScript(({ key, theme }) => localStorage.setItem(key, JSON.stringify({ theme })), { key: PREFERENCES_KEY, theme: theme.id })
       await mockDesign(context)
       await page.setViewportSize({ width, height: 900 })
@@ -18,7 +18,7 @@ for (const theme of THEMES) {
       await expect(page.locator('.side__identity')).toHaveCount(0)
       await expect(page.locator('.side__head .brand-mark')).toHaveCount(0)
       const tokens = resolveTheme(theme.id)
-      const field = page.locator('.side__search')
+      const field = page.getByRole('button', { name: width <= 900 ? 'Search chats' : 'Search workspace', exact: true })
       await expect(field).toHaveCSS('background-color', rgb(tokens['surface-raised']))
       await expect(field).toHaveCSS('border-top-style', 'solid')
       expect(tokens['surface-raised']).not.toBe(tokens['surface-panel'])

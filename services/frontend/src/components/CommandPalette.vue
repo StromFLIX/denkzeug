@@ -23,7 +23,9 @@
       </div>
       <p v-if="scope === 'packages'" class="command-palette__notice">Public npm catalog. Package searches are sent to npm.</p>
       <div id="command-results" class="command-palette__results scroll-y" role="listbox" aria-label="Search results">
-        <div v-for="group in groups" :key="group.key" role="group" :aria-labelledby="`command-group-${group.key}`">
+        <div v-for="group in groups" :key="group.key" role="group" :aria-labelledby="`command-group-${group.key}`"
+          :aria-describedby="group.key === firstSecondary ? 'command-secondary' : undefined">
+          <div v-if="group.key === firstSecondary" id="command-secondary" class="command-palette__secondary" aria-hidden="true">Other workspace matches</div>
           <div :id="`command-group-${group.key}`" class="command-palette__heading">
             {{ group.label }}<span>{{ group.results.length < group.count ? `${group.results.length} of ${group.count}` : group.count }}</span>
           </div>
@@ -111,6 +113,7 @@ const groups = computed(() => commandSearchGroups(store.chats, query.value, scop
   workflows: store.workflows, drafts: isAdmin.value ? store.drafts : [],
   runs: remoteRuns.value ?? (runQuery.value ? [] : store.runs), packages: packages.value, settingSections: settingSections.value
 }))
+const firstSecondary = computed(() => scope.value === 'all' && text.value ? groups.value.find(group => group.key !== 'chats')?.key : undefined)
 const results = computed(() => groups.value.flatMap(group => group.results))
 const selected = computed(() => results.value.find(result => result.key === activeKey.value) || results.value[0])
 const optionId = result => `command-option-${result.key}`
@@ -264,6 +267,8 @@ async function activate (result) {
 .command-palette__results { flex: 1; min-height: 0; padding: 0 10px 12px; }
 .command-palette__heading { display: flex; gap: 8px; padding: 16px 12px 8px; color: var(--text-dim); font-size: 0.6875rem; font-weight: 600; }
 .command-palette__heading span { font-weight: 400; }
+.command-palette__secondary { margin: 14px 12px 0; padding-top: 12px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.75rem; font-weight: 600; }
+.command-palette__secondary + .command-palette__heading { padding-top: 8px; }
 .command-palette__result { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: var(--radius-sm); cursor: pointer; }
 .command-palette__result--active { background: var(--accent-soft); }
 .command-palette__icon { flex: none; color: var(--text-muted); font-size: 1.125rem; }

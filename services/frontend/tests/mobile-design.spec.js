@@ -80,24 +80,21 @@ test('workflow title, run action and settings tab fit on a narrow phone', async 
   await expect(page.getByRole('heading', { name: 'Schedules', exact: true })).toBeVisible()
 })
 
-test('landscape chat filters do not shrink the list and apply without leaving it', async ({ page, context }, testInfo) => {
+test('mobile keeps contextual list search, bottom navigation and focused chat detail', async ({ page, context }, testInfo) => {
   await mockDesign(context)
-  await page.setViewportSize({ width: 844, height: 390 })
   await page.goto('/chats')
   const list = page.locator('.side__list')
-  await expect(list.getByText('Design review', { exact: true })).toBeVisible()
-  const before = (await list.boundingBox()).height
-  await page.getByRole('button', { name: 'Group', exact: true }).tap()
-  const sheet = page.getByRole('dialog', { name: 'Chat list filters' })
-  await expect(sheet.getByRole('button', { name: 'Show chats', exact: true })).toBeInViewport({ ratio: 1 })
-  expect((await list.boundingBox()).height).toBeCloseTo(before)
-  await page.screenshot({ path: testInfo.outputPath('landscape-filter-sheet.png') })
-  await sheet.getByRole('button', { name: 'Activity', exact: true }).tap()
-  await sheet.getByRole('button', { name: 'Show chats', exact: true }).tap()
-  await expect(sheet).toBeHidden()
-  await expect(page.getByText('Grouped by activity', { exact: true })).toBeVisible()
-  await expect(list.getByText('Design review', { exact: true })).toBeInViewport()
-  await page.screenshot({ path: testInfo.outputPath('landscape-filters.png') })
+  const nav = page.getByRole('navigation', { name: 'Main navigation' })
+  await expect(page.getByRole('button', { name: 'Group', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Search chats', exact: true })).toBeInViewport({ ratio: 1 })
+  await expect(nav.getByRole('link', { name: 'Workflows', exact: true })).toBeInViewport({ ratio: 1 })
+  expect((await nav.boundingBox()).y).toBeGreaterThan((await list.boundingBox()).y)
+  await page.screenshot({ path: testInfo.outputPath('mobile-chat-list.png') })
+  await list.getByText('Design review', { exact: true }).tap()
+  await expect(page.getByRole('button', { name: 'Back to chats', exact: true })).toBeInViewport({ ratio: 1 })
+  await expect(nav).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Search workspace', exact: true })).toHaveCount(0)
+  await page.screenshot({ path: testInfo.outputPath('mobile-chat-detail.png') })
 })
 
 test('settings Back restores agent query and sign-out actions fit at 150%', async ({ page, context }) => {

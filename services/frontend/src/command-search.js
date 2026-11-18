@@ -31,7 +31,7 @@ export function commandSearchGroups (chats, query, scope = 'all', remoteResults 
   // The list and the detail route both prefer a draft over a deployed revision.
   const workflowsByName = new Map([...workflows, ...drafts.map(item => ({ ...item, draft: true }))].map(item => [item.name, item]))
   const workflowResults = [...workflowsByName.values()].filter(item => matchesWords(`${item.name} ${item.title || ''} ${item.description || ''}`, words))
-  return [
+  const groups = [
     resultGroup('chats', text ? 'Chats' : 'Recent chats', chatResults.map(chat => ({
       key: `chat-${chat.id}`, label: chat.title || 'Untitled chat',
       description: chat.last_message?.preview || 'Open conversation', icon: 'chat_bubble_outline',
@@ -59,4 +59,7 @@ export function commandSearchGroups (chats, query, scope = 'all', remoteResults 
       icon: 'extension', to: { path: '/settings/packages', query: { source: `npm:${item.name}@${item.version}` } }
     })), 100)
   ].filter(group => (scope === group.key || (scope === 'all' && group.key !== 'packages')) && group.results.length)
+  // Leave room for secondary matches. The Chats filter shows the deeper list.
+  return scope === 'all' && text && groups.length > 1 ? groups.map(group => group.key === 'chats'
+    ? { ...group, results: group.results.slice(0, 5) } : group) : groups
 }

@@ -4,30 +4,13 @@
       <div class="row side__heading">
         <h1 class="side__title grow truncate" :title="heading">{{ heading }}</h1>
         <button
-          v-if="!mobile" type="button" class="btn btn--icon"
-          aria-label="Collapse sidebar" title="Collapse sidebar"
-          aria-expanded="true" aria-controls="shell-sidebar"
-          @click="$emit('collapse-sidebar')"
-        >
-          <span class="material-icons" aria-hidden="true">menu_open</span>
-        </button>
-        <button
-          v-if="section === 'chats'" type="button" class="btn btn--icon"
-          :class="{ 'side__filter--active': groupBy !== 'none' || activeMinutes }"
-          aria-label="Group" title="Group and filter chats"
-          :aria-expanded="showGroupControls" :aria-controls="mobile ? undefined : 'chat-group-controls'" :aria-haspopup="mobile ? 'dialog' : undefined"
-          @click="showGroupControls = !showGroupControls"
-        >
-          <span class="material-icons" aria-hidden="true">tune</span>
-        </button>
-        <button
-          v-if="section === 'chats'" class="btn btn--icon side__new" title="New chat" aria-label="New chat"
+          v-if="mobile && section === 'chats'" class="btn btn--icon side__new" title="New chat" aria-label="New chat"
           :disabled="route.params.id === 'new'" @click="startChat"
         >
           <span class="material-icons">add</span>
         </button>
         <button
-          v-else class="btn btn--icon" title="Refresh"
+          v-else-if="section !== 'chats'" class="btn btn--icon" title="Refresh"
           @click="refresh"
         >
           <span class="material-icons">refresh</span>
@@ -41,42 +24,8 @@
           <span v-if="health !== 'ok'" class="dot side__cog-dot" :class="{ 'dot--bad': health === 'degraded' }" />
         </RouterLink>
       </div>
-      <WorkspaceSearchButton class="side__search" :scope="section" :label="`Search ${section}`" :shortcut="mobile ? '' : searchShortcut" />
-      <div v-if="mobile && filterSummary.length" class="side__filter-summary">
-        <span v-for="filter in filterSummary" :key="filter" class="chip">{{ filter }}</span>
-      </div>
-      <template v-if="section === 'chats'">
-      <component v-if="mobile || showGroupControls" :is="mobile ? QDialog : 'div'"
-        v-bind="mobile ? { modelValue: showGroupControls, position: 'bottom', 'aria-label': 'Chat list filters' } : {}" @update:model-value="showGroupControls = $event">
-      <div id="chat-group-controls" class="side__controls" :class="{ 'side__controls--sheet': mobile }">
-        <div v-if="mobile" class="side__sheet-head">
-          <h2>Chat list filters</h2>
-          <button type="button" class="btn btn--icon" aria-label="Close filters" @click="showGroupControls = false"><span class="material-icons" aria-hidden="true">close</span></button>
-        </div>
-        <div class="side__control">
-          <span class="side__control-label">Group</span>
-          <div class="seg" role="group" aria-label="Group chats by">
-            <button
-              v-for="opt in groupOptions" :key="opt.value" type="button"
-              class="seg__btn" :class="{ 'seg__btn--active': groupBy === opt.value }"
-              :aria-pressed="groupBy === opt.value" @click="groupBy = opt.value"
-            >{{ opt.label }}</button>
-          </div>
-        </div>
-        <div class="side__control">
-          <span class="side__control-label">Active</span>
-          <div class="seg" role="group" aria-label="Show chats active within">
-            <button
-              v-for="opt in activeOptions" :key="opt.value" type="button"
-              class="seg__btn" :class="{ 'seg__btn--active': activeMinutes === opt.value }"
-              :aria-pressed="activeMinutes === opt.value" :title="opt.title" @click="activeMinutes = opt.value"
-            >{{ opt.label }}</button>
-          </div>
-        </div>
-        <button v-if="mobile" type="button" class="btn btn--primary side__done" @click="showGroupControls = false">Show chats</button>
-      </div>
-      </component>
-      </template>
+      <WorkspaceSearchButton v-if="mobile" class="side__search" :scope="section" :label="`Search ${section}`" />
+      <slot name="agents" />
     </header>
 
     <div class="side__list scroll-y grow" :class="{ 'side__list--grouped': section === 'chats' && groupBy !== 'none' }">
@@ -165,7 +114,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { QDialog } from 'quasar'
 import WorkspaceSearchButton from './WorkspaceSearchButton.vue'
 import { scheduleTime } from '../format'
 import { nextWorkflowSchedule, workflowSchedules } from '../workflow-schedules'
@@ -174,7 +122,7 @@ import { account } from '../auth-session.js'
 import { api } from '../api'
 import ChatTree from './ChatTree.vue'
 import { preferences } from '../preferences'
-import { CHAT_GROUP_OPTIONS, groupChats } from '../chat-groups'
+import { groupChats } from '../chat-groups'
 import { chatAncestors, chatForest, filterChatForest, chatTreeRows } from '../chat-tree'
 import { belongsToAgent } from '../agent-config'
 import { chatLocation } from '../router'
@@ -183,28 +131,14 @@ const props = defineProps({
   mobile: Boolean,
   isChatActive: { type: Function, required: true }
 })
-defineEmits(['collapse-sidebar'])
 
 const route = useRoute()
 const router = useRouter()
-const searchShortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 const readBusy = ref('')
 const readError = ref('')
 
-const groupOptions = CHAT_GROUP_OPTIONS.map(([value, label]) => ({ value, label: value === 'none' ? 'All' : label }))
-
-// A real ladder of ranges instead of three flavours of "a few minutes".
-const activeOptions = [
-  { value: 60, label: '1h', title: 'Active in the last hour' },
-  { value: 24 * 60, label: '24h', title: 'Active in the last 24 hours' },
-  { value: 7 * 24 * 60, label: '7d', title: 'Active in the last 7 days' },
-  { value: 30 * 24 * 60, label: '30d', title: 'Active in the last 30 days' },
-  { value: 0, label: 'All', title: 'No time limit' }
-]
-
-const showGroupControls = ref(false)
-const groupBy = computed({ get: () => preferences.chatGroupBy, set: value => { preferences.chatGroupBy = value } })
-const activeMinutes = computed({ get: () => preferences.chatActiveMinutes, set: value => { preferences.chatActiveMinutes = value } })
+const groupBy = computed(() => preferences.chatGroupBy)
+const activeMinutes = computed(() => preferences.chatActiveMinutes)
 const showOlder = ref(false)
 
 watch(activeMinutes, () => { showOlder.value = false })
@@ -257,15 +191,9 @@ const section = computed(() => route.meta.section || route.name || 'chats')
 const selectedAgent = computed(() => section.value === 'chats' ? store.agentNavigation.agents.find(agent => agent.id === route.query.agent) : null)
 const heading = computed(() => selectedAgent.value?.name || ({ chats: 'Chats', workflows: 'Workflows', runs: 'Runs' }[section.value]))
 
-const filterSummary = computed(() => section.value === 'chats' ? [
-  groupBy.value !== 'none' && `Grouped by ${groupOptions.find(item => item.value === groupBy.value)?.label.toLowerCase()}`,
-  activeMinutes.value && `Active: ${activeOptions.find(item => item.value === activeMinutes.value)?.label}`
-].filter(Boolean) : [])
-
 const filteredChats = computed(() =>
   filterChatForest(chatForest(store.chats), chat => belongsToAgent(chat, route.query.agent))
     .map(treeNode => ({ ...treeNode.summary, treeNode })))
-watch([section, () => props.mobile], () => { showGroupControls.value = false })
 
 const workflowRows = computed(() => store.workflows.map(workflow => {
   const schedules = workflowSchedules(workflow)
@@ -306,7 +234,7 @@ function refresh () {
   letter-spacing: -0.045em;
 }
 
-.side__new, .side__filter--active {
+.side__new {
   color: var(--accent);
   background: var(--accent-soft);
 }
@@ -332,84 +260,7 @@ function refresh () {
 }
 
 .side__search { margin-top: 18px; }
-.side__filter-summary { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 @media (max-height: 420px) { .side__search { margin-top: 8px; } }
-
-.side__controls {
-  display: grid;
-  gap: 6px;
-  padding: 8px 2px 0;
-}
-
-.side__controls--sheet { width: min(100%, 560px); max-height: min(75dvh, 500px); overflow-y: auto; overscroll-behavior-y: contain; gap: 12px; padding: 12px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); background: var(--surface-overlay); }
-.side__sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.side__sheet-head h2 { font-size: 1rem; font-weight: 600; }
-.side__controls--sheet .seg__btn { min-height: 44px; }
-.side__done { min-height: 44px; }
-
-.side__control {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-  min-width: 0;
-}
-
-.side__control-label {
-  flex: none;
-  color: var(--text-dim);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.seg {
-  display: flex;
-  flex-wrap: wrap;
-  flex: 1;
-  min-width: 0;
-  padding: 2px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-input);
-  border: 1px solid var(--border);
-}
-
-.seg__btn {
-  flex: 1 1 auto;
-  min-width: max-content;
-  padding: 4px 6px;
-  border-radius: var(--radius-pill);
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font: inherit;
-  font-size: 0.71875rem;
-  font-weight: 600;
-  line-height: 1.6;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition);
-}
-
-.seg__btn:hover {
-  color: var(--text);
-  background: var(--surface-hover);
-}
-
-.seg__btn--active,
-.seg__btn--active:hover {
-  background: var(--accent);
-  color: var(--accent-text);
-}
-
-.seg__btn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
 
 .side__more {
   display: flex;
@@ -457,7 +308,7 @@ function refresh () {
 }
 
 .side__list--grouped {
-  /* Sticky headers must meet the search divider, not a padded scroll edge. */
+  /* Sticky headers sit flush against the list header. */
   padding-top: 0;
 }
 

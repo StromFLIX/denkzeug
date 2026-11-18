@@ -1,6 +1,7 @@
 import { test, expect } from './account-fixture.js'
 import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 import { mockDesign } from './design-fixture.js'
+import { setChatListPreferences } from './helpers.js'
 
 const titles = page => page.locator('.side__list .row-item__title')
 
@@ -53,8 +54,7 @@ for (const group of ['All', 'Date', 'Project']) {
       if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ chatOrderBy: 'activity' }))
     }, PREFERENCES_KEY)
     await page.goto('/chats/alpha')
-    await page.getByRole('button', { name: 'Group', exact: true }).click()
-    await page.getByRole('group', { name: 'Group chats by', exact: true }).getByRole('button', { name: group, exact: true }).click()
+    await setChatListPreferences(page, { group: group === 'All' ? 'none' : group.toLowerCase() })
     let expected = ['Agent replied', 'User just asked', 'Agent using tools']
     await expect(titles(page)).toHaveText(expected)
     if (group === 'Project') await expect(page.locator('.side__group .truncate')).toHaveText(['Project reply', 'Project user', 'Project tools'])
@@ -107,8 +107,6 @@ test('date buckets and counts move only when the full response ends across midni
   Object.assign(working, { created_at: previousDay - 86400, last_activity_at: previousDay })
   for (const chat of chats.slice(1)) chat.last_activity_at = nextDay
   await page.goto('/chats/alpha')
-  await page.getByRole('button', { name: 'Group', exact: true }).click()
-  await page.getByRole('group', { name: 'Group chats by', exact: true }).getByRole('button', { name: 'Date', exact: true }).click()
   await expect(page.locator('.side__group-count')).toHaveText(['2 chats', '1 chat'])
   working.updated_at = nextDay + 60
   working.last_message_at = nextDay + 60
@@ -127,9 +125,7 @@ for (const group of ['All', 'Project']) {
     chats[1].updated_at = Date.now() / 1000 - 7200
     for (const chat of chats) chat.project_ids = ['tools']
     await page.goto('/chats/alpha')
-    await page.getByRole('button', { name: 'Group', exact: true }).click()
-    await page.getByRole('group', { name: 'Group chats by', exact: true }).getByRole('button', { name: group, exact: true }).click()
-    await page.getByRole('group', { name: 'Show chats active within', exact: true }).getByRole('button', { name: '1h', exact: true }).click()
+    await setChatListPreferences(page, { group: group === 'All' ? 'none' : 'project', minutes: 60 })
     await expect(titles(page)).toHaveText(['User just asked', 'Agent using tools'])
     await page.getByRole('button', { name: 'Show 1 older', exact: true }).click()
     await expect(titles(page)).toHaveText(['Agent replied', 'User just asked', 'Agent using tools'])

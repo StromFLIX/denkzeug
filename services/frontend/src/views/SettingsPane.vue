@@ -185,7 +185,8 @@ onUnmounted(() => {
 .settings__breadcrumb { display: flex; align-items: center; gap: 12px; font-size: 0.8125rem; color: var(--text-dim); }
 .settings__breadcrumb h1 { color: var(--text); font-weight: 600; }
 .settings__shortcut { margin-right: 12px; }
-.settings__searchbar { padding: 18px 24px; border-bottom: 1px solid var(--border); background: var(--surface-app); }
+.settings__searchbar { display: none; padding: 18px 24px; border-bottom: 1px solid var(--border); background: var(--surface-app); }
+@media (max-width: 900px) { .settings__searchbar { display: block; } }
 .settings__workspace { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 0; }
 .settings__navigator { position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; min-width: 0; border-right: 1px solid var(--border); background: var(--surface-app); }
 .settings__tree { min-height: 0; background: var(--surface-app); overscroll-behavior-y: contain; scrollbar-gutter: stable; scrollbar-color: var(--text-dim) var(--surface-app); scroll-padding-block: 18px; }

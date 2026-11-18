@@ -38,9 +38,20 @@ test('scopes, empty states and result limits remain independent of activity filt
   assert.deepEqual(commandSearchGroups(chats, 'nothing-matches'), [])
   const many = Array.from({ length: 60 }, (_, i) => ({ id: String(i), title: `Old chat ${i}`, updated_at: 1 }))
   assert.equal(commandSearchGroups(many, '')[0].results.length, 8)
-  const [group] = commandSearchGroups(many, 'old')
+  const [group] = commandSearchGroups(many, 'old', 'chats')
   assert.equal(group.results.length, 30)
   assert.equal(group.count, 60)
+})
+
+test('All shows chat matches first and makes room for secondary workspace results', () => {
+  const many = Array.from({ length: 10 }, (_, i) => ({ id: String(i), title: `Zebra digest ${i}` }))
+  assert.equal(commandSearchGroups(many, 'zebra')[0].results.length, 10)
+  const data = { workflows: [{ name: 'zebra', title: 'Zebra digest' }] }
+  const groups = commandSearchGroups(many, 'zebra', 'all', null, data)
+  assert.deepEqual(groups.map(group => group.key), ['chats', 'workflows'])
+  assert.equal(groups[0].results.length, 5)
+  assert.equal(groups[0].count, 10)
+  assert.equal(commandSearchGroups(many, 'zebra', 'chats', null, data)[0].results.length, 10)
 })
 
 test('remote full-history and semantic ranks replace local filtering and link to matching messages', () => {

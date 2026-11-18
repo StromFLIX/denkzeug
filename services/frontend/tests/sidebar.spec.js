@@ -3,6 +3,7 @@ import { PREFERENCES_KEY } from '../src/preferences-schema.js'
 import { mockDesign } from './design-fixture.js'
 
 const collapseButton = page => page.getByRole('button', { name: 'Collapse sidebar', exact: true })
+const expandButton = page => page.getByRole('button', { name: 'Expand sidebar', exact: true })
 const chatsLink = page => page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Chats', exact: true })
 const savedPreferences = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), PREFERENCES_KEY)
 
@@ -19,40 +20,41 @@ test('header collapse button makes room for the chat without losing its draft or
   await grip.press('ArrowRight')
   await expect(grip).toHaveAttribute('aria-valuenow', '330')
   const expandedWidth = (await main.boundingBox()).width
-  await expect(sidebar.locator('.side__head').getByRole('button', { name: 'Collapse sidebar', exact: true })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Collapse sidebar', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('link', { name: 'Settings', exact: true })).toBeVisible()
-  const agentColumn = page.getByRole('navigation', { name: 'Chats by agent' })
-  const agentWidth = (await agentColumn.boundingBox()).width
-  const collapseBox = await collapseButton(page).boundingBox()
-  const groupBox = await page.getByRole('button', { name: 'Group', exact: true }).boundingBox()
-  expect(collapseBox.x + collapseBox.width).toBeLessThanOrEqual(groupBox.x)
-  expect(collapseBox.y).toBeCloseTo(groupBox.y)
+  const nav = page.getByRole('navigation', { name: 'Main navigation' })
+  await expect(nav.getByRole('button', { name: 'Collapse sidebar', exact: true })).toBeVisible()
+  await expect(nav.getByRole('button', { name: 'New chat', exact: true })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Settings', exact: true })).toBeVisible()
+  const barBox = await nav.boundingBox()
+  const searchBox = await nav.getByRole('button', { name: 'Search workspace', exact: true }).boundingBox()
+  expect(searchBox.x + searchBox.width / 2).toBeCloseTo(barBox.x + barBox.width / 2, 0)
+  expect(barBox.y + barBox.height).toBeCloseTo((await sidebar.boundingBox()).y, 0)
+  const agents = sidebar.getByRole('navigation', { name: 'Chats by agent' })
+  await expect(agents).toBeVisible()
   await expect(collapseButton(page)).toHaveAttribute('aria-controls', 'shell-sidebar')
   await expect(collapseButton(page)).toHaveAttribute('aria-expanded', 'true')
   await collapseButton(page).click()
   await expect(sidebar).toBeHidden()
   await expect(grip).toBeHidden()
   await expect(collapseButton(page)).toBeHidden()
-  await expect(page.getByRole('button', { name: 'Expand sidebar', exact: true })).toHaveCount(0)
-  await expect(chatsLink(page)).toBeFocused()
+  await expect(expandButton(page)).toHaveAttribute('aria-expanded', 'false')
+  await expect(expandButton(page)).toBeFocused()
   await expect(input).toHaveValue('Keep this draft while I focus')
-  await expect(agentColumn).toBeHidden()
-  expect((await main.boundingBox()).width).toBeCloseTo(expandedWidth + 330 + agentWidth)
+  await expect(agents).toBeHidden()
+  expect((await main.boundingBox()).width).toBeCloseTo(expandedWidth + 330)
   await page.screenshot({ path: '/tmp/nautionette-sidebar-collapsed.png' })
 
-  // Focus moves to the existing navigation link, which reopens the current list.
+  // The same top-bar button reopens the list without leaving the conversation.
   await page.keyboard.press('Enter')
   await expect(sidebar).toBeVisible()
   await expect(page).toHaveURL(/\/chats\/alpha$/)
-  await expect(chatsLink(page)).toBeFocused()
+  await expect(collapseButton(page)).toBeFocused()
   await expect(sidebar).toHaveCSS('width', '330px')
-  await expect(page.getByRole('button', { name: 'Search chats', exact: true })).toBeVisible()
+  await expect(nav.getByRole('button', { name: 'Search workspace', exact: true })).toBeVisible()
   await expect(input).toHaveValue('Keep this draft while I focus')
   expect((await main.boundingBox()).width).toBeCloseTo(expandedWidth)
   await collapseButton(page).press('Space')
   await expect(sidebar).toBeHidden()
-  await expect(chatsLink(page)).toBeFocused()
+  await expect(expandButton(page)).toBeFocused()
   await chatsLink(page).click()
   await expect(sidebar).toBeVisible()
   await expect(input).toHaveValue('Keep this draft while I focus')
@@ -109,32 +111,23 @@ test('navigation icons reopen collapsed lists, including the current section', a
 })
 
 for (const interfaceSize of [125, 150]) {
-  test(`header actions fit the narrowest sidebar at ${interfaceSize}% interface size`, async ({ page, context }) => {
+  test(`top-bar actions fit at 901px and ${interfaceSize}% interface size`, async ({ page, context }) => {
     await mockDesign(context)
     await context.addInitScript(({ key, interfaceSize }) => {
       localStorage.setItem(key, JSON.stringify({ sideWidth: 260, interfaceSize }))
     }, { key: PREFERENCES_KEY, interfaceSize })
     await page.setViewportSize({ width: 901, height: 800 })
     await page.goto('/chats/alpha')
-    const header = page.locator('.side__head')
-    const title = header.getByRole('heading')
-    const collapse = collapseButton(page)
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const title = page.locator('.side__head').getByRole('heading')
     for (const section of ['Chats', 'Workflows']) {
-      await page.getByRole('navigation').getByRole('link', { name: section, exact: true }).click()
+      await nav.getByRole('link', { name: section, exact: true }).click()
       await expect(title).toHaveText(section)
-      // Long headings truncate instead of painting over the adjacent buttons.
-      await expect(title).toHaveCSS('overflow', 'hidden')
       await expect(title).toHaveCSS('text-overflow', 'ellipsis')
-      const titleBox = await title.boundingBox()
-      const collapseBox = await collapse.boundingBox()
-      expect(titleBox.x + titleBox.width).toBeLessThanOrEqual(collapseBox.x)
-      for (const button of await header.getByRole('button').all()) {
-        await expect(button).toBeInViewport({ ratio: 1 })
-        const box = await button.boundingBox()
-        const headerBox = await header.boundingBox()
-        expect(box.x + box.width).toBeLessThanOrEqual(headerBox.x + headerBox.width)
+      for (const action of await nav.getByRole('link').or(nav.getByRole('button')).all()) {
+        await expect(action).toBeInViewport({ ratio: 1 })
       }
-      expect(await header.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
+      expect(await nav.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
     }
   })
 }
