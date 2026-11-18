@@ -162,7 +162,7 @@ test('explicit all-resource grants, cancellation and rejected creation retain th
 test('webhook failure does not copy a URL and the shorter expiry is sent explicitly', async ({ page, context }) => {
   const state = await setup(page, context)
   state.webhookFailure = true
-  await page.goto('/workflows/digest?tab=Run')
+  await page.goto('/workflows/digest?tab=Integrate')
   await page.getByLabel('Link expires in').selectOption('1')
   await page.getByRole('button', { name: 'Copy webhook URL', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('Workflow access removed')
@@ -214,9 +214,10 @@ for (const width of [1440, 390, 320]) {
     const state = await setup(page, context, { member: true })
     const inputs = { message: "O'Reilly & 東京", enabled: true, optional: null, nested: { list: [1, false] } }
     state.workflow.manifest.inputs = { type: 'object', properties: Object.fromEntries(Object.keys(inputs).map(key => [key, { default: inputs[key] }])) }
-    state.workflow.schedule = { input: inputs }
+    state.workflow.schedules = [{ id: 'schedule-digest', description: 'Every day at 08:00', timezone: 'UTC', input: inputs }]
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/workflows/digest?tab=Integrate')
+    await page.getByLabel('Example inputs').selectOption('schedule-digest')
     const trigger = page.locator('.trigger')
     await expect(trigger.getByRole('button', { name: 'curl', exact: true })).toHaveAttribute('aria-pressed', 'true')
     expect(state.webhooks).toHaveLength(0)
@@ -297,7 +298,7 @@ test('leaving Integrate during token creation never reveals or copies the stale 
 for (const clipboardFails of [false, true]) {
   test(`webhook copying mints exact-workflow credentials first, clipboard failure=${clipboardFails}`, async ({ page, context }) => {
     const state = await setup(page, context, { clipboardFails })
-    await page.goto('/workflows/digest?tab=Run')
+    await page.goto('/workflows/digest?tab=Integrate')
     await expect(page.getByLabel('Link expires in')).toHaveValue('7')
     await page.getByRole('button', { name: 'Copy webhook URL', exact: true }).click()
     await expect(page.getByLabel('Webhook URL', { exact: true })).toHaveValue('https://example.test/api/triggers/digest?token=webhook-once')

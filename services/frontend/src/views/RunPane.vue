@@ -31,7 +31,7 @@
       <RunStatistics :statistics="detail.statistics" />
     </div>
     <div v-else class="pane-body scroll-y grow">
-      <section v-if="['failed', 'terminated', 'timed_out'].includes(status)" class="run-failure" role="status"><strong>This execution {{ status.replaceAll('_', ' ') }}.</strong><p v-if="typeof run?.result?.summary === 'string'">{{ run.result.summary }}</p></section>
+      <section v-if="['failed', 'terminated', 'timed_out'].includes(status)" class="run-failure" role="status"><strong>This execution {{ status.replaceAll('_', ' ') }}.</strong></section>
       <section class="block">
         <div class="facts">
           <div class="fact-cell">
@@ -56,7 +56,8 @@
 
       <section class="block">
         <h2 class="section-label">Output</h2>
-        <pre class="code" style="margin-top: 8px">{{ pretty(run?.result ?? temporal?.result) }}</pre>
+        <ExecutionOutput :key="id" :workflow-id="id" :result="run?.result ?? temporal?.result"
+          :app="detail.app" :app-diagnostic="detail.app_diagnostic" />
       </section>
 
       <section v-if="detail.delivery" class="block"><h2 class="section-label">Delivery</h2><p>{{ { pending: 'Delivery pending. The saved result will be retried without rerunning this workflow.', delivered: 'Result delivered to its conversation.', skipped: 'No reply requested.' }[detail.delivery.state] || 'Delivery status unavailable.' }}</p><RouterLink v-if="detail.delivery.chat_id" class="btn btn--outline" :to="`/chats/${detail.delivery.chat_id}`">Open conversation</RouterLink></section>
@@ -84,6 +85,7 @@ import { backTo } from '../router'
 import { actions, onLiveEvent, store } from '../store'
 import { api } from '../api'
 import ExecutionFlow from '../components/ExecutionFlow.vue'
+import ExecutionOutput from '../components/ExecutionOutput.vue'
 import EmptyState from '../components/EmptyState.vue'
 import RunStatistics from '../components/RunStatistics.vue'
 
@@ -165,7 +167,6 @@ onUnmounted(() => { off(); clearInterval(refreshTimer); loadVersion++ })
 .run-context { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; align-items: center; padding: 12px 22px; font-size: 0.8125rem; overflow-wrap: anywhere; }
 .run-context > a:first-child { color: var(--accent); text-decoration: none; }
 .run-failure { padding: 20px; margin-bottom: 24px; border-radius: var(--radius-md); background: var(--danger-soft); font-size: 0.875rem; }
-.run-failure p { margin: 12px 0 0; white-space: pre-wrap; }
 .run-pane .pane-head__back { display: grid; }
 .run-identity { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); background: var(--surface-panel); }
 .run-identity .material-icons { font-size: 1.25rem; }

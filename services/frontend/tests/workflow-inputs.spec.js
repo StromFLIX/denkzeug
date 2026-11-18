@@ -67,7 +67,7 @@ test('schedule and trigger retain false and zero independently of manual inputs'
   await page.getByRole('button', { name: 'Mon', exact: true }).click()
   await page.getByRole('button', { name: 'Save schedule' }).click()
   await expect.poll(() => state.schedule).toEqual({ frequency: 'weekly', at: expect.stringMatching(/^09:00(:00)?$/), days: ['monday'], timezone: 'Europe/Berlin', input: { days: 7, dry_run: false, threshold: 0 } })
-  await page.getByRole('button', { name: 'Integrate', exact: true }).click()
+  await page.getByRole('navigation', { name: 'Workflow views' }).getByRole('button', { name: 'Integrate', exact: true }).click()
   await page.getByLabel('Example inputs').selectOption('monday-schedule')
   await page.locator('.trigger').getByRole('button', { name: 'GET', exact: true }).click()
   await expect.poll(async () => JSON.parse(new URL(await page.getByLabel('Integration preview').innerText()).searchParams.get('input'))).toMatchObject({ days: 7, dry_run: false, threshold: 0 })

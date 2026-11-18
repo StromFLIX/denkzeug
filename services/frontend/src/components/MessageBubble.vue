@@ -26,7 +26,7 @@
           <span class="material-icons" aria-hidden="true">compress</span>
           {{ part.state === 'started' ? 'Compacting context…' : part.aborted || part.error ? 'Context compaction did not complete' : 'Context compacted · original history retained' }}
         </div>
-        <div v-else-if="part.kind === 'text' && part.text.trim()" class="bubble__body" @click="copyCode" v-html="renderMarkdown(part.text)" />
+        <MarkdownBody v-else-if="part.kind === 'text' && part.text.trim()" :text="part.text" @copy-code="copy($event, 'Code')" />
       </template>
       <p v-if="meta.app_diagnostic" class="caption dim" role="status">The interactive view was unavailable when this result was saved. The original run data is retained.</p>
       <McpAppView v-for="app in meta.apps || []" :key="app.id" :instance="app" :chat-id="chatId" />
@@ -73,8 +73,8 @@ import MessageOrigin from './MessageOrigin.vue'
 import { messageOrigin } from '../message-origin'
 import { store } from '../store'
 import { groupToolCalls } from '../timeline'
-import { renderMarkdown } from '../markdown'
-import { copyText } from '../clipboard'
+import MarkdownBody from './MarkdownBody.vue'
+import { useCopyStatus } from '../use-copy-status'
 import { shortTime } from '../format'
 import { preferences } from '../preferences'
 
@@ -127,28 +127,7 @@ const responseText = computed(() => [
   ...parts.value.filter((part) => part.kind === 'text').map((part) => part.text),
   error.value
 ].filter((text) => text.trim()).join('\n\n'))
-const copyStatus = ref('')
-let copyTimer
-onUnmounted(() => clearTimeout(copyTimer))
-
-async function copy (text, label) {
-  clearTimeout(copyTimer)
-  copyStatus.value = ''
-  try {
-    await copyText(text)
-    copyStatus.value = `${label} copied`
-  } catch {
-    copyStatus.value = 'Could not copy. Select the text and copy it manually.'
-  }
-  copyTimer = setTimeout(() => { copyStatus.value = '' }, 3000)
-}
-
-function copyCode (event) {
-  const button = event.target.closest('button.code-block__copy')
-  if (!button || !event.currentTarget.contains(button)) return
-  const code = button.closest('.code-block')?.querySelector('pre code')
-  if (code) copy(code.textContent, 'Code')
-}
+const { copy, copyStatus } = useCopyStatus()
 
 const hasTools = computed(() => steps.value.some((step) => step.kind === 'tool'))
 const origin = computed(() => messageOrigin(props.meta, props.role))
@@ -284,116 +263,6 @@ const time = computed(() => shortTime(props.createdAt))
 </style>
 
 <style>
-.bubble__body > :first-child {
-  margin-top: 0;
-}
-
-.bubble__body > :last-child {
-  margin-bottom: 0;
-}
-
-.bubble__body p {
-  margin: 0 0 8px;
-  line-height: 1.55;
-}
-
-.bubble__body ul,
-.bubble__body ol {
-  margin: 0 0 8px;
-  padding-left: 20px;
-}
-
-.bubble__body li {
-  margin-bottom: 3px;
-}
-
-.bubble__body h1,
-.bubble__body h2,
-.bubble__body h3,
-.bubble__body h4 {
-  margin: 12px 0 6px;
-  font-size: calc(var(--chat-font-size) * 1.12);
-  font-weight: 600;
-}
-
-.bubble__body code {
-  padding: 1px 5px;
-  border-radius: var(--radius-xs);
-  background: var(--surface-active);
-}
-
-.bubble__body pre {
-  margin: 8px 0;
-  padding: 11px 13px;
-  border-radius: var(--radius-md);
-  background: var(--surface-code);
-  color: var(--text);
-  overflow-x: auto;
-}
-
-.bubble__body pre code {
-  padding: 0;
-  background: none;
-}
-
-.bubble__body {
-  -webkit-user-select: text;
-  user-select: text;
-}
-
-.bubble__body .code-block {
-  margin: 8px 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-code);
-  color: var(--text);
-  overflow: hidden;
-}
-
-.bubble__body .code-block__toolbar {
-  display: flex;
-  justify-content: flex-end;
-  padding: 4px 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.bubble__body .code-block pre {
-  margin: 0;
-  border-radius: 0;
-  background: none;
-}
-
-.bubble__body a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.msg--assistant .bubble__body a {
-  color: var(--accent-hover);
-}
-
-.bubble__body blockquote {
-  margin: 8px 0;
-  padding-left: 10px;
-  border-left: 2px solid var(--border-strong);
-  color: var(--text-muted);
-}
-
-.bubble__body table {
-  width: 100%;
-  margin: 8px 0;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-}
-
-.bubble__body th,
-.bubble__body td {
-  padding: 5px 8px;
-  border: 1px solid var(--border);
-  text-align: left;
-}
-
 @media (max-width: 480px) {
   .msg {
     position: relative;

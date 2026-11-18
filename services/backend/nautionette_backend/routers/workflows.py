@@ -9,7 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from temporalio.service import RPCError, RPCStatusCode
 
-from .. import access
+from .. import access, local_apps
 from ..clients import authoring, temporal
 from ..db import db
 from ..deployment import WorkflowSource, deploy
@@ -68,6 +68,9 @@ async def get_workflow(name: str) -> dict[str, Any]:
     workflow["graph"] = definition_graph(workflow.get("code", ""), name)
     owner = access.human_id()
     workflow["runs"] = db.list_runs(name, limit=25, owner_user_id=owner) if owner is not None else []
+    if owner and workflow["runs"]:
+        latest = workflow["runs"][0]
+        latest.update(local_apps.workflow_view(latest["workflow_id"], owner))
     workflow["settings"] = _private_settings(name)
     who = access.principal()
     workflow["schedules"] = []
