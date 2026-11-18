@@ -858,8 +858,15 @@ onUnmounted(() => {
   .pane-head__identity > .caption { display: none; }
 }
 @container chat (max-height: 360px) {
-  .thread__foot { --attachment-preview-size: 32px; --attachment-strip-top: 0px; --attachment-editor-budget: 44px; padding-block: 4px max(4px, env(safe-area-inset-bottom)); }
+  .thread__foot { --attachment-preview-size: 32px; --attachment-strip-top: 0px; --attachment-editor-budget: 44px; --attachment-bar-padding: 0px; padding-block: 2px max(2px, env(safe-area-inset-bottom)); }
   .thread__tabs > button { padding-block: 6px; min-height: 38px; }
+}
+@container chat (min-height: 300px) and (max-height: 360px) {
+  /* A wrapping notice should scroll before it displaces attachment previews.
+     Below this height, the editor itself can scroll to keep Send reachable. */
+  .thread__body { min-height: 44px; }
+  .thread__notices > p { line-height: 1.15; }
+  .thread__foot > :deep(.composer--docked:not(.composer--configuration):has(.composer__attachments)) { flex-shrink: 0; }
 }
 
 @media (max-width: 420px) {

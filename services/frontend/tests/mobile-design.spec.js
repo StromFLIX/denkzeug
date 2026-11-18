@@ -42,13 +42,21 @@ test('native first launch tests the server before offering invitation and reset 
   await expect(address).toBeVisible()
 })
 
-test('long drafts with four attachments keep Send and chat visible at keyboard height', async ({ page, context }, testInfo) => {
+test('long drafts with attachments keep previews, Send and chat visible even with a notice', async ({ page, context }, testInfo) => {
   const state = await mockDesign(context)
+  await context.addInitScript(() => {
+    const write = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key, value) {
+      if (key.startsWith('nautionette.composer-drafts.')) throw new DOMException('Draft journal is full', 'QuotaExceededError')
+      return write.call(this, key, value)
+    }
+  })
   await context.route('**/api/chats/alpha/draft', route => route.fulfill({ json: { revision: 0, text: '', attachments: [] } }))
   await page.goto('/chats/alpha')
   const editor = page.getByRole('textbox', { name: 'Message', exact: true })
   await editor.fill('Please summarize the decisions we made and link to the supporting notes. '.repeat(16))
   await page.locator('.composer input[type=file]').setInputFiles(Array.from({ length: 4 }, (_, i) => ({ name: `review-${i}.png`, mimeType: 'image/png', buffer: png })))
+  await expect(page.getByRole('region', { name: 'Chat notices' })).toContainText('Could not save this draft on this device')
   await page.setViewportSize({ width: 320, height: 300 })
   const send = page.getByRole('button', { name: 'Send message', exact: true })
   await expect(send).toBeEnabled()

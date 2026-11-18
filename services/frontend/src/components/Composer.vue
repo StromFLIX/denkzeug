@@ -387,7 +387,7 @@ defineExpose({
 }
 @media (max-width: 640px) {
   .composer__bar { padding: 6px 8px 10px; gap: 3px; }
-  .composer--docked:has(.composer__attachments) .composer__bar { padding-block: 2px 4px; }
+  .composer--docked:has(.composer__attachments) .composer__bar { padding-block: var(--attachment-bar-padding, 2px 4px); }
   .composer__bar:has(.composer__actions--recording) > .pick { display: none; }
   .composer__quick-agent .composer__agent-avatar { display: none; }
   .composer__input, .composer--welcome .composer__input { padding: 10px 14px 6px; }
