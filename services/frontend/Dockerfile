@@ -5,6 +5,7 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/
 RUN npm install -g --ignore-scripts npm@11.21.2 && npm cache clean --force
 WORKDIR /src
 COPY package.json package-lock.json ./
+COPY scripts/picomatch-mitigation.mjs ./scripts/
 RUN npm ci --no-audit --no-fund
 COPY . .
 ARG APP_VERSION=dev

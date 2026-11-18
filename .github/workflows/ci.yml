@@ -161,7 +161,7 @@ jobs:
         run: npm ci
 
       - name: Dependency security audit (including desktop build tools)
-        run: npm audit --audit-level=moderate
+        run: npm run audit:ci
 
       - name: Frontend unit tests
         run: npm test

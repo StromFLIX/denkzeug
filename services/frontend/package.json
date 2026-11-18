@@ -25,6 +25,8 @@
   },
   "type": "module",
   "scripts": {
+    "postinstall": "node scripts/picomatch-mitigation.mjs",
+    "audit:ci": "node scripts/audit-dependencies.mjs",
     "dev": "vite",
     "test": "node --test src/*.test.js scripts/*.test.js",
     "test:e2e": "playwright test",
