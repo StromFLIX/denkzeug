@@ -1,0 +1,39 @@
+name: Report vulnerabilities
+
+description: Report vulnerabilities for an SBOM, retrying transient Grype or database failures.
+
+inputs:
+  sbom:
+    description: Path to the SPDX JSON inventory.
+    required: true
+  output-file:
+    description: Path to the JSON vulnerability report.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Scan SBOM
+      id: scan
+      continue-on-error: true
+      uses: anchore/scan-action@v7.4.2
+      with:
+        sbom: ${{ inputs.sbom }}
+        fail-build: false
+        output-format: json
+        output-file: ${{ inputs.output-file }}
+
+    - name: Wait for vulnerability database service
+      if: steps.scan.outcome == 'failure'
+      shell: bash
+      run: sleep 15
+
+    - name: Retry SBOM scan
+      if: steps.scan.outcome == 'failure'
+      # An unavailable scanner/database must still fail CI if the retry fails.
+      uses: anchore/scan-action@v7.4.2
+      with:
+        sbom: ${{ inputs.sbom }}
+        fail-build: false
+        output-format: json
+        output-file: ${{ inputs.output-file }}

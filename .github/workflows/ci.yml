@@ -353,11 +353,9 @@ jobs:
           upload-release-assets: false
 
       - name: Report container vulnerabilities (including upstream unfixed issues)
-        uses: anchore/scan-action@v7.4.2
+        uses: ./.github/actions/report-vulnerabilities
         with:
           sbom: sbom.spdx.json
-          fail-build: false
-          output-format: json
           output-file: vulnerabilities.json
 
       - uses: actions/upload-artifact@v7
@@ -428,11 +426,9 @@ jobs:
           output-file: sbom-pi-base.spdx.json
           upload-release-assets: false
 
-      - uses: anchore/scan-action@v7.4.2
+      - uses: ./.github/actions/report-vulnerabilities
         with:
           sbom: sbom-pi-base.spdx.json
-          fail-build: false
-          output-format: json
           output-file: vulnerabilities-pi-base.json
 
       - name: Inventory default agent packages
@@ -443,11 +439,9 @@ jobs:
           output-file: sbom-pi-agent-default.spdx.json
           upload-release-assets: false
 
-      - uses: anchore/scan-action@v7.4.2
+      - uses: ./.github/actions/report-vulnerabilities
         with:
           sbom: sbom-pi-agent-default.spdx.json
-          fail-build: false
-          output-format: json
           output-file: vulnerabilities-pi-agent-default.json
 
       - uses: actions/upload-artifact@v7
@@ -490,6 +484,9 @@ jobs:
         include:
           - { name: temporal-ui, image: 'temporalio/ui:2.58.1' }
     steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Pull current upstream image
         run: docker pull '${{ matrix.image }}'
       - uses: anchore/sbom-action@v0.24.3
@@ -498,11 +495,9 @@ jobs:
           artifact-name: sbom-${{ matrix.name }}.spdx.json
           output-file: sbom.spdx.json
           upload-release-assets: false
-      - uses: anchore/scan-action@v7.4.2
+      - uses: ./.github/actions/report-vulnerabilities
         with:
           sbom: sbom.spdx.json
-          fail-build: false
-          output-format: json
           output-file: vulnerabilities.json
       - uses: actions/upload-artifact@v7
         with:
