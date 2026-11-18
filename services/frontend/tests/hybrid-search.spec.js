@@ -6,7 +6,7 @@ const result = (extra = {}) => ({ chat_id: 'alpha', title: 'Design review', mess
 const response = (results, state = 'ready') => ({ results, semantic: { state, pending: state === 'indexing' ? 100 : 0 } })
 
 async function open (page) {
-  await expect(page.getByRole('button', { name: 'Search chats', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Search workspace', exact: true })).toBeVisible()
   await page.keyboard.press('Control+k')
   await expect(search(page)).toBeFocused()
 }
