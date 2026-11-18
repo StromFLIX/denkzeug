@@ -318,34 +318,63 @@ class FakeTemporal:
         payload: dict[str, Any],
         paused: bool = False,
         timeout_minutes: int = 30,
+        *,
+        schedule_id: str | None = None,
+        update_only: bool = False,
     ) -> dict[str, Any]:
         from nautionette_backend.schedules import schedule_summary
+        from temporalio.service import RPCError, RPCStatusCode
 
-        self.schedule_specs[workflow] = {
+        schedule_id = schedule_id or f"schedule-{workflow}"
+        key = schedule_id.removeprefix("schedule-")
+        if update_only:
+            if key not in self.schedule_specs:
+                raise RPCError("no such schedule", RPCStatusCode.NOT_FOUND, b"")
+            paused = self.schedule_specs[key]["paused"]
+        self.schedule_specs[key] = {
             "spec": spec,
             "input": payload,
             "paused": paused,
             "timeout_minutes": timeout_minutes,
         }
         return {
-            "schedule_id": f"schedule-{workflow}",
+            "schedule_id": schedule_id,
             "input": payload,
             **schedule_summary(spec, paused=paused),
         }
 
+    async def workflow_schedule_ids(self, workflow: str) -> list[str]:
+        legacy = f"schedule-{workflow}"
+        return [
+            legacy,
+            *(
+                item["id"]
+                for item in await self.schedules()
+                if item["workflow"] == workflow and item["id"] != legacy
+            ),
+        ]
+
     async def set_workflow_disabled(self, workflow: str, disabled: bool) -> None:
-        spec = self.schedule_specs.get(workflow)
+        for schedule_id in await self.workflow_schedule_ids(workflow):
+            await self.set_schedule_disabled(schedule_id, disabled)
+
+    async def set_schedule_disabled(self, schedule_id: str, disabled: bool) -> None:
+        key = schedule_id.removeprefix("schedule-")
+        spec = self.schedule_specs.get(key)
         if spec is None:
             return
         if disabled and not spec["paused"]:
             spec["paused"] = True
-            self.disabled_schedules.add(workflow)
-        elif not disabled and workflow in self.disabled_schedules:
+            self.disabled_schedules.add(key)
+        elif not disabled and key in self.disabled_schedules:
             spec["paused"] = False
-            self.disabled_schedules.remove(workflow)
+            self.disabled_schedules.remove(key)
 
-    async def ensure_schedule_timeout(self, workflow: str, timeout_minutes: int) -> None:
-        self.schedule_specs[workflow]["timeout_minutes"] = timeout_minutes
+    async def ensure_schedule_timeout(
+        self, workflow: str, timeout_minutes: int, *, schedule_id: str | None = None
+    ) -> None:
+        key = schedule_id.removeprefix("schedule-") if schedule_id else workflow
+        self.schedule_specs[key]["timeout_minutes"] = timeout_minutes
 
     async def scheduled_executions(self):
         for item in self.executions.values():
@@ -355,15 +384,21 @@ class FakeTemporal:
     async def execution_input(self, workflow_id: str, run_id: str) -> dict[str, Any]:
         return self.histories[workflow_id][0]["input"]
 
-    async def delete_schedule(self, workflow: str) -> None:
-        self.schedule_specs.pop(workflow, None)
+    async def delete_schedule(self, workflow: str, *, schedule_id: str | None = None) -> None:
+        key = schedule_id.removeprefix("schedule-") if schedule_id else workflow
+        self.schedule_specs.pop(key, None)
+        self.disabled_schedules.discard(key)
 
-    async def schedule(self, workflow: str) -> dict[str, Any]:
+    async def schedule(self, workflow: str, *, schedule_id: str | None = None) -> dict[str, Any]:
         from nautionette_backend.schedules import schedule_summary
+        from temporalio.service import RPCError, RPCStatusCode
 
-        spec = self.schedule_specs[workflow]
+        schedule_id = schedule_id or f"schedule-{workflow}"
+        spec = self.schedule_specs.get(schedule_id.removeprefix("schedule-"))
+        if spec is None:
+            raise RPCError("no such schedule", RPCStatusCode.NOT_FOUND, b"")
         return {
-            "id": f"schedule-{workflow}",
+            "id": schedule_id,
             "workflow": workflow,
             "input": spec["input"],
             **schedule_summary(spec["spec"], paused=spec["paused"]),
@@ -375,7 +410,7 @@ class FakeTemporal:
         return [
             {
                 "id": f"schedule-{name}",
-                "workflow": name,
+                "workflow": name.split("--", 1)[0],
                 **schedule_summary(spec["spec"], paused=spec["paused"]),
             }
             for name, spec in self.schedule_specs.items()

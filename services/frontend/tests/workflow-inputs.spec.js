@@ -23,13 +23,16 @@ async function mockApi (page, initialSchedule = null, manual = true) {
     if (path === '/api/workflows') data = { workflows: [workflow] }
     if (path === '/api/workflows/weekly_audit') data = workflow
     if (path === '/api/workflows/weekly_audit/run' && request.method() === 'POST') { state.run = request.postDataJSON(); data = { workflow_id: 'audit-test' } }
-    if (path === '/api/workflows/weekly_audit/schedule' && request.method() === 'POST') {
-      state.schedule = request.postDataJSON(); workflow.schedule = { ...state.schedule, description: 'Every Monday', next_run: null }; data = workflow.schedule
+    if (path === '/api/workflows/weekly_audit/schedules' && request.method() === 'POST') {
+      state.schedule = request.postDataJSON()
+      data = { ...state.schedule, id: 'monday-schedule', description: 'Every Monday', next_run: null }
+      workflow.schedules = [data]
     }
     return route.fulfill({ json: data })
   })
   await page.goto(`/workflows/weekly_audit${manual ? '' : '?tab=Settings'}`)
   if (manual) await page.getByRole('button', { name: 'Run workflow', exact: true }).click()
+  else await page.getByRole('button', { name: 'Add schedule', exact: true }).click()
   await expect(page.getByLabel('dry_run', { exact: true })).toBeVisible()
   return state
 }
@@ -58,14 +61,16 @@ test('schedule and trigger retain false and zero independently of manual inputs'
   await page.getByLabel('days', { exact: true }).fill('7')
   await page.getByLabel('dry_run', { exact: true }).selectOption('false')
   await page.getByLabel('threshold', { exact: true }).fill('0')
-  await page.locator('.trigger').getByRole('button', { name: 'GET', exact: true }).click()
-  await expect.poll(async () => JSON.parse(new URL(await page.getByLabel('Integration preview').innerText()).searchParams.get('input'))).toMatchObject({ days: 7, dry_run: false, threshold: 0 })
   await page.getByLabel('Repeat').selectOption('weekly')
   await page.getByLabel('At', { exact: true }).fill('09:00')
   await page.getByLabel('Timezone').fill('Europe/Berlin')
   await page.getByRole('button', { name: 'Mon', exact: true }).click()
   await page.getByRole('button', { name: 'Save schedule' }).click()
-  await expect.poll(() => state.schedule).toEqual({ frequency: 'weekly', at: '09:00', days: ['monday'], timezone: 'Europe/Berlin', input: { days: 7, dry_run: false, threshold: 0 } })
+  await expect.poll(() => state.schedule).toEqual({ frequency: 'weekly', at: expect.stringMatching(/^09:00(:00)?$/), days: ['monday'], timezone: 'Europe/Berlin', input: { days: 7, dry_run: false, threshold: 0 } })
+  await page.getByRole('button', { name: 'Integrate', exact: true }).click()
+  await page.getByLabel('Example inputs').selectOption('monday-schedule')
+  await page.locator('.trigger').getByRole('button', { name: 'GET', exact: true }).click()
+  await expect.poll(async () => JSON.parse(new URL(await page.getByLabel('Integration preview').innerText()).searchParams.get('input'))).toMatchObject({ days: 7, dry_run: false, threshold: 0 })
   await page.getByRole('button', { name: 'Run workflow', exact: true }).click()
   await page.getByRole('button', { name: 'Run now' }).click()
   await expect.poll(() => state.run).toEqual({ input: {} })

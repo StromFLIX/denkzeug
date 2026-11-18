@@ -90,6 +90,34 @@ async def test_real_schedule_is_discovered_and_delivered(backend, monkeypatch):
                 assert (await handle.describe()).info.num_actions == count
                 await gateway.set_workflow_disabled("schedule_probe", False)
                 assert not (await handle.describe()).schedule.state.paused
+                extra_id = "schedule-schedule_probe--" + "a" * 32
+                extra = env.client.get_schedule_handle(extra_id)
+                try:
+                    spec = ScheduleSpec(intervals=[ScheduleIntervalSpec(every=timedelta(days=1))])
+                    await gateway.set_schedule(
+                        "schedule_probe", spec, {"text": "extra"}, schedule_id=extra_id
+                    )
+                    assert (await extra.describe()).schedule.action.id != (
+                        await handle.describe()
+                    ).schedule.action.id
+                    await extra.pause(note="operator pause")
+                    updated = await gateway.set_schedule(
+                        "schedule_probe", spec, {"text": "edited"}, schedule_id=extra_id, update_only=True
+                    )
+                    assert updated["paused"]
+                    assert (await extra.describe()).schedule.state.note == "operator pause"
+                    assert (await gateway.schedule("schedule_probe", schedule_id=extra_id))["input"] == {
+                        "text": "edited"
+                    }
+                    assert (await gateway.schedule("schedule_probe"))["input"] == payload
+                    async with asyncio.timeout(15):
+                        while extra_id not in await gateway.workflow_schedule_ids("schedule_probe"):
+                            await asyncio.sleep(0.1)
+                    await gateway.set_workflow_disabled("schedule_probe", True)
+                    assert (await handle.describe()).schedule.state.paused
+                    assert (await extra.describe()).schedule.state.paused
+                finally:
+                    await gateway.delete_schedule("schedule_probe", schedule_id=extra_id)
             finally:
                 await handle.delete()
                 await background.drain()

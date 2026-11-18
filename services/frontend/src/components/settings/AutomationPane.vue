@@ -10,7 +10,7 @@
     <RouterLink v-for="workflow in store.workflows" :key="workflow.name" class="automation-row"
       :to="{ path: `/workflows/${workflow.name}`, query: { tab: 'Settings' } }">
       <div class="avatar avatar--square" :style="avatarStyle(workflow.name)"><span class="material-icons" aria-hidden="true">account_tree</span></div>
-      <div class="grow"><strong>{{ workflow.title || workflow.name }}</strong><p class="caption muted">{{ workflow.schedule?.description || 'On demand' }}<template v-if="workflow.schedule?.timezone"> · {{ workflow.schedule.timezone }}</template></p></div>
+      <div class="grow"><strong>{{ workflow.title || workflow.name }}</strong><p class="caption muted">{{ scheduleSummary(workflow) }}</p></div>
       <span v-if="workflow.settings?.disabled" class="chip chip--warning">Disabled</span>
       <span class="material-icons dim" aria-hidden="true">chevron_right</span>
     </RouterLink>
@@ -20,6 +20,14 @@
 <script setup>
 import { store } from '../../store'
 import { avatarStyle } from '../../format'
+import { workflowSchedules } from '../../workflow-schedules'
+
+function scheduleSummary (workflow) {
+  const schedules = workflowSchedules(workflow)
+  if (!schedules.length) return 'On demand'
+  if (schedules.length === 1) return `${schedules[0].description} (${schedules[0].timezone})`
+  return `${schedules.length} schedules`
+}
 </script>
 
 <style scoped>

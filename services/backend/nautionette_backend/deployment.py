@@ -38,7 +38,7 @@ async def _deploy(name: str, code: str, message: str) -> dict[str, Any]:
         candidate = {}  # The authoring validator returns its existing detailed errors.
     if resource_fields(candidate.get("inputs")):
         try:
-            schedule = await temporal.schedule(name)
+            schedule = len(await temporal.workflow_schedule_ids(name)) > 1 or await temporal.schedule(name)
         except RPCError as exc:
             if exc.status != RPCStatusCode.NOT_FOUND:
                 raise HTTPException(
@@ -52,7 +52,7 @@ async def _deploy(name: str, code: str, message: str) -> dict[str, Any]:
         if schedule:
             raise HTTPException(
                 409,
-                "Remove the schedule before deploying resource input fields; "
+                "Remove all schedules before deploying resource input fields; "
                 "they currently support manual runs only.",
             )
     access.register_resource("workflow", name)

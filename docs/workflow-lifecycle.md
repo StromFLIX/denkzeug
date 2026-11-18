@@ -1,9 +1,22 @@
 # Workflow controls and result delivery
 
+## Schedules
+
+**Workflow → Settings** lists the saved schedules. Add or edit a schedule to set its
+recurrence, timezone and run inputs independently of the other schedules. The
+workflow overview shows the earliest upcoming run across unpaused schedules.
+
+The workflow API exposes `schedules` on detail and list responses (saved inputs
+are included only on detail). `POST /api/workflows/{name}/schedules` adds a new
+schedule; `PUT` and `DELETE` on `/api/workflows/{name}/schedules/{schedule_id}`
+change or remove a specific entry. Existing schedules keep their IDs. The legacy
+singular `schedule` field and `/schedule` endpoints still refer only to the
+legacy default schedule, not the whole collection.
+
 ## Disable and schedule synchronization
 
-**Disable** blocks new manual, agent and webhook starts and pauses the workflow's
-managed Temporal schedule. It does **not** cancel executions already started,
+**Disable** blocks new manual, agent and webhook starts and pauses all of the workflow's
+managed Temporal schedules. It does **not** cancel executions already started,
 reverse external writes, or stop a linked agent task. Inspect/cancel the exact
 run when that is required. New schedule creation/replacement is refused while
 disabled. Starts, schedule replacement and control changes are serialized by
@@ -13,7 +26,7 @@ The desired disabled flag is saved before contacting Temporal. A successful
 settings response confirms schedule synchronization (or that no schedule exists).
 If Temporal is unavailable, the endpoint returns **503** with
 `schedule_sync_pending: true` and the saved settings. Manual/webhook starts remain
-blocked, but Temporal may still fire the old schedule until it can be paused.
+blocked, but Temporal may still fire a schedule until it can be paused.
 The workflow UI shows the error and **Retry sync**, which retries the saved intent
 rather than toggling it back. Background reconciliation retries after recovery
 and backend restarts, including flags saved by older installations.

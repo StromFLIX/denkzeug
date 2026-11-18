@@ -109,6 +109,11 @@
     "authentication": "account",
     "resource": "workflow:name"
   },
+  "DELETE /api/workflows/{name}/schedules/{schedule_id}": {
+    "scope": "workflows:schedule",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
   "DELETE /internal/agent/tasks/{key}": {
     "scope": "agents:write",
     "authentication": "internal",
@@ -976,6 +981,11 @@
     "authentication": "account",
     "resource": "workflow:name"
   },
+  "POST /api/workflows/{name}/schedules": {
+    "scope": "workflows:schedule",
+    "authentication": "account",
+    "resource": "workflow:name"
+  },
   "POST /api/workflows/{name}/webhook-token": {
     "scope": "workflows:trigger",
     "authentication": "session",
@@ -1095,6 +1105,11 @@
     "scope": "settings:write",
     "authentication": "account",
     "resource": null
+  },
+  "PUT /api/workflows/{name}/schedules/{schedule_id}": {
+    "scope": "workflows:schedule",
+    "authentication": "account",
+    "resource": "workflow:name"
   },
   "WEBSOCKET /api/speech/stream": {
     "scope": "speech:execute",

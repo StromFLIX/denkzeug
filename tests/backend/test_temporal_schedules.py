@@ -232,18 +232,18 @@ async def test_disable_owns_only_its_pause_and_keeps_all_schedule_fields(monkeyp
         return client
 
     monkeypatch.setattr(gateway, "client", connect)
-    await gateway.set_workflow_disabled("digest", True)
+    await gateway.set_schedule_disabled("schedule-digest", True)
     paused = client.handle.schedule
     assert paused.state.paused
     assert paused.action == schedule.action
     assert paused.spec == schedule.spec
     assert paused.policy == schedule.policy
-    await gateway.set_workflow_disabled("digest", True)  # Lost response/restart retry.
+    await gateway.set_schedule_disabled("schedule-digest", True)  # Lost response/restart retry.
     assert client.handle.updates == (0 if operator_paused else 1)
-    await gateway.set_workflow_disabled("digest", False)
+    await gateway.set_schedule_disabled("schedule-digest", False)
     assert client.handle.schedule.state.paused == operator_paused
     assert client.handle.schedule.state.note == "operator note"
-    await gateway.set_workflow_disabled("digest", False)
+    await gateway.set_schedule_disabled("schedule-digest", False)
     assert client.handle.updates == (0 if operator_paused else 2)
 
 
@@ -264,7 +264,7 @@ async def test_disable_ignores_only_absent_schedule(monkeypatch, status):
 
     monkeypatch.setattr(gateway, "client", connect)
     if status == RPCStatusCode.NOT_FOUND:
-        await gateway.set_workflow_disabled("digest", True)
+        await gateway.set_schedule_disabled("schedule-digest", True)
     else:
         with pytest.raises(RPCError):
-            await gateway.set_workflow_disabled("digest", True)
+            await gateway.set_schedule_disabled("schedule-digest", True)

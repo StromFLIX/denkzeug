@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import time
 from typing import Annotated, Any, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -30,6 +31,12 @@ _DAY_INDEX = {
 }
 _DAY_NAME = {index: name for name, index in _DAY_INDEX.items()}
 _WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+
+
+def schedule_workflow_name(schedule_id: str) -> str | None:
+    """Recognize legacy IDs and independently managed schedules, not external IDs."""
+    match = re.fullmatch(r"schedule-([a-z][a-z0-9_]{2,63})(?:--[0-9a-f]{32})?", schedule_id)
+    return match.group(1) if match else None
 
 
 class _ScheduleBase(BaseModel):

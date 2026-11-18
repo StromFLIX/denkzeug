@@ -229,8 +229,9 @@ export const api = {
     request(`/api/workflows/${name}/settings`, { method: 'PATCH', ...json(payload) }),
   deleteWorkflow: (name) => request(`/api/workflows/${name}`, { method: 'DELETE' }),
   runWorkflow: (name, input) => request(`/api/workflows/${name}/run`, { method: 'POST', ...json({ input }) }),
-  schedule: (name, schedule) => request(`/api/workflows/${name}/schedule`, { method: 'POST', ...json(schedule) }),
-  unschedule: (name) => request(`/api/workflows/${name}/schedule`, { method: 'DELETE' }),
+  createSchedule: (name, schedule) => request(`/api/workflows/${name}/schedules`, { method: 'POST', ...json(schedule) }),
+  updateSchedule: (name, id, schedule) => request(`/api/workflows/${name}/schedules/${encodeURIComponent(id)}`, { method: 'PUT', ...json(schedule) }),
+  deleteSchedule: (name, id) => request(`/api/workflows/${name}/schedules/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   validate: (name, code) => request('/api/workflows/validate', { method: 'POST', ...json({ name, code }) }),
 
   drafts: () => request('/api/drafts'),

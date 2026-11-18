@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Any
+from uuid import uuid4
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from temporalio.service import RPCError, RPCStatusCode
@@ -13,7 +15,7 @@ from ..db import db
 from ..deployment import WorkflowSource, deploy
 from ..events import bus
 from ..runs import restart_worker
-from ..schedules import ScheduleRequest, temporal_spec
+from ..schedules import ScheduleRequest, schedule_workflow_name, temporal_spec
 from ..security import require_user
 from ..workflow_control import workflow_lock
 from ..workflow_graph import definition_graph
@@ -40,23 +42,23 @@ async def _schedules() -> list[dict[str, Any]]:
         return []
 
 
-async def _schedule(workflow: str) -> dict[str, Any] | None:
-    try:
-        return await temporal.schedule(workflow)
-    except Exception:  # noqa: BLE001 - a schedule is optional workflow metadata
-        return None
+def _legacy_schedule(name: str, schedules: list[dict[str, Any]]) -> dict[str, Any] | None:
+    return next((item for item in schedules if item["id"] == f"schedule-{name}"), None)
 
 
 @router.get("/api/workflows")
 async def list_workflows() -> dict[str, Any]:
     workflows = access.visible("workflow", await authoring.list_workflows(), "name")
-    by_workflow = {item["workflow"]: item for item in await _schedules()}
+    by_workflow = defaultdict(list)
+    who = access.principal()
+    if who is not None and who.role == "admin":
+        for item in await _schedules():
+            by_workflow[item["workflow"]].append(item)
     for workflow in workflows:
-        workflow["schedule"] = by_workflow.get(workflow["name"])
-        workflow["settings"] = _private_settings(workflow["name"])
-        who = access.principal()
-        if who is not None and who.role != "admin":
-            workflow["schedule"] = None
+        name = workflow["name"]
+        workflow["schedules"] = by_workflow[name]
+        workflow["schedule"] = _legacy_schedule(name, workflow["schedules"])
+        workflow["settings"] = _private_settings(name)
     return {"workflows": workflows}
 
 
@@ -68,17 +70,22 @@ async def get_workflow(name: str) -> dict[str, Any]:
     workflow["runs"] = db.list_runs(name, limit=25, owner_user_id=owner) if owner is not None else []
     workflow["settings"] = _private_settings(name)
     who = access.principal()
+    workflow["schedules"] = []
     workflow["schedule"] = None
     workflow["schedule_status"] = "hidden"
     if who is not None and who.role == "admin":
         try:
-            workflow["schedule"] = await temporal.schedule(name)
+            schedules = []
+            for schedule_id in await temporal.workflow_schedule_ids(name):
+                try:
+                    schedules.append(await temporal.schedule(name, schedule_id=schedule_id))
+                except RPCError as exc:
+                    if exc.status != RPCStatusCode.NOT_FOUND:
+                        raise
+            workflow["schedules"] = schedules
+            workflow["schedule"] = _legacy_schedule(name, schedules)
             workflow["schedule_status"] = "available"
-        except RPCError as exc:
-            workflow["schedule_status"] = (
-                "available" if exc.status == RPCStatusCode.NOT_FOUND else "unavailable"
-            )
-        except Exception:
+        except Exception:  # noqa: BLE001 - leave the workflow usable if Temporal is down
             workflow["schedule_status"] = "unavailable"
     return workflow
 
@@ -147,7 +154,8 @@ async def _delete_workflow(name: str) -> dict[str, Any]:
     # Stop Temporal before removing the definition. If Temporal is unavailable,
     # leave the file/settings intact so deletion can be retried safely.
     try:
-        await temporal.delete_schedule(name)
+        for schedule_id in await temporal.workflow_schedule_ids(name):
+            await temporal.delete_schedule(name, schedule_id=schedule_id)
     except Exception as exc:  # noqa: BLE001 - do not strand a live schedule by deleting its definition
         raise HTTPException(
             status_code=503,
@@ -168,19 +176,51 @@ async def validate_workflow(payload: dict[str, Any] = Body(...)) -> dict[str, An
 
 @router.post("/api/workflows/{name}/schedule")
 async def schedule_workflow(name: str, payload: ScheduleRequest) -> dict[str, Any]:
-    """Schedule a workflow with a human recurrence and an explicit IANA timezone."""
-    workflow = await authoring.get_workflow(name)
-    manifest = workflow.get("manifest") or {}
-    validate_inputs(name, manifest.get("inputs"), payload.input, scheduled=True)
+    """Set the legacy default schedule. Use the schedules collection to add more."""
+    return await _save_schedule(name, payload)
+
+
+@router.post("/api/workflows/{name}/schedules")
+async def create_workflow_schedule(name: str, payload: ScheduleRequest) -> dict[str, Any]:
+    """Add an independent schedule to a workflow."""
+    result = await _save_schedule(name, payload, schedule_id=f"schedule-{name}--{uuid4().hex}")
+    return {**result, "id": result["schedule_id"]}
+
+
+def _check_schedule_id(name: str, schedule_id: str) -> None:
+    if schedule_workflow_name(schedule_id) != name:
+        raise HTTPException(404, "Schedule not found")
+
+
+@router.put("/api/workflows/{name}/schedules/{schedule_id}")
+async def update_workflow_schedule(name: str, schedule_id: str, payload: ScheduleRequest) -> dict[str, Any]:
+    """Change one schedule's recurrence and saved inputs."""
+    _check_schedule_id(name, schedule_id)
+    result = await _save_schedule(name, payload, schedule_id=schedule_id, update_only=True)
+    return {**result, "id": result["schedule_id"]}
+
+
+async def _save_schedule(
+    name: str, payload: ScheduleRequest, *, schedule_id: str | None = None, update_only: bool = False
+) -> dict[str, Any]:
     async with workflow_lock(name):
+        workflow = await authoring.get_workflow(name)
+        manifest = workflow.get("manifest") or {}
+        validate_inputs(name, manifest.get("inputs"), payload.input, scheduled=True)
         if db.workflow_settings(name)["disabled"]:
-            raise HTTPException(409, f"{name} is disabled; enable it before changing its schedule")
-        result = await temporal.set_schedule(
-            name,
-            temporal_spec(payload),
-            payload.input,
-            timeout_minutes=manifest.get("timeout_minutes", 30),
-        )
+            raise HTTPException(409, f"{name} is disabled; enable it before changing its schedules")
+        try:
+            result = await temporal.set_schedule(
+                name,
+                temporal_spec(payload),
+                payload.input,
+                timeout_minutes=manifest.get("timeout_minutes", 30),
+                **({"schedule_id": schedule_id, "update_only": update_only} if schedule_id else {}),
+            )
+        except RPCError as exc:
+            if update_only and exc.status == RPCStatusCode.NOT_FOUND:
+                raise HTTPException(404, "Schedule not found") from exc
+            raise
     bus.publish(
         "workflow.scheduled",
         {"workflow": name, "frequency": payload.frequency, "timezone": payload.timezone},
@@ -190,7 +230,19 @@ async def schedule_workflow(name: str, payload: ScheduleRequest) -> dict[str, An
 
 @router.delete("/api/workflows/{name}/schedule")
 async def unschedule_workflow(name: str) -> dict[str, Any]:
-    await temporal.delete_schedule(name)
+    """Remove the legacy default schedule only."""
+    return await _remove_schedule(name)
+
+
+@router.delete("/api/workflows/{name}/schedules/{schedule_id}")
+async def delete_workflow_schedule(name: str, schedule_id: str) -> dict[str, Any]:
+    _check_schedule_id(name, schedule_id)
+    return await _remove_schedule(name, schedule_id=schedule_id)
+
+
+async def _remove_schedule(name: str, *, schedule_id: str | None = None) -> dict[str, Any]:
+    async with workflow_lock(name):
+        await temporal.delete_schedule(name, schedule_id=schedule_id)
     bus.publish("workflow.unscheduled", {"workflow": name})
     return {"ok": True}
 

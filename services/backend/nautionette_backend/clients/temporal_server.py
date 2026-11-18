@@ -26,7 +26,7 @@ from temporalio.client import (
 from temporalio.service import RPCError, RPCStatusCode
 
 from ..config import settings
-from ..schedules import schedule_summary
+from ..schedules import schedule_summary, schedule_workflow_name
 
 # Ownership survives lost replies/backend restarts. Never resume an operator's pause.
 DISABLED_SCHEDULE_NOTE = "Disabled by Denkzeug workflow settings.\n"
@@ -321,6 +321,18 @@ class TemporalGateway:
     def _schedule_id(self, workflow: str) -> str:
         return f"schedule-{workflow}"
 
+    async def workflow_schedule_ids(self, workflow: str) -> list[str]:
+        legacy = self._schedule_id(workflow)
+        # Probe the legacy ID directly too, even if it is not in the list yet.
+        return [
+            legacy,
+            *sorted(
+                item["id"]
+                for item in await self.schedules()
+                if item["workflow"] == workflow and item["id"] != legacy
+            ),
+        ]
+
     async def set_schedule(
         self,
         workflow: str,
@@ -328,25 +340,51 @@ class TemporalGateway:
         payload: dict[str, Any],
         paused: bool = False,
         timeout_minutes: int = 30,
+        *,
+        schedule_id: str | None = None,
+        update_only: bool = False,
     ) -> dict[str, Any]:
         client = await self.client()
+        legacy = schedule_id is None or schedule_id == self._schedule_id(workflow)
+        upsert = schedule_id is None
+        schedule_id = schedule_id or self._schedule_id(workflow)
         schedule = Schedule(
             action=ScheduleActionStartWorkflow(
                 workflow,
                 payload,
-                id=f"{workflow}-scheduled",
+                id=f"{workflow}-scheduled" if legacy else schedule_id,
                 task_queue=settings.temporal_task_queue,
                 execution_timeout=timedelta(minutes=timeout_minutes),
             ),
             spec=spec,
             state=ScheduleState(paused=paused),
         )
-        schedule_id = self._schedule_id(workflow)
-        try:
-            await client.create_schedule(schedule_id, schedule)
-        except ScheduleAlreadyRunningError:
-            handle = client.get_schedule_handle(schedule_id)
-            await handle.update(lambda _: ScheduleUpdate(schedule=schedule))
+        if update_only:
+            # Keep the existing action ID, pause, note and overlap policy when editing.
+            def update(current):
+                existing = current.description.schedule
+                return ScheduleUpdate(
+                    schedule=replace(
+                        existing,
+                        spec=spec,
+                        action=replace(
+                            existing.action,
+                            args=schedule.action.args,
+                            execution_timeout=schedule.action.execution_timeout,
+                        ),
+                    )
+                )
+
+            await client.get_schedule_handle(schedule_id).update(update)
+        else:
+            try:
+                await client.create_schedule(schedule_id, schedule)
+            except ScheduleAlreadyRunningError:
+                if not upsert:
+                    raise
+                await client.get_schedule_handle(schedule_id).update(
+                    lambda _: ScheduleUpdate(schedule=schedule)
+                )
         description = await client.get_schedule_handle(schedule_id).describe()
         return {
             "schedule_id": schedule_id,
@@ -359,6 +397,10 @@ class TemporalGateway:
         }
 
     async def set_workflow_disabled(self, workflow: str, disabled: bool) -> None:
+        for schedule_id in await self.workflow_schedule_ids(workflow):
+            await self.set_schedule_disabled(schedule_id, disabled)
+
+    async def set_schedule_disabled(self, schedule_id: str, disabled: bool) -> None:
         """Pause future starts, or release only a pause owned by this control.
 
         Update just the state using Temporal's optimistic update callback. Keep
@@ -383,12 +425,14 @@ class TemporalGateway:
             return ScheduleUpdate(schedule=replace(schedule, state=state))
 
         try:
-            await client.get_schedule_handle(self._schedule_id(workflow)).update(update)
+            await client.get_schedule_handle(schedule_id).update(update)
         except RPCError as exc:
             if exc.status != RPCStatusCode.NOT_FOUND:
                 raise
 
-    async def ensure_schedule_timeout(self, workflow: str, timeout_minutes: int) -> None:
+    async def ensure_schedule_timeout(
+        self, workflow: str, timeout_minutes: int, *, schedule_id: str | None = None
+    ) -> None:
         """Migrate existing actions without resetting recurrence, inputs or pause state."""
         client = await self.client()
         timeout = timedelta(minutes=timeout_minutes)
@@ -402,11 +446,11 @@ class TemporalGateway:
                 schedule=replace(schedule, action=replace(action, execution_timeout=timeout))
             )
 
-        await client.get_schedule_handle(self._schedule_id(workflow)).update(update)
+        await client.get_schedule_handle(schedule_id or self._schedule_id(workflow)).update(update)
 
-    async def schedule(self, workflow: str) -> dict[str, Any]:
+    async def schedule(self, workflow: str, *, schedule_id: str | None = None) -> dict[str, Any]:
         client = await self.client()
-        schedule_id = self._schedule_id(workflow)
+        schedule_id = schedule_id or self._schedule_id(workflow)
         description = await client.get_schedule_handle(schedule_id).describe()
         action = description.schedule.action
         decoded = await description.data_converter.decode(action.args)
@@ -422,11 +466,11 @@ class TemporalGateway:
             ),
         }
 
-    async def delete_schedule(self, workflow: str) -> None:
+    async def delete_schedule(self, workflow: str, *, schedule_id: str | None = None) -> None:
         """No schedule is already clean; outages and other errors must still surface."""
         client = await self.client()
         try:
-            await client.get_schedule_handle(self._schedule_id(workflow)).delete()
+            await client.get_schedule_handle(schedule_id or self._schedule_id(workflow)).delete()
         except RPCError as exc:
             if exc.status != RPCStatusCode.NOT_FOUND:
                 raise
@@ -435,6 +479,9 @@ class TemporalGateway:
         client = await self.client()
         out: list[dict[str, Any]] = []
         async for item in await client.list_schedules():
+            workflow = schedule_workflow_name(item.id)
+            if workflow is None:
+                continue
             listed = getattr(item, "schedule", None)
             spec = getattr(listed, "spec", None)
             state = getattr(listed, "state", None)
@@ -442,7 +489,7 @@ class TemporalGateway:
             out.append(
                 {
                     "id": item.id,
-                    "workflow": item.id.removeprefix("schedule-"),
+                    "workflow": workflow,
                     **schedule_summary(
                         spec,
                         paused=bool(state is not None and getattr(state, "paused", False)),

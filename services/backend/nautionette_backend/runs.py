@@ -27,6 +27,7 @@ from .clients import authoring, broker, temporal
 from .db import db
 from .events import bus
 from .runtime import runtime
+from .schedules import schedule_workflow_name
 from .workflow_control import workflow_lock
 
 # Temporal ends a run at its own execution timeout, so watching only has to
@@ -93,21 +94,22 @@ async def reconcile_schedule_timeouts() -> None:
     # Never remove schedules based on a transient get_workflow failure.
     deployed = {item["name"] for item in await authoring.list_workflows()}
     for schedule in schedules:
-        name = schedule["workflow"]
-        if schedule.get("id") != f"schedule-{name}":
+        schedule_id = schedule["id"]
+        name = schedule_workflow_name(schedule_id)
+        if name is None:
             continue  # Do not touch schedules outside the app's naming convention.
         try:
-            if name not in deployed:
-                await temporal.delete_schedule(name)
-                bus.publish("workflow.unscheduled", {"workflow": name, "reason": "workflow deleted"})
-                continue
             async with workflow_lock(name):
+                if name not in deployed:
+                    await temporal.delete_schedule(name, schedule_id=schedule_id)
+                    bus.publish("workflow.unscheduled", {"workflow": name, "reason": "workflow deleted"})
+                    continue
                 # State synchronization does not depend on importing/validating
                 # workflow source: a broken definition must still be stoppable.
-                await temporal.set_workflow_disabled(name, db.workflow_settings(name)["disabled"])
+                await temporal.set_schedule_disabled(schedule_id, db.workflow_settings(name)["disabled"])
                 workflow = await authoring.get_workflow(name)
                 timeout = (workflow.get("manifest") or {}).get("timeout_minutes", 30)
-                await temporal.ensure_schedule_timeout(name, timeout)
+                await temporal.ensure_schedule_timeout(name, timeout, schedule_id=schedule_id)
         except Exception:  # noqa: BLE001 - unavailable services can retry on the next pass
             log.exception("Could not reconcile schedule for %s", name)
 

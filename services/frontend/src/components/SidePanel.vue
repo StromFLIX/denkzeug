@@ -140,15 +140,15 @@
             <div class="row">
               <span class="row-item__title grow truncate">{{ workflow.title || workflow.name }}</span>
               <span v-if="workflow.settings?.disabled" class="material-icons row-item__pin dim">pause_circle</span>
-              <span v-else-if="workflow.schedule" class="material-icons row-item__pin">schedule</span>
+              <span v-else-if="workflow.scheduleCount" class="material-icons row-item__pin">schedule</span>
             </div>
             <div
               class="row-item__sub truncate"
-              :title="workflow.schedule ? `${workflow.schedule.description} · ${workflow.schedule.timezone}` : ''"
+              :title="workflow.nextSchedule ? `${workflow.nextSchedule.description} · ${workflow.nextSchedule.timezone}` : ''"
             >
-              {{ workflow.schedule?.next_run
-                ? `Next ${scheduleTime(workflow.schedule.next_run, workflow.schedule.timezone)}`
-                : workflow.schedule?.description || workflow.description || workflow.name }}
+              {{ workflow.nextSchedule && !workflow.settings?.disabled
+                ? `Next ${scheduleTime(workflow.nextSchedule.next_run, workflow.nextSchedule.timezone)}`
+                : workflow.scheduleCount ? `${workflow.scheduleCount} ${workflow.scheduleCount === 1 ? 'schedule' : 'schedules'}` : workflow.description || workflow.name }}
             </div>
           </div>
         </RouterLink>
@@ -165,6 +165,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { scheduleTime } from '../format'
+import { nextWorkflowSchedule, workflowSchedules } from '../workflow-schedules'
 import { actions, health, store } from '../store'
 import { account } from '../auth-session.js'
 import { api } from '../api'
@@ -273,7 +274,10 @@ watch(() => JSON.stringify([query.value.trim(), filteredChats.value.flatMap(chat
 }, { immediate: true })
 
 const filteredWorkflows = computed(() =>
-  store.workflows.filter((workflow) => matches(`${workflow.name} ${workflow.title || ''} ${workflow.description || ''}`)))
+  store.workflows.filter((workflow) => matches(`${workflow.name} ${workflow.title || ''} ${workflow.description || ''}`)).map(workflow => {
+    const schedules = workflowSchedules(workflow)
+    return { ...workflow, nextSchedule: nextWorkflowSchedule(schedules), scheduleCount: schedules.length }
+  }))
 
 const filteredDrafts = computed(() =>
   store.drafts.filter((draft) => matches(`${draft.name} ${draft.description || ''}`)))

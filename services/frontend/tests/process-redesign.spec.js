@@ -76,6 +76,7 @@ test.describe('touch process controls', () => {
     }
     await noOverflow(page)
     await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await page.getByRole('button', { name: 'Add schedule', exact: true }).click()
     const fields = page.locator('.schedule-grid .field')
     await expect(fields.first()).toBeVisible()
     for (const field of await fields.all()) {

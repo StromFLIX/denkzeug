@@ -120,7 +120,7 @@ def test_schedule_not_found_is_distinct_from_outage(client, typed, monkeypatch, 
     from nautionette_backend.clients import temporal
     from temporalio.service import RPCError, RPCStatusCode
 
-    async def unavailable(_):
+    async def unavailable(_, *, schedule_id=None):
         raise RPCError(
             "schedule unavailable", RPCStatusCode.NOT_FOUND if missing else RPCStatusCode.UNAVAILABLE, b""
         )

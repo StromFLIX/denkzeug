@@ -184,6 +184,50 @@ def test_scheduling_requires_a_deployed_workflow(client, backend):
     assert backend.temporal.schedule_specs == {}
 
 
+def test_multiple_schedules_can_be_managed_independently(client, digest):
+    base = "/api/workflows/url_digest"
+    request = {"frequency": "daily", "at": "08:00", "timezone": "UTC", "input": {"url": "https://a"}}
+    assert client.post(f"{base}/schedule", json=request).status_code == 200
+    first = client.post(f"{base}/schedules", json=request).json()["id"]
+    second = client.post(f"{base}/schedules", json=request).json()["id"]
+    assert first != second
+
+    changed = {**request, "at": "09:00", "input": {"url": "https://b"}}
+    assert client.put(f"{base}/schedules/{second}", json=changed).json()["at"] == "09:00"
+    detail = client.get(base).json()
+    assert detail["schedule"]["id"] == "schedule-url_digest"
+    entries = {item["id"]: item for item in detail["schedules"]}
+    assert entries[first]["input"] == request["input"]
+    assert entries[second]["input"] == changed["input"]
+    summaries = client.get("/api/workflows").json()["workflows"][0]["schedules"]
+    assert {item["id"] for item in summaries} == set(entries)
+    assert all("input" not in item for item in summaries)
+
+    digest.authoring.add_workflow("other_flow")
+    assert client.put(f"/api/workflows/other_flow/schedules/{second}", json=request).status_code == 404
+    assert client.delete(f"/api/workflows/other_flow/schedules/{second}").status_code == 404
+    assert client.delete(f"{base}/schedules/{second}").status_code == 200
+    assert client.put(f"{base}/schedules/{second}", json=request).status_code == 404
+    assert client.delete(f"{base}/schedule").status_code == 200
+    assert [item["id"] for item in client.get(base).json()["schedules"]] == [first]
+
+
+def test_workflow_disable_enable_and_delete_apply_to_all_schedules(client, digest):
+    base = "/api/workflows/url_digest"
+    request = {"frequency": "daily", "at": "08:00", "timezone": "UTC", "input": {"url": "https://a"}}
+    for _ in range(2):
+        assert client.post(f"{base}/schedules", json=request).status_code == 200
+    for disabled in (True, False):
+        assert client.patch(f"{base}/settings", json={"disabled": disabled}).status_code == 200
+        entries = client.get(base).json()["schedules"]
+        assert len(entries) == 2
+        assert all(item["paused"] == disabled for item in entries)
+        if disabled:
+            assert client.post(f"{base}/schedules", json=request).status_code == 409
+    assert client.delete(base).status_code == 200
+    assert digest.temporal.schedule_specs == {}
+
+
 # ----------------------------------------------------------------------- drafts
 
 
