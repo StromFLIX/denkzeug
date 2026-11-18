@@ -6,6 +6,9 @@ import subprocess
 import sys
 import zipfile
 from pathlib import Path
+from types import ModuleType
+
+from nautionette import import_aliases
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = {
@@ -15,6 +18,25 @@ PACKAGES = {
     "denkzeug_worker": "nautionette_worker",
     "denkzeug_workflow_mcp": "nautionette_workflow_mcp",
 }
+
+
+def test_alias_finder_resolves_child_when_importlib_captured_the_shim_path(tmp_path, monkeypatch):
+    shim_path = tmp_path / "alias"
+    canonical_path = tmp_path / "canonical"
+    shim_path.mkdir()
+    canonical_path.mkdir()
+    (canonical_path / "leaf.py").write_text("value = 1\n")
+    parent = ModuleType("_alias_test_canonical")
+    parent.__path__ = [str(canonical_path)]
+    monkeypatch.setitem(sys.modules, parent.__name__, parent)
+    monkeypatch.setitem(import_aliases.ALIASES, "_alias_test", parent.__name__)
+
+    # A concurrent child import can retain the shim directory even after the
+    # parent has finished swapping sys.modules to the canonical package.
+    spec = import_aliases._finder.find_spec("_alias_test.leaf", [str(shim_path)])
+    assert spec is not None
+    assert spec.name == "_alias_test.leaf"
+    assert spec.loader.target == "_alias_test_canonical.leaf"
 
 
 def test_wheels_include_aliases_and_preserve_singletons_in_both_import_orders(tmp_path):

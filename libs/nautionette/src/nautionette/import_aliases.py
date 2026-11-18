@@ -43,11 +43,16 @@ class _AliasFinder(importlib.abc.MetaPathFinder):
         if not separator or root not in ALIASES:
             return None
         canonical = ALIASES[root] + "." + child
-        # A finder runs under Python's global import lock. util.find_spec can
-        # execute a parent package here and deadlock concurrent alias/canonical
-        # imports. The already-loaded alias parent supplies the canonical path.
+        # Importlib may capture the alias parent's shim path before waiting for
+        # that parent to finish. Resolve against the canonical parent's live path
+        # instead. Only consult loaded modules here: importing a parent under the
+        # global import lock could deadlock a concurrent import.
+        parent = sys.modules.get(canonical.rpartition(".")[0])
+        canonical_path = getattr(parent, "__path__", path)
         cached = sys.modules.get(canonical)
-        spec = getattr(cached, "__spec__", None) or importlib.machinery.PathFinder.find_spec(canonical, path)
+        spec = getattr(cached, "__spec__", None) or importlib.machinery.PathFinder.find_spec(
+            canonical, canonical_path
+        )
         if spec is None:
             return None
         return importlib.machinery.ModuleSpec(
