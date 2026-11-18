@@ -48,7 +48,7 @@
         </nav>
         <div v-if="moreAbove" class="settings__edge settings__edge--top" aria-hidden="true" />
         <div class="settings__more" aria-hidden="true">
-          <span v-show="moreBelow" class="settings__more-label">
+          <span class="settings__more-label" :class="{ 'settings__more-label--visible': moreBelow }">
             More categories below <span class="material-icons">expand_more</span>
           </span>
         </div>
@@ -234,7 +234,8 @@ onUnmounted(() => {
 .settings__edge { position: absolute; inset-inline: 0 10px; height: 18px; pointer-events: none; }
 .settings__edge--top { top: 0; background: linear-gradient(var(--surface-app), transparent); }
 .settings__more { display: grid; place-items: center; min-height: 30px; color: var(--text-muted); font-size: 0.6875rem; }
-.settings__more-label { display: flex; align-items: center; gap: 4px; }
+.settings__more-label { display: flex; align-items: center; gap: 4px; visibility: hidden; }
+.settings__more-label--visible { visibility: visible; }
 .settings__more-label .material-icons { font-size: 1rem; }
 .settings__group + .settings__group { margin-top: 28px; }
 .settings__group h2 { margin: 0 10px 10px; font-size: 0.75rem; font-weight: 600; line-height: 1.5; color: var(--text); letter-spacing: 0; text-transform: none; }

@@ -99,6 +99,8 @@ for (const mode of ['light', 'dark']) {
 
 test('desktop category list indicates overflow, reveals the deep-linked category and scrolls independently', async ({ page, context }, testInfo) => {
   await mockDesign(context)
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
   await page.setViewportSize({ width: 1440, height: 550 })
   await page.goto('/settings/activity')
   const nav = page.getByRole('navigation', { name: 'Settings categories' })
@@ -122,6 +124,7 @@ test('desktop category list indicates overflow, reveals the deep-linked category
   await page.setViewportSize({ width: 1440, height: 1800 })
   await expect(above).toBeHidden()
   await expect(below).toBeHidden()
+  expect(errors.filter(message => message.includes('ResizeObserver loop'))).toEqual([])
 })
 
 test.describe('touch settings', () => {
