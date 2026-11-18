@@ -79,11 +79,20 @@ for (const [width, theme, interfaceSize] of [[1440, 'orbit', 100], [320, 'orbit'
 }
 
 test('opening a descendant from search reveals the selected chat and its ancestors', async ({ page, context }) => {
-  await fixture(context)
+  const chats = await fixture(context)
+  const descendant = chats.find(chat => chat.id === 'research')
+  const excerpt = 'Reviewed accessible colours and contrast ratios.'
+  await context.route('**/api/search/chats?*', route => route.fulfill({ json: {
+    results: [{ chat_id: descendant.id, title: descendant.title, excerpt, match: 'keyword' }],
+    semantic: { state: 'ready' }
+  } }))
   await page.goto('/chats')
   const titles = page.locator('.side__list .row-item__title')
   await searchWorkspace(page, 'chats', 'accessible colours')
-  await workspaceSearch(page).getByRole('option', { name: 'Research accessible colours', exact: true }).click()
+  const hit = workspaceSearch(page).getByRole('option', { name: descendant.title, exact: true })
+  // Wait for the full-history result, not a local fallback that may be replaced.
+  await expect(hit).toContainText(excerpt)
+  await hit.click()
   await expect(page).toHaveURL('/chats/research')
   await expect(page.locator('.side__list a[href="/chats/research"]')).toHaveClass(/row-item--active/)
   await expect(page.getByRole('button', { name: 'Collapse agent chats for Build the website (3)', exact: true })).toHaveAttribute('aria-expanded', 'true')
