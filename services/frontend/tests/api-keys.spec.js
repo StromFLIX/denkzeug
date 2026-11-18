@@ -162,7 +162,7 @@ test('explicit all-resource grants, cancellation and rejected creation retain th
 test('webhook failure does not copy a URL and the shorter expiry is sent explicitly', async ({ page, context }) => {
   const state = await setup(page, context)
   state.webhookFailure = true
-  await page.goto('/workflows/digest?tab=Run')
+  await page.goto('/workflows/digest?tab=Integrate')
   await page.getByLabel('Link expires in').selectOption('1')
   await page.getByRole('button', { name: 'Copy webhook URL', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('Workflow access removed')
@@ -297,7 +297,7 @@ test('leaving Integrate during token creation never reveals or copies the stale 
 for (const clipboardFails of [false, true]) {
   test(`webhook copying mints exact-workflow credentials first, clipboard failure=${clipboardFails}`, async ({ page, context }) => {
     const state = await setup(page, context, { clipboardFails })
-    await page.goto('/workflows/digest?tab=Run')
+    await page.goto('/workflows/digest?tab=Integrate')
     await expect(page.getByLabel('Link expires in')).toHaveValue('7')
     await page.getByRole('button', { name: 'Copy webhook URL', exact: true }).click()
     await expect(page.getByLabel('Webhook URL', { exact: true })).toHaveValue('https://example.test/api/triggers/digest?token=webhook-once')

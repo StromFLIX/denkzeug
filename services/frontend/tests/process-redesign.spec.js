@@ -33,6 +33,25 @@ test('empty process views explain workflows with real next steps', async ({ page
   }
 })
 
+test('webhook controls live only in the Integrate tab', async ({ page, context }) => {
+  await mockProcesses(context)
+  await page.goto('/workflows/digest?tab=Run')
+  const views = page.getByRole('navigation', { name: 'Workflow views' })
+  const schedule = page.getByRole('heading', { name: 'Schedule', exact: true })
+  const webhook = page.getByRole('heading', { name: 'Webhook trigger', exact: true })
+  await expect(schedule).toBeVisible()
+  await expect(webhook).toHaveCount(0)
+
+  await views.getByRole('button', { name: 'Integrate', exact: true }).click()
+  await expect(webhook).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Copy webhook URL', exact: true })).toBeVisible()
+  await expect(schedule).toHaveCount(0)
+
+  await views.getByRole('button', { name: 'Settings', exact: true }).click()
+  await expect(schedule).toBeVisible()
+  await expect(webhook).toHaveCount(0)
+})
+
 test('workflow disable shows saved intent and retries schedule synchronization without toggling it back', async ({ page, context }) => {
   const state = await mockProcesses(context)
   const writes = []

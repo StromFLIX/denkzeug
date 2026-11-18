@@ -277,7 +277,6 @@
             >{{ option.label }}</button>
           </div>
         </section>
-
       </template>
 
       <section v-else-if="tab === 'Definition' && definitionTab === 'Code'" class="block block--wide">
@@ -286,7 +285,7 @@
 
       <section v-else-if="tab === 'Runs'" class="block block--wide"><WorkflowRuns :workflow="name" @run="openRun" /></section>
 
-      <section v-if="tab === 'Integrate' || tab === 'Settings'" class="block">
+      <section v-else-if="tab === 'Integrate'" class="block">
         <h2 class="section-label">Trigger</h2>
         <p class="block__intro">Start this workflow from another tool. This preview uses the schedule input draft, not a manual run draft.</p>
         <TriggerSnippet class="block__panel" :workflow="workflow.name" :inputs="scheduleInputs" />
