@@ -109,7 +109,6 @@
 
       <!-- workflows -->
       <template v-else-if="section === 'workflows'">
-        <RouterLink to="/workflows" class="row-item" :class="{ 'row-item--active': !route.params.name && route.query.view !== 'runs' && !route.params.id }"><span class="material-icons" aria-hidden="true">account_tree</span><span>All workflows</span></RouterLink>
         <RouterLink to="/workflows?view=runs" class="row-item" :class="{ 'row-item--active': route.query.view === 'runs' }"><span class="material-icons" aria-hidden="true">history</span><span>All runs</span></RouterLink>
         <template v-if="filteredDrafts.length">
           <div class="side__group section-label">Waiting for review</div>
