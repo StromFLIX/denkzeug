@@ -122,9 +122,12 @@ def test_models_can_change_within_native_session_without_misattribution(db):
             for model in ["p/first", "p/second", "p/second"]
         ],
     )
-    data = report()
+    data = report(chart_group="models", limit=1)
     assert data["summary"]["executions"] == 1
-    assert [(r["id"], r["tokens"]["total"]) for r in data["rows"]] == [("p/second", 32), ("p/first", 16)]
+    assert [(r["id"], r["tokens"]["total"]) for r in data["rows"]] == [("p/second", 32)]
+    assert [(s["id"], s["total"]) for s in data["chart"]["series"]] == [("p/second", 32), ("p/first", 16)]
+    assert data["daily"][14]["series"] == [32, 16]
+    assert data["daily"][15]["series"] == [0, 0]
     assert report(model="p/first")["summary"]["tokens"]["total"] == 16
     assert report(group="executions")["count"] == 1
     assert report(group="executions")["rows"][0]["model"] == "p/first, p/second"
@@ -144,7 +147,11 @@ def test_saved_workflow_tasks_delegates_and_legacy_attempts_are_counted_once(db)
             "wf", call, "agent", "research", "failed", model="p/legacy", statistics=stats.snapshot()
         )
     run_statistics.record_call("wf", "mcp1", "mcp", "http", "completed")
-    all_data = report()
+    all_data = report(chart_group="workload")
+    assert all_data["chart"]["series"] == [
+        {"id": "workflows", "label": "Workflows", "total": 64},
+        {"id": "chats", "label": "Chats", "total": 16},
+    ]
     assert all_data["summary"]["tokens"]["total"] == 80
     assert all_data["summary"]["executions"] == 5
     flows = report(group="workflows")
@@ -160,6 +167,54 @@ def test_saved_workflow_tasks_delegates_and_legacy_attempts_are_counted_once(db)
     assert runs["rows"][0]["href"] == "/runs/wf"
     day = next(d for d in all_data["daily"] if d["tokens"])
     assert day["chats"]["total"] + day["workflows"]["total"] == day["tokens"]["total"]
+
+
+@pytest.mark.parametrize(
+    ("chart_group", "expected"),
+    [
+        ("models", {"provider/m1": 32, "Unknown model": 16}),
+        ("agents", {"Agent One": 32, "No saved profile": 16}),
+        ("workflows", {"digest": 16, "No workflow": 32}),
+        ("workload", {"Workflows": 16, "Chats": 32}),
+        ("users", {"Member": 16, "Admin": 32}),
+    ],
+)
+def test_chart_dimensions_share_filtered_range_and_daily_totals(db, chart_group, expected):
+    member(db)
+    turn(db, id="plain", created_at=NOW - 86400)
+    turn(db, id="unassigned", model=None, agent=None)
+    turn(db, id="workflow", user="member", origin={"kind": "workflow", "workflow": "digest"})
+    turn(db, id="unreported", model="unreported", events=[])
+    data = report(chart_group=chart_group, group="executions")
+    series = data["chart"]["series"]
+    assert {s["label"]: s["total"] for s in series} == expected
+    assert data["chart"]["group"] == chart_group
+    assert [sum(day["series"][i] for day in data["daily"]) for i in range(len(series))] == [
+        item["total"] for item in series
+    ]
+    assert [sum(day["series"]) for day in data["daily"]] == [0] * 13 + [16, 32] + [0] * 15
+    assert sum(s["total"] for s in series) == data["summary"]["tokens"]["total"]
+    filtered = report(chart_group=chart_group, workload="workflows", user="member")
+    assert [s["total"] for s in filtered["chart"]["series"]] == [16]
+    assert filtered["daily"][14]["series"] == [16]
+
+
+def test_chart_other_is_stable_across_days_and_does_not_depend_on_table_paging(db):
+    for i in range(7):
+        turn(
+            db,
+            id=str(i),
+            model=f"p/{i}",
+            created_at=NOW + (i % 2) * 86400,
+            events=[{"type": "usage", "usage": COUNTS}] * (7 - i),
+        )
+    data = report(chart_group="models", group="agents", offset=1, limit=1, sort="name")
+    assert not data["rows"]
+    series = data["chart"]["series"]
+    assert [s["id"] for s in series] == ["p/0", "p/1", "p/2", "p/3", None]
+    assert series[-1] == {"id": None, "label": "Other", "total": 96, "count": 3}
+    assert data["daily"][14]["series"] == [112, 0, 80, 0, 64]
+    assert data["daily"][15]["series"] == [0, 96, 0, 64, 32]
 
 
 def test_nested_root_outside_selected_range_still_attributes_child(db):
@@ -225,9 +280,11 @@ def test_local_days_dst_half_open_bounds_and_start_attribution(db):
         end="2026-11-01",
         timezone="America/New_York",
         who=Principal("test-admin", "admin"),
+        chart_group="models",
     )
     assert data["summary"]["tokens"]["total"] == 32
     assert len(data["daily"]) == 1
+    assert data["daily"][0]["series"] == [32]
 
 
 @pytest.mark.parametrize(
@@ -238,6 +295,7 @@ def test_local_days_dst_half_open_bounds_and_start_attribution(db):
         {"end": "2026-10-01"},
         {"timezone": "bad/zone"},
         {"group": "bad"},
+        {"chart_group": "runs"},
         {"workload": "bad"},
         {"sort": "bad"},
     ],
@@ -269,7 +327,11 @@ def test_api_session_policy_validation_export_and_no_external_requests(client, d
     response = client.get("/api/settings/usage", params=params)
     assert response.status_code == 200, response.text
     assert response.json()["summary"]["tokens"]["total"] == 16
-    for extra in [{"limit": 0}, {"limit": 101}, {"offset": -1}, {"timezone": "bad"}]:
+    assert "chart" not in response.json()
+    chart = client.get("/api/settings/usage", params={**params, "chart_group": "workload"}).json()
+    assert chart["chart"]["series"] == [{"id": "chats", "label": "Chats", "total": 16}]
+    assert chart["daily"][14]["series"] == [16]
+    for extra in [{"limit": 0}, {"limit": 101}, {"offset": -1}, {"timezone": "bad"}, {"chart_group": "bad"}]:
         assert client.get("/api/settings/usage", params={**params, **extra}).status_code == 422
     exported = client.get("/api/settings/usage/export", params=params)
     assert exported.status_code == 200
@@ -310,6 +372,9 @@ def test_http_member_totals_facets_export_and_cross_account_denial(client, db):
     assert response.status_code == 200, response.text
     assert response.json()["summary"]["tokens"]["total"] == 16
     assert response.json()["facets"]["users"] == []
+    chart = http.get("/api/settings/usage", params={**PARAMS, "chart_group": "models"}).json()["chart"]
+    assert chart["series"] == [{"id": "member/model", "label": "member/model", "total": 16}]
+    assert http.get("/api/settings/usage", params={**PARAMS, "chart_group": "users"}).status_code == 403
     for path in ["/api/settings/usage", "/api/settings/usage/export"]:
         assert http.get(path, params={**PARAMS, "user": "test-admin"}).status_code == 403
         assert http.get(path, params={**PARAMS, "group": "users"}).status_code == 403

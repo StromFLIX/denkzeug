@@ -50,9 +50,10 @@ def get_usage(
     response: Response,
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
+    chart_group: str | None = None,
 ) -> dict:
     response.headers["Cache-Control"] = "no-store"
-    return usage.report(**selected, offset=offset, limit=limit)
+    return usage.report(**selected, offset=offset, limit=limit, chart_group=chart_group)
 
 
 @router.get("/export")

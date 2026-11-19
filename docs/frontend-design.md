@@ -59,10 +59,12 @@ button opens workspace search with the Settings filter selected. The desktop top
 bar search and **Ctrl/Command + K** open it at **All**. On narrow screens, a
 grouped category selector replaces the tree.
 
-**Run & manage → Usage** shows token composition, a time chart and filtered
-model/agent/workflow/account breakdowns. Workflow drilldowns show runs; members
-see only their own usage. The page uses theme tokens, collapses filters on mobile,
-and supports filtered CSV downloads. See [Usage](usage.md) for the accounting and API contract.
+**Run & manage → Usage** keeps token types next to the reported total. One
+**Group by** control applies to both the range composition and the daily stacks;
+keep series colors in sync between them. The detail table and CSV have their own
+breakdown, with workflows drilling into runs. Members see only their own usage.
+On mobile, collapse filters and offer a day picker so visitors can inspect a day
+without hitting a narrow bar. See [Usage](usage.md) for accounting and the API contract.
 
 ## Workspace navigation
 

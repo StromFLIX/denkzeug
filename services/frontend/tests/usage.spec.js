@@ -3,11 +3,28 @@ import { test, expect } from './account-fixture.js'
 const tokens = { input: 3600000, output: 1200000, cacheRead: 18400000, cacheWrite: 1600000, total: 24800000 }
 const facets = { models: [{ id: 'copilot/gpt-6.1-sol', label: 'copilot/gpt-6.1-sol' }, { id: 'anthropic/sonnet', label: 'anthropic/sonnet' }], agents: [{ id: 'a1', label: 'Digest writer' }], workflows: [{ id: 'hn_daily_digest', label: 'hn_daily_digest' }], users: [{ id: 'test-admin', label: 'Alex' }] }
 const total = { tokens, responses: 6320, reports: 6040, executions: 746 }
-const daily = Array.from({ length: 30 }, (_, i) => ({ date: `2026-11-${String(i + 1).padStart(2, '0')}`, tokens: { total: 800000 }, chats: { total: 600000 }, workflows: { total: 200000 }, executions: 25 }))
+const chartOptions = {
+  models: facets.models,
+  agents: facets.agents,
+  workload: [{ id: 'chats', label: 'Chats' }, { id: 'workflows', label: 'Workflows' }],
+  workflows: [{ id: '', label: 'No workflow' }, ...facets.workflows],
+  users: facets.users
+}
 function payload (params) {
   const group = params.get('group') || 'models'
+  const chartGroup = params.get('chart_group') || 'models'
+  const start = params.get('start') || '2026-11-01', end = params.get('end') || '2026-11-30'
+  const first = Date.parse(start), count = (Date.parse(end) - first) / 86400000 + 1
+  const options = chartOptions[chartGroup]
+  const daily = Array.from({ length: count }, (_, i) => {
+    const date = new Date(first + i * 86400000).toISOString().slice(0, 10)
+    const volume = i === 0 ? 1600000 : 800000
+    return { date, tokens: { total: volume }, executions: 25, series: options.length === 2 ? [volume * .75, volume * .25] : [volume] }
+  })
+  const series = options.map((item, i) => ({ ...item, total: daily.reduce((sum, day) => sum + day.series[i], 0) }))
+  const summary = { ...total, tokens: { ...tokens, total: series.reduce((sum, item) => sum + item.total, 0) } }
   const rows = ['executions', 'runs'].includes(group) ? [{ id: 'chat:t1', label: 'Digest writer', agent_name: 'Digest writer', agent_set: 'default', model: 'copilot/gpt-6.1-sol', created_at: 1794744000, workflow: 'hn_daily_digest', trigger: 'schedule', state: 'completed', href: group === 'runs' ? '/runs/digest-run' : '/chats/task', workload: 'workflows', ...total }] : group === 'workflows' ? [{ id: 'hn_daily_digest', label: 'hn_daily_digest', ...total }] : group === 'agents' ? [{ id: 'a1', label: 'Digest writer', ...total }] : group === 'users' ? [{ id: 'test-admin', label: 'Alex', ...total }] : [{ id: 'copilot/gpt-6.1-sol', label: 'copilot/gpt-6.1-sol', ...total }]
-  return structuredClone({ start: '2026-11-01', end: '2026-11-30', timezone: 'UTC', admin: true, facets, summary: total, daily, group, rows, count: rows.length, offset: 0, limit: 50 })
+  return structuredClone({ start, end, timezone: 'UTC', admin: true, facets, summary, daily, chart: { group: chartGroup, series }, group, rows, count: rows.length, offset: 0, limit: 50 })
 }
 async function mock (page, handler) {
   await page.route('**/api/**', route => {
@@ -28,8 +45,25 @@ test('overview renders approved chart and composition without coverage panels', 
   await expect(page.locator('.usage__total')).toHaveText('24.80M')
   await expect(page.locator('.usage__tokens')).toContainText('18.40M')
   await expect(page.getByRole('list', { name: 'Tokens by date' }).getByRole('listitem')).toHaveCount(30)
-  await page.locator('.usage__bar').first().focus()
-  await expect(page.locator('.usage__chart-detail')).toContainText('Chats 600,000')
+  const range = page.getByRole('region', { name: 'Selected range token breakdown' })
+  const grouping = page.getByRole('combobox', { name: 'Group by' })
+  const chart = page.getByRole('region', { name: 'Token consumption over time' })
+  await expect(grouping).toHaveValue('models')
+  await expect(range).toContainText('anthropic/sonnet')
+  await chart.getByRole('button', { name: /Nov 1, 2026:/ }).click()
+  await expect(chart.getByRole('status')).toContainText('copilot/gpt-6.1-sol 1.20M')
+  const mint = await range.locator('i').first().evaluate(el => getComputedStyle(el).backgroundColor)
+  expect(await chart.getByRole('button', { pressed: true }).locator('span').first().evaluate(el => getComputedStyle(el).backgroundColor)).toBe(mint)
+  for (const [value, label] of [['users', 'Alex'], ['agents', 'Digest writer'], ['workflows', 'No workflow'], ['workload', 'Chats']]) {
+    await grouping.selectOption(value)
+    await expect(range).toContainText(label)
+    await expect(chart.getByRole('status')).toContainText(label)
+    await expect(chart.getByRole('button', { pressed: true })).toHaveAttribute('data-date', '2026-11-01')
+  }
+  await expect(page).toHaveURL(/chart_group=workload/)
+  await expect(page.getByRole('tab', { name: 'Models', exact: true })).toHaveAttribute('aria-selected', 'true')
+  await grouping.selectOption('models')
+  await expect(range).toContainText('anthropic/sonnet')
   await expect(page.getByText('View data coverage')).toHaveCount(0)
   await expect(page.getByText('Reported usage is a lower bound')).toHaveCount(0)
   await page.locator('.settings__body').evaluate(el => { el.scrollTop = 0 })
@@ -63,12 +97,31 @@ test('keyboard tabs, mobile filters and both themes remain usable', async ({ pag
   await page.keyboard.press('ArrowRight')
   await expect(page.getByRole('tab', { name: 'Agents', exact: true })).toHaveAttribute('aria-selected', 'true')
   await page.setViewportSize({ width: 320, height: 844 })
-  await page.getByRole('button', { name: /^Filters/ }).click()
+  const toggle = page.getByRole('button', { name: /^Filters/ })
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByRole('combobox', { name: 'Model', exact: true })).toBeHidden()
+  await toggle.click()
   await expect(page.getByRole('combobox', { name: 'Model', exact: true })).toBeVisible()
   await page.getByRole('combobox', { name: 'Usage breakdown', exact: true }).selectOption('models')
   await expect(page.locator('.usage__total')).toHaveText('24.80M')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-  await page.getByRole('button', { name: /^Filters/ }).click()
+  await toggle.click()
+  const picker = page.getByRole('combobox', { name: 'Select a day to inspect' })
+  const chart = page.getByRole('region', { name: 'Token consumption over time' })
+  await picker.selectOption('2026-11-20')
+  await expect(chart.getByRole('status')).toContainText('Nov 20')
+  await expect(chart.getByRole('button', { pressed: true })).toHaveAttribute('data-date', '2026-11-20')
+  await chart.getByRole('button', { name: 'Clear day' }).click()
+  await expect(picker).toHaveValue('')
+  await expect(picker).toBeFocused()
+  await chart.getByRole('button', { name: /Nov 21, 2026:/ }).click()
+  await expect(picker).toHaveValue('2026-11-21')
+  const sideBySide = await page.locator('.usage__hero').evaluate(el => {
+    const total = el.querySelector('.usage__total').getBoundingClientRect()
+    const types = el.querySelector('.usage__tokens').getBoundingClientRect()
+    return total.right < types.left && total.top < types.bottom && types.top < total.bottom
+  })
+  expect(sideBySide).toBe(true)
   await page.screenshot({ path: testInfo.outputPath('usage-mobile.png'), fullPage: true })
   await page.getByRole('combobox', { name: 'Usage breakdown', exact: true }).selectOption('workflows')
   await page.getByRole('button', { name: 'Explore hn_daily_digest', exact: true }).click()
@@ -78,6 +131,25 @@ test('keyboard tabs, mobile filters and both themes remain usable', async ({ pag
   await page.evaluate(() => localStorage.setItem('nautionette.preferences.v1', JSON.stringify({ theme: 'orbit' })))
   await page.reload()
   await expect(page.locator('.usage__total')).toHaveText('24.80M')
+  await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark')
+  await expect(page.locator('.range__legend i').first()).toHaveCSS('background-color', 'rgb(121, 222, 196)')
+})
+
+test('long ranges stay daily and selecting a date scrolls only within the chart', async ({ page }) => {
+  await mock(page)
+  await page.goto('/settings/usage?period=custom&start=2025-11-30&end=2026-11-30&chart_group=agents')
+  await expect(page.getByRole('combobox', { name: 'Group by' })).toHaveValue('agents')
+  await expect(page.getByRole('list', { name: 'Tokens by date' }).getByRole('listitem')).toHaveCount(366)
+  const picker = page.getByRole('combobox', { name: 'Select a day to inspect' })
+  await picker.selectOption('2026-11-29')
+  await expect(page.locator('.chart__detail')).toContainText('Nov 29, 2026')
+  await expect.poll(() => page.locator('.chart__scroll').evaluate(el => el.scrollLeft)).toBeGreaterThan(0)
+  await page.locator('.chart__bar[aria-pressed=true]').focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(picker).toHaveValue('2026-11-30')
+  await page.keyboard.press('Home')
+  await expect(picker).toHaveValue('2025-11-30')
+  await expect.poll(() => page.locator('.chart__scroll').evaluate(el => el.scrollLeft)).toBe(0)
 })
 
 test('unknown counts are dashes, empty states and retry recover without fabricated zeros', async ({ page }) => {
@@ -103,8 +175,11 @@ test('unknown counts are dashes, empty states and retry recover without fabricat
 test('member settings exposes Usage without workspace user controls', async ({ page }) => {
   await mock(page)
   await page.route('**/api/auth/me', route => route.fulfill({ json: { user: { id: 'member', username: 'member', display_name: 'Member', role: 'member', status: 'active' }, csrf_token: 'csrf' } }))
-  await page.goto(path)
+  await page.goto(`${path}&chart_group=users`)
   await expect(page.getByRole('heading', { name: 'Usage', exact: true })).toBeVisible()
+  const grouping = page.getByRole('combobox', { name: 'Group by' })
+  await expect(grouping).toHaveValue('models')
+  await expect(grouping.locator('option[value=users]')).toHaveCount(0)
   await expect(page.getByRole('tab', { name: 'Users', exact: true })).toHaveCount(0)
   await expect(page.getByRole('combobox', { name: 'Account owner', exact: true })).toHaveCount(0)
 })

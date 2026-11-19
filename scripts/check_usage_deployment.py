@@ -38,16 +38,42 @@ def validate(data: dict) -> None:
         raise ValueError("Invalid breakdown")
 
 
+def validate_chart(data: dict, group: str) -> None:
+    chart = data["chart"]
+    if chart["group"] != group or len(chart["series"]) > 5:
+        raise ValueError("Invalid chart grouping")
+    totals = [item["total"] for item in chart["series"]]
+    sums = [0] * len(totals)
+    for day in data["daily"]:
+        values = day["series"]
+        if len(values) != len(totals) or any(type(value) is not int or value < 0 for value in values):
+            raise ValueError("Invalid daily chart series")
+        if sum(values) != (day["tokens"] or {}).get("total", 0):
+            raise ValueError("Daily chart series do not reconcile")
+        for i, value in enumerate(values):
+            sums[i] += value
+    if sums != totals:
+        raise ValueError("Range chart series do not reconcile")
+
+
 def check(session: AccountSession) -> None:
     end = datetime.now(UTC).date()
     selected = {"start": (end - timedelta(days=29)).isoformat(), "end": end.isoformat(), "timezone": "UTC"}
-    for group in ("models", "agents", "workflows", "executions", "runs"):
-        query = urllib.parse.urlencode({**selected, "group": group})
+    for group, chart_group in (
+        ("models", "models"),
+        ("agents", "agents"),
+        ("workflows", "workflows"),
+        ("executions", "workload"),
+        ("runs", "models"),
+    ):
+        query = urllib.parse.urlencode({**selected, "group": group, "chart_group": chart_group})
         request = urllib.request.Request(session.base + "/api/settings/usage?" + query)  # noqa: S310 - AccountSession validates origin
         with session.open(request, timeout=60) as response:
             if response.headers.get("Cache-Control") != "no-store":
                 raise ValueError("Usage responses must not be cached")
-            validate(json.load(response))
+            data = json.load(response)
+            validate(data)
+            validate_chart(data, chart_group)
     query = urllib.parse.urlencode(selected)
     request = urllib.request.Request(session.base + "/api/settings/usage/export?" + query)  # noqa: S310 - AccountSession validates origin
     with session.open(request, timeout=60) as response:

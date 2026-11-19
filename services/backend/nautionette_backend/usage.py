@@ -21,6 +21,20 @@ from .db import db
 from .run_statistics import TOKEN_FIELDS, token_counts
 
 GROUPS = {"models", "agents", "workflows", "users", "executions", "runs"}
+CHART_KEYS = {
+    "models": "model",
+    "agents": "agent",
+    "workflows": "workflow",
+    "users": "user",
+    "workload": "workload",
+}
+CHART_MISSING = {
+    "models": ("__unknown__", "Unknown model"),
+    "agents": ("__none__", "No saved profile"),
+    "workflows": ("", "No workflow"),
+    "users": ("__unknown__", "Unknown account"),
+}
+CHART_NAMED_SERIES = 4
 
 
 def window(start: str, end: str, timezone: str) -> tuple[date, date, ZoneInfo, float, float]:
@@ -221,6 +235,58 @@ def _options(facts: list[dict], key: str, label: str | None = None) -> list[dict
     ]
 
 
+def _workload(fact: dict) -> str:
+    return "workflows" if fact["workflow"] or fact["source"] == "workflow" else "chats"
+
+
+def _chart(group: str, days: list[dict], buckets: dict, facets: dict) -> dict:
+    """Use one range-wide series order so the colors and totals reconcile every day."""
+    key = CHART_KEYS[group]
+    if group == "workload":
+        missing = ""
+        labels = {"chats": "Chats", "workflows": "Workflows"}
+    else:
+        missing, fallback = CHART_MISSING[group]
+        labels = {item["id"]: item["label"] for item in facets[group]}
+        labels.setdefault(missing, fallback)
+
+    range_totals: dict[str, int] = defaultdict(int)
+    day_totals = []
+    for day in days:
+        totals: dict[str, int] = defaultdict(int)
+        for fact in buckets[day["date"]]:
+            if not fact["tokens"]:
+                continue
+            identity = _workload(fact) if group == "workload" else fact.get(key) or missing
+            count = sum(fact["tokens"].values())
+            totals[identity] += count
+            range_totals[identity] += count
+        day_totals.append(totals)
+
+    ordered = sorted(range_totals, key=lambda identity: (-range_totals[identity], identity))
+    named = ordered[:CHART_NAMED_SERIES]
+    rest = ordered[CHART_NAMED_SERIES:]
+    series = [
+        {"id": identity, "label": labels.get(identity, identity), "total": range_totals[identity]}
+        for identity in named
+    ]
+    if rest:
+        series.append(
+            {
+                "id": None,
+                "label": "Other",
+                "total": sum(range_totals[identity] for identity in rest),
+                "count": len(rest),
+            }
+        )
+    for day, totals in zip(days, day_totals, strict=True):
+        day["series"] = [totals.get(identity, 0) for identity in named]
+        if rest:
+            # The remainder is already represented by this day's overall total.
+            day["series"].append((day["tokens"] or {}).get("total", 0) - sum(day["series"]))
+    return {"group": group, "series": series}
+
+
 def _row(fact: dict, who) -> dict:
     own = fact["user"] == who.user_id
     return {
@@ -235,7 +301,7 @@ def _row(fact: dict, who) -> dict:
         "user": fact["user"] or "",
         "user_name": fact["user_name"],
         "state": fact["state"],
-        "workload": "workflows" if fact["workflow"] or fact["source"] == "workflow" else "chats",
+        "workload": _workload(fact),
         "href": (f"/chats/{fact['chat_id']}" if fact["source"] == "chat" else f"/runs/{fact['workflow_id']}")
         if own
         else None,
@@ -258,6 +324,7 @@ def report(
     offset: int = 0,
     limit: int = 50,
     sort: str = "tokens",
+    chart_group: str | None = None,
 ) -> dict:
     first, last, zone, lower, upper = window(start, end, timezone)
     if (
@@ -266,6 +333,10 @@ def report(
         or sort not in {"tokens", "newest", "name"}
     ):
         raise HTTPException(422, "Choose a supported breakdown, workload and sort order")
+    if chart_group is not None and chart_group not in CHART_KEYS:
+        raise HTTPException(422, "Choose a supported chart grouping")
+    if "users" in (group, chart_group) and who.role != "admin":
+        raise HTTPException(403, "Account breakdown requires an administrator")
     # Even administrator API keys and delegated agents must not gain workspace
     # analytics through a broad settings grant. Routes require human sessions.
     if who.role != "admin" and user and user != who.user_id:
@@ -305,13 +376,8 @@ def report(
         and (not model or (f.get("model") or "__unknown__") == model)
         and (not agent or (f.get("agent") or "__none__") == agent)
         and (not workflow or f["workflow"] == workflow)
-        and (
-            not workload
-            or ("workflows" if f["workflow"] or f["source"] == "workflow" else "chats") == workload
-        )
+        and (not workload or _workload(f) == workload)
     ]
-    if group == "users" and who.role != "admin":
-        raise HTTPException(403, "Account breakdown requires an administrator")
     buckets = defaultdict(list)
     for fact in selected:
         day = datetime.fromtimestamp(fact["created_at"], zone).date().isoformat()
@@ -324,12 +390,8 @@ def report(
             {
                 "date": day,
                 **_metrics(daily),
-                "chats": _metrics([f for f in daily if not f["workflow"] and f["source"] == "chat"])[
-                    "tokens"
-                ],
-                "workflows": _metrics([f for f in daily if f["workflow"] or f["source"] == "workflow"])[
-                    "tokens"
-                ],
+                "chats": _metrics([f for f in daily if _workload(f) == "chats"])["tokens"],
+                "workflows": _metrics([f for f in daily if _workload(f) == "workflows"])["tokens"],
             }
         )
     rows = []
@@ -392,6 +454,7 @@ def report(
         "admin": who.role == "admin",
         "summary": _metrics(selected),
         "daily": days,
+        **({"chart": _chart(chart_group, days, buckets, facets)} if chart_group is not None else {}),
         "facets": facets,
         "group": group,
         "rows": rows[offset : offset + limit],
