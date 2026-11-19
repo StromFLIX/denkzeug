@@ -8,7 +8,6 @@ import time
 
 import run as harness
 from waymark import Workflow, workflow
-
 from workflows import Chain, step
 
 
