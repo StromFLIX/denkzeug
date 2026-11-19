@@ -108,12 +108,6 @@ jobs:
           python3 scripts/smoke_auth.py --initialize
           uv run --with httpx python scripts/smoke.py
 
-      - name: Schedule round trip
-        env:
-          BASE: http://127.0.0.1:8080
-        run: |
-          uv run --with httpx python scripts/check_schedule_roundtrip.py
-
       - name: Logs
         if: failure()
         run: docker compose logs --tail 200 --no-color

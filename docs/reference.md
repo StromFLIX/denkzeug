@@ -1094,23 +1094,32 @@ but new agent writes and chat promotions deploy directly.
 A workflow is a plain Python module against the Temporal Python SDK, with a manifest at the top. No bespoke DSL and no database row: what an agent writes is what a person reads, edits and reviews.
 
 ```python
+# Documentation example only; not installed on startup.
+from temporalio import workflow
+
 MANIFEST = {
     "schema": 1,
-    "name": "daily-repo-digest",
-    "inputs": {"type": "object", "properties": {"repo": {"type": "string"}}},
-    "outputs": {"type": "object", "properties": {"summary": {"type": "string"}}},
-    "agent_set": "default",
+    "name": "example_hello",
+    "inputs": {"type": "object"},
+    "outputs": {"type": "object"},
 }
+
+
+@workflow.defn(name="example_hello")
+class ExampleHello:
+    @workflow.run
+    async def run(self, params: dict) -> dict:
+        return {"summary": "Hello from a workflow."}
 ```
 
 Where the files live:
 
 | Stage | Where |
 | --- | --- |
-| Live workflows | The shared volume. `workflows/` in this repo is the seed, copied in on first start. |
+| Live workflows | The installation's shared volume. A fresh installation starts with no workflows. |
 | Deployment | Validated authoring tools publish files and reload workers; automatic Git synchronization is not provided. |
 
-Git is the reason a workflow is a file at all. Nothing in the design assumes an agent wrote it — a workflow typed by hand in an editor and pushed from a laptop takes exactly the same path through validation and deploy.
+A workflow typed by hand takes the same path through validation and deployment as one written by an agent. The application repository does not ship live workflow definitions.
 
 ### Typed manual inputs
 
@@ -1424,7 +1433,6 @@ images/
   agent-sets/default/         the one agent set: gateway provider + MCP tool bridge
 infra/temporal/               Temporal server config
 tests/                        one pytest suite over every Python service
-workflows/                    Python workflow files, seeded into the volume
 ```
 
 Every Python service ships one distinctly named package — `nautionette_backend`,
@@ -1538,8 +1546,8 @@ tests/workflow_mcp/   the store, the check chain, the REST face
 tests/lib/            the manifest schema and the source reader
 ```
 
-The workflow import check uses a subprocess; it is marked `slow` and runs by default,
-since the committed workflows are validated with the real chain. The optional gateway
+The workflow import check uses a subprocess. CI exercises the same validation chain
+with isolated test definitions. The optional gateway
 runtime test starts a real gateway and Node MCP fixture (no downloads or provider key):
 
 ```sh

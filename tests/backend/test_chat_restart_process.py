@@ -37,7 +37,6 @@ async def backend_process(tmp_path, port, repo_root):
         "DATA_DIR": str(tmp_path / "data"),
         "ARTIFACTS_DIR": str(tmp_path / "artifacts"),
         "WORKFLOWS_DIR": str(tmp_path / "workflows"),
-        "WORKFLOWS_SEED_DIR": str(tmp_path / "seed"),
         "BACKEND_CHAT_DRAIN_SECONDS": "10",
         "OTEL_SDK_DISABLED": "true",
         "DENKZEUG_BOOTSTRAP_ADMIN_USERNAME": "restart-admin",

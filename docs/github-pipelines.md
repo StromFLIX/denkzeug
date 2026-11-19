@@ -222,16 +222,13 @@ recovery, retrying authenticated GETs only. It still requires ready artifacts,
 ready agent sets and ready workers; persistent failures and auth errors stay red.
 
 The read-only **Prepare Denkzeug release** workflow checks the healthy staging
-commit, ancestry, unused/increasing stable version, and evidence-backed notes. Its
-source is tracked in `workflows/prepare_nautionette_release.py` and regression-tested
-in CI. It does not publish or deploy. It deliberately does **not** pin checksums of
-these docs, the Deploy Action, or its script: routine pipeline edits must not require
-updating an unrelated live workflow. Preparation does not certify deployment code
-or environment configuration; the current Deploy Action remains the authority for
-promotion and independently applies its staging, tag, environment and health gates.
-After editing the tracked preparation workflow, deploy that complete source with
-`write_workflow`, check worker readiness, run it, and inspect its completed result.
-Repository pushes do not overwrite an existing live workflow automatically.
+commit, ancestry, unused/increasing stable version, and evidence-backed notes. It
+lives in Denkzeug, not in this checkout, and returns the private **Release notes**
+app card. It does not publish or deploy. Preparation does not certify deployment
+code or environment configuration; the GitHub Deploy Action remains the authority
+for promotion and independently applies its staging, tag, environment and health
+gates. Update the preparation workflow through Denkzeug's authoring tools, then
+test a complete run. Repository pushes do not install or overwrite live workflows.
 
 To manually retry/promote an **existing published stable release**, open
 **Actions → Deploy → Run workflow**, select branch **main**, and enter its exact

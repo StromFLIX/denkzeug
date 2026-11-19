@@ -76,9 +76,6 @@ def test_repository_cutover_syncs_links_and_release_reads_but_not_runtime_identi
     assert "StromFLIX/nautionette" not in html
     assert 'data-copy="git clone https://github.com/StromFLIX/denkzeug"' in html
     assert 'href="https://github.com/StromFLIX/denkzeug/releases"' in html
-    workflow = files[ROOT / "workflows/prepare_nautionette_release.py"].decode()
-    assert 'REPO = "StromFLIX/denkzeug"' in workflow
-    assert '@workflow.defn(name="prepare_nautionette_release")' in workflow
     for name in ("services/frontend/src/brand-data.json", "images/pi-base/brand.json"):
         assert json.loads(files[ROOT / name])["repository"] == brand["repository"]
     package = json.loads(files[ROOT / "services/frontend/package.json"])
@@ -86,8 +83,6 @@ def test_repository_cutover_syncs_links_and_release_reads_but_not_runtime_identi
     assert package["build"]["protocols"][0]["schemes"] == ["denkzeug", "nautionette"]
     assert "ghcr.io/stromflix/nautionette/pi-" in files[ROOT / "docs/github-pipelines.md"].decode()
     assert "app.stage.denkzeug.ai" in files[ROOT / "docs/staging.md"].decode()
-    assert 'STAGING_URL = "https://app.stage.denkzeug.ai"' in workflow
-    assert 'PRODUCTION_URL = "https://app.denkzeug.ai"' in workflow
     assert ROOT / "docker-compose.yaml" not in files
 
 

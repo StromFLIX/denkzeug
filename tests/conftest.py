@@ -26,7 +26,6 @@ os.environ.update(
         "CHAT_SESSIONS_DIR": str(_ROOT / "chat-sessions"),
         "ARTIFACTS_DIR": str(_ROOT / "artifacts"),
         "WORKFLOWS_DIR": str(_ROOT / "workflows"),
-        "WORKFLOWS_SEED_DIR": str(_ROOT / "seed"),
         "APP_TOKEN": APP_TOKEN,
         "INTERNAL_TOKEN": INTERNAL_TOKEN,
         "APP_VERSION": "test",
@@ -36,7 +35,7 @@ os.environ.update(
         "FRONTEND_WEB_URL": "http://frontend.test:80",
     }
 )
-for key in ("DATA_DIR", "ARTIFACTS_DIR", "WORKFLOWS_DIR", "WORKFLOWS_SEED_DIR"):
+for key in ("DATA_DIR", "ARTIFACTS_DIR", "WORKFLOWS_DIR"):
     Path(os.environ[key]).mkdir(parents=True, exist_ok=True)
 
 

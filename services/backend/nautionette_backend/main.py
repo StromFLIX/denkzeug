@@ -8,7 +8,6 @@ This module only assembles the app; every route lives in `routers/`.
 
 from __future__ import annotations
 
-import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -49,24 +48,9 @@ from .security import AccountBoundaryMiddleware
 install_access_logging()
 
 
-def seed_workflows() -> None:
-    """Copy committed workflows into the shared volume on first start."""
-    source, target = Path(settings.seed_dir), Path(settings.workflows_dir)
-    target.mkdir(parents=True, exist_ok=True)
-    (target / ".drafts").mkdir(exist_ok=True)
-    if not source.exists():
-        return
-    for item in source.glob("*.py"):
-        destination = target / item.name
-        if not destination.exists():
-            shutil.copy2(item, destination)
-        # Environment bootstrap happens before seeding. Newly installed example
-        # definitions still need an explicit workspace owner and can then be shared.
-        from .db import db
-
-        state = db.one("SELECT legacy_owner FROM access_state WHERE id=1")
-        if state and state["legacy_owner"]:
-            access.register_resource("workflow", item.stem, owner_user_id=state["legacy_owner"])
+def initialize_workflow_storage() -> None:
+    """Prepare the volume without installing or changing workflow definitions."""
+    (Path(settings.workflows_dir) / ".drafts").mkdir(parents=True, exist_ok=True)
 
 
 @asynccontextmanager
@@ -79,7 +63,7 @@ async def lifespan(_: FastAPI):
     spawn(auth_mail.maintenance(), name="account-mail-maintenance")
     spawn(access.account_maintenance(), name="account-access-maintenance")
     Path(settings.artifacts_dir).mkdir(parents=True, exist_ok=True)
-    seed_workflows()
+    initialize_workflow_storage()
     recover_interrupted()
     pi_packages.recover_installations()
     artcraft.recover_installations()

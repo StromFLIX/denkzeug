@@ -1,0 +1,16 @@
+# Synthetic source for graph parsing tests only. Never loaded or deployed.
+from datetime import timedelta
+from temporalio import workflow
+
+@workflow.defn(name="url_digest")
+class GraphFixture:
+    @workflow.run
+    async def run(self, params):
+        page = await workflow.execute_activity("http_fetch", params)
+        if page["status"] >= 400:
+            return {"summary": "Fetch failed"}
+        digest = await workflow.execute_activity(
+            "agent_call", {"prompt": page["body"]}, start_to_close_timeout=timedelta(minutes=10),
+        )
+        await workflow.execute_activity("save_artifact", digest)
+        return digest

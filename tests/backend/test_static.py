@@ -1,4 +1,4 @@
-"""Artifacts, seeding and the single door in front of the SPA."""
+"""Artifacts, workflow storage and the single door in front of the SPA."""
 
 from __future__ import annotations
 
@@ -41,21 +41,19 @@ def test_an_artifact_that_was_never_written_is_a_404(client):
     assert client.get("/api/artifacts/nothing.md").status_code == 404
 
 
-def test_committed_workflows_are_seeded_once(tmp_path, monkeypatch):
-    source, target = tmp_path / "seed", tmp_path / "workflows"
-    source.mkdir()
-    (source / "hello_world.py").write_text("original\n")
-    monkeypatch.setattr(settings, "seed_dir", str(source))
+def test_workflow_storage_starts_empty_and_preserves_live_files(tmp_path, monkeypatch):
+    target = tmp_path / "workflows"
     monkeypatch.setattr(settings, "workflows_dir", str(target))
 
-    main.seed_workflows()
-    assert (target / "hello_world.py").read_text() == "original\n"
+    main.initialize_workflow_storage()
+    assert set(target.iterdir()) == {target / ".drafts"}
     assert (target / ".drafts").is_dir()
 
-    # A workflow edited in place is never overwritten by the image's copy.
-    (target / "hello_world.py").write_text("edited\n")
-    main.seed_workflows()
-    assert (target / "hello_world.py").read_text() == "edited\n"
+    live = target / "existing.py"
+    live.write_text("existing workflow\n")
+    main.initialize_workflow_storage()
+    assert set(target.iterdir()) == {target / ".drafts", live}
+    assert live.read_text() == "existing workflow\n"
 
 
 def test_anything_else_is_handed_to_the_frontend(client, monkeypatch):
