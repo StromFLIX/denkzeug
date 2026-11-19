@@ -107,7 +107,7 @@ export function registerOutputTools(pi: ExtensionAPI, rpc: Rpc, grant: Grant | n
     name: updating ? "update_output" : "publish_output", label: updating ? "Update output" : "Publish output",
     description: `${updating
       ? "Publish a new revision of an EXISTING output in this chat. First call read_output to obtain its output_id and current revision; supply them as output_id and expected_revision. Never invent IDs. If the output does not exist, use publish_output to CREATE it instead. Old revisions stay available."
-      : "CREATE a NEW output durably in this chat's Outputs tab. The server generates its ID; this tool takes no output_id or expected_revision. To revise an existing output, first read_output, then use update_output."} Supply local file paths, not bytes or URLs. Include a PNG/JPEG/WebP preview for PDFs/CAD files, and role=source for editable documents. Publish completed snapshots only. Up to 8 files; configurable file, publication, chat and instance quotas are enforced. Quota errors include usage, limits and a settings_url: give the user that link instead of repeatedly retrying. Success means all files are committed. If interrupted, read_output before retrying.`,
+      : "CREATE a NEW output durably in this chat's Workspace tab. The server generates its ID; this tool takes no output_id or expected_revision. To revise an existing output, first read_output, then use update_output."} Supply local file paths, not bytes or URLs. Include a PNG/JPEG/WebP preview for PDFs/CAD files, and role=source for editable documents. Publish completed snapshots only. Up to 8 files; configurable file, publication, chat and instance quotas are enforced. Quota errors include usage, limits and a settings_url: give the user that link instead of repeatedly retrying. Success means all files are committed. If interrupted, read_output before retrying.`,
     promptSnippet: "Use publish_output for requested deliverables (images, PDFs, exports), including previews/source when useful. Ordinary repository edits do not need publication.",
     parameters: {
       type: "object", additionalProperties: false, required: updating ? ["title", "files", "output_id", "expected_revision"] : ["title", "files"],
@@ -167,7 +167,7 @@ export function registerOutputTools(pi: ExtensionAPI, rpc: Rpc, grant: Grant | n
           }
           output = await transport(rpc, "backend_publish_chat_output", { ...grant, request_id, upload_id: prepared.upload_id }, signal);
         }
-        return textResult({ output, message: "Published to this chat's Outputs tab. Files are durable; local sandbox files can now be removed." });
+        return textResult({ output, message: "Published to this chat's Workspace tab. Files are durable; local sandbox files can now be removed." });
       } finally { for (const file of files) await file.handle.close(); }
     },
   });

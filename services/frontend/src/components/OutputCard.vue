@@ -3,7 +3,7 @@
     <header class="output-card__head">
       <span class="material-icons" aria-hidden="true">inventory_2</span>
       <div class="grow">
-        <h2>{{ output.title }}</h2>
+        <h2 ref="heading" tabindex="-1">{{ output.title }}</h2>
         <p class="caption dim">Ready · Revision {{ output.revision }}<template v-if="output.source_app"> · {{ output.source_app }}</template></p>
       </div>
     </header>
@@ -12,21 +12,28 @@
       <OutputImage v-for="file in previews" :key="file.id" :chat-id="chatId" :output-id="output.id" :revision="output.revision" :file="file" />
     </div>
     <ul class="output-card__files" aria-label="Output files">
-      <li v-for="file in output.files" :key="file.id">
+      <li v-for="file in output.files" :key="file.id" class="output-card__file">
         <button type="button" class="output-card__download" :disabled="Boolean(loadingFile)" :aria-label="`Download ${file.name}`" @click="download(file)">
           <span class="material-icons" aria-hidden="true">{{ file.role === 'source' ? 'edit_document' : 'download' }}</span>
           <span class="output-card__file-details"><strong>{{ file.name }}</strong><span class="caption dim">{{ file.role === 'source' ? 'Editable source · ' : file.role === 'preview' ? 'Preview · ' : '' }}{{ formatSize(file.size) }} · {{ loadingFile === file.id ? 'Downloading…' : 'Download' }}</span></span>
         </button>
+        <button type="button" class="btn btn--sm btn--outline output-card__open" :aria-label="`Open ${file.name}`" @click="openedFile = file.id">Open</button>
       </li>
     </ul>
-    <p v-if="error" class="caption" role="alert">{{ error }}</p>
-    <p v-if="status" class="caption" role="status">{{ status }}</p>
+    <q-dialog v-model="viewerOpen" :maximized="$q.screen.width <= 650 || presenting" :persistent="presenting">
+      <WorkspaceFileViewer v-if="activeFile" :chat-id="chatId" :output="output" :file="activeFile" :presenting="presenting"
+        :downloading="Boolean(loadingFile)" :download-error="error" :download-status="status"
+        @select-file="selectFile" @update:presenting="presenting = $event" @close="viewerOpen = false" @download="download" />
+    </q-dialog>
+    <p v-if="error && !viewerOpen" class="caption" role="alert">{{ error }}</p>
+    <p v-if="status && !viewerOpen" class="caption" role="status">{{ status }}</p>
   </article>
 </template>
 
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue'
 import OutputImage from './OutputImage.vue'
+import WorkspaceFileViewer from './WorkspaceFileViewer.vue'
 import { api } from '../api'
 import { saveDownload } from '../file-download'
 
@@ -40,6 +47,14 @@ const previews = computed(() => {
   return files
 })
 const formatSize = size => size >= 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(1)} MiB` : `${Math.max(1, Math.ceil(size / 1024))} KiB`
+const heading = ref(null)
+defineExpose({ focusHeading: () => heading.value?.focus() })
+const openedFile = ref(''), presenting = ref(false)
+const activeFile = computed(() => props.output.files.find(file => file.id === openedFile.value))
+const viewerOpen = computed({ get: () => Boolean(activeFile.value), set: open => {
+  if (!open) { openedFile.value = ''; presenting.value = false; error.value = ''; status.value = '' }
+} })
+function selectFile (id) { error.value = ''; status.value = ''; presenting.value = false; openedFile.value = id }
 const loadingFile = ref('')
 const error = ref('')
 const status = ref('')
@@ -76,7 +91,7 @@ async function download (file) {
     if (!request.signal.aborted) loadingFile.value = ''
   }
 }
-watch([() => props.chatId, () => props.output.id, () => props.output.revision], () => { cleanup(); error.value = '' })
+watch([() => props.chatId, () => props.output.id, () => props.output.revision], () => { cleanup(); viewerOpen.value = false })
 onUnmounted(cleanup)
 </script>
 
@@ -89,7 +104,8 @@ onUnmounted(cleanup)
 .output-card__summary { white-space: pre-wrap; font-size: 0.875rem; line-height: 1.75; max-width: 75ch; color: var(--text-muted); }
 .output-card__previews { display: grid; gap: 12px; margin: 12px 0; }
 .output-card__files { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 8px; list-style: none; margin: 12px 0 0; padding: 0; }
-.output-card__files li { min-width: 0; }
+.output-card__file { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: 5px; }
+.output-card__open { min-height: 44px; }
 .output-card__download { display: flex; align-items: center; gap: 8px; width: 100%; height: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-input); color: var(--text); text-align: left; font: inherit; cursor: pointer; }
 .output-card__download:disabled { opacity: 0.6; cursor: wait; }
 .output-card__file-details { display: flex; flex-direction: column; gap: 4px; min-width: 0; overflow-wrap: anywhere; }

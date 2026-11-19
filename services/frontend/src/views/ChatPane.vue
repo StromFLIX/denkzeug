@@ -46,11 +46,11 @@
 
     <div v-if="chatId" class="thread__tabs" role="tablist" aria-label="Chat workspace" @keydown="navigateTabs">
       <button id="chat-conversation-tab" type="button" role="tab" :aria-selected="activeTab === 'chat'" :tabindex="activeTab === 'chat' ? 0 : -1" aria-controls="chat-conversation-panel" @click="activeTab = 'chat'">Chat</button>
-      <button id="chat-outputs-tab" type="button" role="tab" :aria-selected="activeTab === 'outputs'" :tabindex="activeTab === 'outputs' ? 0 : -1" aria-controls="chat-outputs-panel" @click="activeTab = 'outputs'">Outputs<span v-if="outputs.length" class="thread__output-count">{{ outputs.length }}</span></button>
+      <button id="chat-outputs-tab" type="button" role="tab" :aria-selected="activeTab === 'outputs'" :tabindex="activeTab === 'outputs' ? 0 : -1" aria-controls="chat-outputs-panel" @click="activeTab = 'outputs'">Workspace<span v-if="outputs.length" class="thread__output-count">{{ outputs.length }}</span></button>
     </div>
 
     <ChatOutputs v-if="chatId && activeTab === 'outputs'" id="chat-outputs-panel" :key="chatId" role="tabpanel" aria-labelledby="chat-outputs-tab"
-      v-model:selected-id="selectedOutputId" v-model:selected-revision="selectedOutputRevision" :chat-id="chatId" :outputs="outputs" :working="streaming" />
+      v-model:selected-id="selectedOutputId" v-model:selected-revision="selectedOutputRevision" :open-request="outputOpenRequest" :chat-id="chatId" :outputs="outputs" :working="streaming" />
 
     <div v-show="activeTab === 'chat'" id="chat-conversation-panel" ref="scroller" :role="chatId ? 'tabpanel' : undefined" :aria-labelledby="chatId ? 'chat-conversation-tab' : undefined" data-skin-part="conversation" class="thread__body scroll-y grow" @scroll.passive="acknowledgeRead">
       <div class="thread__inner">
@@ -193,8 +193,10 @@ const outputs = ref([])
 const activeTab = ref('chat')
 const selectedOutputId = ref('')
 const selectedOutputRevision = ref(null)
+const outputOpenRequest = ref(0)
 
 function openOutput (output) {
+  outputOpenRequest.value++
   selectedOutputId.value = output.id
   const current = outputs.value.find(item => item.id === output.id)
   selectedOutputRevision.value = current?.revision === output.revision ? null : output.revision

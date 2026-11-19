@@ -60,17 +60,26 @@ Optional file
 `name` and `mime_type` override basename and extension-based detection. Originals
 are preserved exactly. Success returns committed output/file IDs, revision numbers
 and SHA-256 digests, not bytes or public links. The chat receives a compact output
-row and its Outputs tab receives the latest complete snapshot.
+row and its **Workspace** tab (formerly Outputs) receives the latest complete snapshot. The rename does not change the publication API or IDs.
 
 **Settings → Workspace → Chat → Output display** switches between **Inline file
 rows** (the default, with no preview requests) and **Small thumbnail rows** (one
 54 × 44 px preview per output, loaded lazily). This device-local choice is saved
 and applied immediately, including to existing replies and other open tabs.
 Both modes use a single keyboard-accessible row to open the publication's exact
-revision in Outputs. Titles truncate rather than expanding the message; the full
+revision in Workspace. Titles truncate rather than expanding the message; the full
 title remains in the accessible label and native tooltip. Thumbnail mode falls back
 to a file icon when a preview is missing or fails. Full-size previews, summaries,
-source-app metadata, revision history and file downloads remain in Outputs.
+source-app metadata, revision history and file downloads remain in Workspace.
+
+Each publication is independently selectable via **Browse outputs** or the canvas.
+Drag canvas titles to arrange outputs (positions are saved on this browser); publishing a
+new output does not rearrange existing ones. Use the revision selector to inspect a
+saved snapshot and the file list to open or download individual files within it.
+Workspace can preview PDFs page by page, images, Markdown, plain text, and isolated
+HTML without scripts or network access. For presentations, publish ordered preview
+images (one per slide) or a PDF export alongside the original deck. Other formats
+and older items without previews are still downloadable without republishing.
 
 To continue in another turn:
 

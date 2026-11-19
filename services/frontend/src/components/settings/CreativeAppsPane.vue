@@ -1,6 +1,6 @@
 <template>
   <h2 id="creative-apps" class="settings__title">Creative apps</h2>
-  <p class="settings__intro">Server-side tools for creative files. Apps start on demand; saved results appear in Outputs.</p>
+  <p class="settings__intro">Server-side tools for creative files. Apps start on demand; published results appear in the chat’s Workspace.</p>
   <section class="craft-updates" aria-label="App updates">
     <div class="craft-updates__head">
       <div class="grow">

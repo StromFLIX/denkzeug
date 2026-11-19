@@ -258,7 +258,7 @@ test('cards lazy-load once and retain dark frame surfaces and local state while 
   await expect(page.getByText('Saved result updated by live snapshot', { exact: true })).toBeVisible()
   await expect(view.getByRole('textbox', { name: 'Local filter' })).toHaveValue('keep this filter')
   expect(loads).toBe(1)
-  await page.getByRole('tab', { name: 'Outputs', exact: true }).click()
+  await page.getByRole('tab', { name: 'Workspace', exact: true }).click()
   await expect(frame).toBeAttached()
   await page.getByRole('tab', { name: 'Chat', exact: true }).click()
   await expect(view.getByRole('textbox', { name: 'Local filter' })).toHaveValue('keep this filter')

@@ -24,7 +24,7 @@ async function fixture (context, { empty = false, inline = false } = {}) {
       alpha: { chat: chat('alpha'), messages: [{ id: 'reply', role: 'assistant', content: 'Here is your result.', meta: inline ? { outputs: [first] } : {} }], outputs: empty ? [] : [first], active_turn: null },
       beta: { chat: chat('beta'), messages: [], outputs: [], active_turn: null }
     },
-    history: [first], events: [], reads: [], files: [], completedFiles: 0, failPreview: false, failDownload: false, failHistory: false
+    history: [first], events: [], reads: [], files: [], fileBodies: new Map(), completedFiles: 0, failPreview: false, failDownload: false, failHistory: false
   }
   await context.route('**/api/**', async route => {
     const path = new URL(route.request().url()).pathname
@@ -41,7 +41,7 @@ async function fixture (context, { empty = false, inline = false } = {}) {
       state.files.push({ path, preview, authorization: route.request().headers().authorization })
       if (preview ? state.failPreview : state.failDownload) return route.fulfill({ status: 503, json: { detail: 'File unavailable' } })
       if (state.waitFile) await state.waitFile
-      const body = preview || path.includes('/files/preview-') ? png : (state.downloadBytes || pdf)
+      const body = preview || path.includes('/files/preview-') ? png : (state.fileBodies.get(path.split('/').pop()) || state.downloadBytes || pdf)
       await route.fulfill({ contentType: preview ? 'image/png' : 'application/octet-stream', body })
       state.completedFiles++
       return
@@ -103,8 +103,8 @@ async function mockNativeDownloads (context, { available = true, legacy = false 
   }, { available, legacy })
 }
 
-const outputsTab = page => page.getByRole('tab', { name: /Outputs/ })
-const outputPanel = page => page.getByRole('tabpanel', { name: /Outputs/ })
+const outputsTab = page => page.getByRole('tab', { name: /Workspace/ })
+const outputPanel = page => page.getByRole('tabpanel', { name: /Workspace/ })
 
 for (const width of [1440, 390]) {
   test(`outputs preview, download and composer state work at ${width}px without a browser app`, async ({ page, context }) => {
@@ -565,4 +565,136 @@ test('tab controls support keyboard navigation and route changes discard old out
   await outputsTab(page).click()
   await expect(page.getByRole('heading', { name: 'No outputs yet' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Mounting bracket' })).toHaveCount(0)
+})
+
+const asset = (id, name, mime_type, extras = {}) => ({ id, name, mime_type, size: 100, role: 'file', previewable: false, ...extras })
+const browse = (page, name) => page.getByRole('dialog').getByRole('button', { name: new RegExp(name) })
+
+test('mobile Workspace selects distinct outputs, their revisions, and files within a revision', async ({ page, context }) => {
+  const state = await fixture(context, { inline: true })
+  const firstFiles = [asset('draft', 'notes.md', 'text/markdown')]
+  const currentFiles = [asset('latest', 'notes.md', 'text/markdown'), asset('original', 'archive.zip', 'application/zip')]
+  const oldest = output(1, { title: 'Launch notes', files: firstFiles })
+  state.chats.alpha.messages[0].meta.outputs = [oldest]
+  state.chats.alpha.outputs = [output(2, { title: 'Launch notes', files: currentFiles }), output(1, { id: 'b'.repeat(32), title: 'Station notes', files: [asset('station-notes', 'notes.md', 'text/markdown')] })]
+  state.history = [state.chats.alpha.outputs[0], oldest]
+  state.fileBodies.set('draft', '# Original notes')
+  state.fileBodies.set('latest', '# Updated notes')
+  state.fileBodies.set('station-notes', '# Independent notes')
+  await page.setViewportSize({ width: 320, height: 750 })
+  await page.goto('/chats/alpha')
+  await page.getByRole('button', { name: 'View output: Launch notes' }).click()
+  const panel = outputPanel(page)
+  const revision = panel.getByRole('combobox', { name: 'Revision' })
+  await expect(revision).toHaveValue('1')
+  await panel.getByRole('button', { name: 'Open notes.md' }).click()
+  const viewer = page.getByRole('dialog')
+  await expect(viewer.getByRole('heading', { name: 'Original notes' })).toBeVisible()
+  await viewer.getByRole('button', { name: 'Source' }).click()
+  await expect(viewer.locator('pre')).toHaveText('# Original notes')
+  await viewer.getByRole('button', { name: 'Close file viewer' }).click()
+  await revision.selectOption({ label: 'Latest · 2' })
+  await panel.getByRole('button', { name: 'Open notes.md' }).click()
+  await expect(viewer.getByRole('heading', { name: 'Updated notes' })).toBeVisible()
+  await viewer.getByRole('combobox', { name: 'File' }).selectOption('original')
+  await expect(viewer.getByRole('heading', { name: 'No preview available' })).toBeVisible()
+  await expect(viewer.getByRole('button', { name: 'Download file', exact: true })).toBeVisible()
+  expect(state.files.some(file => file.path.includes('/files/original'))).toBe(false)
+  await viewer.getByRole('button', { name: 'Close file viewer' }).click()
+  await panel.getByRole('button', { name: 'Browse outputs' }).click()
+  await expect(browse(page, 'Launch notes')).toBeVisible()
+  await browse(page, 'Station notes').click({ trial: true })
+  await page.screenshot({ path: 'test-results/workspace-mobile-picker.png', animations: 'disabled' })
+  await browse(page, 'Station notes').click()
+  await panel.getByRole('button', { name: 'Open notes.md' }).click()
+  await expect(viewer.getByRole('heading', { name: 'Independent notes' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})
+
+test('canvas keeps positions by output identity when another publication arrives', async ({ page, context }) => {
+  const state = await fixture(context)
+  const newer = (id, title) => output(1, { id: id.repeat(32), title, files: [asset(id, `${id}.zip`, 'application/zip')] })
+  state.chats.alpha.outputs.unshift(newer('b', 'Station assets'))
+  await page.goto('/chats/alpha')
+  await outputsTab(page).click()
+  const panel = outputPanel(page)
+  const handle = panel.getByRole('button', { name: 'Move Mounting bracket with arrow keys' })
+  const position = () => handle.evaluate(node => node.parentElement.style.left)
+  const before = await position()
+  await handle.focus()
+  await page.keyboard.press('ArrowRight')
+  expect(await position()).not.toBe(before)
+  const moved = await position()
+  state.chats.alpha.outputs.unshift(newer('c', 'Partner assets'))
+  await expect(panel.getByRole('button', { name: 'Open Partner assets' })).toBeVisible()
+  expect(await position()).toBe(moved)
+  const world = panel.locator('.workspace-canvas__world')
+  const transform = () => world.evaluate(node => node.style.transform)
+  const initialCamera = await transform()
+  await panel.getByRole('button', { name: 'Zoom in', exact: true }).click()
+  await expect.poll(transform).not.toBe(initialCamera)
+  await panel.getByRole('button', { name: 'Fit all' }).click()
+  await page.screenshot({ path: 'test-results/workspace-desktop-canvas.png' })
+  await panel.getByRole('button', { name: 'Open Station assets' }).click()
+  await expect(panel.getByRole('heading', { name: 'Station assets' })).toBeVisible()
+  await panel.getByRole('button', { name: 'Open canvas' }).click()
+  expect(await position()).toBe(moved)
+  await page.reload()
+  await outputsTab(page).click()
+  expect(await position()).toBe(moved)
+})
+
+function pdfWithTwoPages () {
+  const paint = '1 0 0 rg 10 10 140 140 re f'
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 160 160] /Resources << >> /Contents 5 0 R >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 160 160] /Resources << >> /Contents 5 0 R >>',
+    `<< /Length ${paint.length} >>\nstream\n${paint}\nendstream`
+  ]
+  let content = '%PDF-1.4\n'
+  const offsets = objects.map((object, i) => { const at = content.length; content += `${i + 1} 0 obj\n${object}\nendobj\n`; return at })
+  return content + `xref\n0 6\n0000000000 65535 f \n${offsets.map(at => `${String(at).padStart(10, '0')} 00000 n \n`).join('')}trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${content.length}\n%%EOF\n`
+}
+
+test('file viewer isolates HTML and opens PDF, original images and published slide images', async ({ page, context }) => {
+  const state = await fixture(context)
+  state.chats.alpha.outputs = [output(1, { files: [
+    asset('html', 'launch.html', 'text/html'), asset('real-pdf', 'guide.pdf', 'application/pdf'), asset('image', 'photo.png', 'image/png'),
+    asset('deck', 'briefing.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'),
+    asset('slide-a', 'slide-a.png', 'image/png', { role: 'preview', previewable: true }), asset('slide-b', 'slide-b.png', 'image/png', { role: 'preview', previewable: true })
+  ] })]
+  state.fileBodies.set('html', '<!doctype html><html><head><style>h1 {color: rgb(40, 50, 60)}</style></head><body><h1>Launch microsite</h1><a href="https://example.invalid/leave">External link</a><script>document.body.textContent = "blocked script"</script></body></html>')
+  state.fileBodies.set('real-pdf', pdfWithTwoPages())
+  state.fileBodies.set('image', png)
+  await page.goto('/chats/alpha')
+  await outputsTab(page).click()
+  const panel = outputPanel(page)
+  await panel.getByRole('button', { name: 'Open launch.html' }).click()
+  const dialog = page.getByRole('dialog')
+  const frame = dialog.frameLocator('iframe')
+  const select = dialog.getByRole('combobox', { name: 'File' })
+  await expect(dialog.locator('iframe')).toHaveAttribute('sandbox', '')
+  await expect(frame.getByRole('heading', { name: 'Launch microsite' })).toHaveCSS('color', 'rgb(40, 50, 60)')
+  await expect(frame.getByText('External link')).not.toHaveAttribute('href')
+  await dialog.getByRole('button', { name: 'Phone' }).click()
+  expect((await dialog.locator('iframe').boundingBox()).width).toBeLessThanOrEqual(390)
+  await select.selectOption('real-pdf')
+  const renderedPage = dialog.getByRole('img', { name: 'Page 1 of 2' })
+  await expect(renderedPage).toBeVisible()
+  await expect.poll(() => renderedPage.evaluate(node => [...node.getContext('2d').getImageData(node.width / 2, node.height / 2, 1, 1).data])).toEqual([255, 0, 0, 255])
+  await dialog.getByRole('button', { name: 'Next page' }).click()
+  await expect(dialog.getByRole('img', { name: 'Page 2 of 2' })).toBeVisible()
+  await select.selectOption('image')
+  await expect(dialog.getByRole('img', { name: 'photo.png' })).toBeVisible()
+  await dialog.getByRole('button', { name: '100%' }).click()
+  await expect(dialog.getByRole('button', { name: '100%' })).toHaveAttribute('aria-pressed', 'true')
+  await select.selectOption('deck')
+  await expect(dialog.getByRole('img', { name: 'Slide 1' })).toBeVisible()
+  await dialog.getByRole('button', { name: 'Present' }).click()
+  await page.keyboard.press('ArrowRight')
+  await expect(dialog.getByRole('img', { name: 'Slide 2' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog.getByRole('button', { name: 'Present', exact: true })).toBeVisible()
 })

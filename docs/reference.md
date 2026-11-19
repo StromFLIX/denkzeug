@@ -333,7 +333,7 @@ This is APK signing for sideloading, not a Google Play upload or Play App Signin
 
 ## Saving chat files on Android
 
-**Download** in Outputs (and file attachments) opens Android's **Save to** picker.
+**Download** in the chat’s **Workspace** (and file attachments) opens Android's **Save to** picker.
 Choose Downloads or another document provider and confirm **Save**. The app reports
 success only after the bytes are written; cancelling or a storage error stays
 visible and lets you retry. Files are fetched with your existing authentication,

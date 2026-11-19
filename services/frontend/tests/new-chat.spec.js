@@ -137,7 +137,7 @@ for (const width of [1440, 390]) {
     const header = page.getByRole('button', { name: /^Chat settings for Existing chat/ })
     const panel = page.getByRole('region', { name: 'Chat preferences', exact: true })
     await expect(header).toBeInViewport()
-    await page.getByRole('tab', { name: 'Outputs', exact: true }).click()
+    await page.getByRole('tab', { name: 'Workspace', exact: true }).click()
     await header.focus()
     await header.press('Enter')
     await expect(page.getByRole('tab', { name: 'Chat', exact: true })).toHaveAttribute('aria-selected', 'true')
