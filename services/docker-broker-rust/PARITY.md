@@ -90,9 +90,11 @@ Windows or a general-purpose Docker proxy.
 
 ## Deployment status
 
-The base Compose file and Python broker remain unchanged. The later staging
-trial adds CI image/native checks and a generated staging-only Compose file.
-That trial deliberately retains Python/sh for Coolify's trusted Temporal hooks;
+The Rust staging trial is paused; staging and production both select the Python
+broker in `/docker-compose.yaml`. The base Compose file and Python broker remain
+unchanged. CI image/native checks and the generated staging-only Rust Compose
+file are retained as opt-in trial assets. That trial deliberately retains
+Python/sh for Coolify's trusted Temporal hooks;
 it does not use the shell-free scratch target. See the service README.
 `compose.local.yaml` and the explicit `candidate` Docker target remain opt-in for a
 disposable comparison stack. Nothing here authorizes production rollout.

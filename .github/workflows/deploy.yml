@@ -56,7 +56,6 @@ jobs:
           APP_URL: ${{ vars.APP_URL }}
           INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN }}
           DEPLOY_HEALTH_TIMEOUT_SECONDS: ${{ vars.DEPLOY_HEALTH_TIMEOUT_SECONDS }}
-          EXPECTED_BROKER_IMPLEMENTATION: ${{ github.event_name == 'workflow_run' && 'rust' || '' }}
         run: python3 -m scripts.coolify_release
       - name: Verify token usage analytics (staging only)
         if: github.event_name == 'workflow_run'

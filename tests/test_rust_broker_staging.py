@@ -1,4 +1,4 @@
-"""Staging-only rollout: Rust serves HTTP without breaking Coolify's trusted hooks."""
+"""Rust rollout assets remain opt-in; automatic deployments use the Python broker."""
 
 import copy
 from pathlib import Path
@@ -38,13 +38,16 @@ def test_generated_wiring_tracks_both_canonical_images_and_the_base_compose():
     assert "import docker" in hook and '"docker-broker"' in hook
 
 
-def test_staging_and_ci_verify_the_rust_runtime_not_just_any_healthy_broker():
+def test_automatic_deployment_does_not_opt_in_to_the_rust_broker():
     workflow = yaml.safe_load((ROOT / ".github/workflows/deploy.yml").read_text())
     deploy = next(
         s for s in workflow["jobs"]["deploy"]["steps"] if s.get("name") == "Pin, deploy, and verify"
     )
-    assert deploy["env"]["EXPECTED_BROKER_IMPLEMENTATION"] == (
-        "${{ github.event_name == 'workflow_run' && 'rust' || '' }}"
+    assert "EXPECTED_BROKER_IMPLEMENTATION" not in deploy["env"]
+    # Keep the optional candidate tested without activating it in either stack.
+    production = yaml.safe_load((ROOT / "docker-compose.yaml").read_text())
+    assert production["services"]["docker-broker"]["build"]["dockerfile"] == (
+        "services/docker-broker/Dockerfile"
     )
     ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
     assert "rust-broker" in ci["jobs"]
