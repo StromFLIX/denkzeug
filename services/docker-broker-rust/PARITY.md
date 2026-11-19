@@ -90,8 +90,11 @@ Windows or a general-purpose Docker proxy.
 
 ## Deployment status
 
-The base Compose file, Python broker and deployment CI remain unchanged.
-`compose.local.yaml` and the explicit `candidate` Docker target are opt-in for a
+The base Compose file and Python broker remain unchanged. The later staging
+trial adds CI image/native checks and a generated staging-only Compose file.
+That trial deliberately retains Python/sh for Coolify's trusted Temporal hooks;
+it does not use the shell-free scratch target. See the service README.
+`compose.local.yaml` and the explicit `candidate` Docker target remain opt-in for a
 disposable comparison stack. Nothing here authorizes production rollout.
 
 Results and the exact scenario execution inventory are recorded alongside this

@@ -1,8 +1,20 @@
 # Rust Docker broker
 
 Local migration candidate for the authenticated Linux broker's fixed verbs.
-The Python implementation, base Compose file and deployment CI are unchanged.
-**No production rollout is part of this port.**
+The Python implementation and production Compose file remain unchanged. CI now
+checks the Rust service and both Rust image targets. **No production rollout is
+part of this port.**
+
+For the staging trial, Coolify selects the generated root file
+`docker-compose.rust-staging.yaml`. Its only Compose difference is the broker's
+build recipe. `Dockerfile.staging` serves HTTP with Rust but retains the original
+Python/sh maintenance runtime: Coolify wraps the Temporal deployment hooks in
+`sh -c` and those trusted hooks use Python's Docker SDK. The scratch image cannot
+run those existing hooks. Do not select the scratch target for a Coolify rollout
+until the hook boundary has been migrated. Regenerate/check the staging files
+with `python scripts/sync_rust_broker_staging.py [--check]` from the repo root.
+Staging deployment health additionally requires `implementation: rust` in the
+broker component, so a healthy Python broker cannot falsely pass the trial.
 
 See [PARITY.md](PARITY.md) for the frozen reference scope, deliberate safety
 limits and verification boundaries. The full scenario mapping is

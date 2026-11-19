@@ -135,6 +135,22 @@ def test_image_inventory_covers_maintenance_and_recovery_dockerfiles_too():
             "images/agent-sets/default/Dockerfile",
         }
     )
+    fixtures = {
+        "services/docker-broker-rust/tests/Dockerfile.fixture",
+        "services/docker-broker-rust/tests/Dockerfile.pi-fixture",
+    }
+    agent_steps = workflow["jobs"]["agent-images"]["steps"]
+    fixture_build = next(
+        item for item in agent_steps if item.get("name") == "Build broker conformance fixture overlays"
+    )
+    assert all(path in fixture_build["run"] for path in fixtures)
+    fixture_sboms = {
+        item.get("with", {}).get("image")
+        for item in agent_steps
+        if item.get("uses", "").startswith("anchore/sbom-action@")
+    }
+    assert {"nautionette/broker-node-fixture:ci", "nautionette/broker-pi-fixture:ci"} <= fixture_sboms
+    covered.update(fixtures)
     actual = {
         str(path.relative_to(ROOT)) for path in ROOT.glob("**/Dockerfile*") if ".venv" not in path.parts
     }

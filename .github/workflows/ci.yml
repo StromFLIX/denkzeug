@@ -44,6 +44,11 @@ jobs:
       - name: Canonical image fingerprints match repository source
         run: python3 services/docker-broker/nautionette_docker_broker/image_context.py --check-lock
 
+      - name: Staging Rust broker wiring is generated and production remains unchanged
+        run: |
+          python3 scripts/sync_rust_broker_staging.py --check
+          uv run pytest tests/test_rust_broker_staging.py
+
       - name: Shared display branding matches every build context
         run: |
           python3 scripts/sync_brand.py --check
@@ -128,6 +133,21 @@ jobs:
 
       - name: Workflow source validation and authoring
         run: uv run pytest tests/workflow_mcp/test_validate.py tests/workflow_mcp/test_api.py
+
+  rust-broker:
+    name: Rust broker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.91.1 --profile minimal --component rustfmt,clippy
+      - name: Format, native contracts, and Clippy
+        working-directory: services/docker-broker-rust
+        run: |
+          cargo +1.91.1 fmt --check
+          cargo +1.91.1 test --locked
+          cargo +1.91.1 clippy --locked --all-targets -- -D warnings
+          python3 tests/check_parity.py
 
   frontend:
     name: Frontend
@@ -247,6 +267,8 @@ jobs:
           - { name: worker, context: ., file: services/worker/Dockerfile }
           - { name: workflow-mcp, context: ., file: services/workflow-mcp/Dockerfile }
           - { name: docker-broker, context: ., file: services/docker-broker/Dockerfile }
+          - { name: docker-broker-rust-staging, context: ., file: services/docker-broker-rust/Dockerfile.staging }
+          - { name: docker-broker-rust-scratch, context: ., file: services/docker-broker-rust/Dockerfile.spike }
           - { name: frontend, context: services/frontend, file: services/frontend/Dockerfile }
           - { name: website, context: services/website, file: services/website/Dockerfile }
           - { name: agentgateway, context: services/agentgateway, file: services/agentgateway/Dockerfile }
@@ -288,6 +310,13 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.name }}
           # Cache availability must not turn a successful image build red.
           cache-to: type=gha,mode=max,scope=${{ matrix.name }},ignore-error=true
+
+      - name: Rust staging image preserves the trusted maintenance-hook runtime
+        if: matrix.name == 'docker-broker-rust-staging'
+        run: |
+          docker run --rm --entrypoint sh nautionette/audit-docker-broker-rust-staging:ci -c \
+            'python -c "import docker" && /broker fingerprints /agent-images /etc/nautionette/image-fingerprints.json'
+          test "$(docker image inspect --format '{{json .Config.Cmd}}' nautionette/audit-docker-broker-rust-staging:ci)" = '["/broker","--local-runtime"]'
 
       - name: PostgreSQL 17 existing-volume and privilege-helper compatibility
         if: matrix.name == 'postgres'
@@ -417,6 +446,37 @@ jobs:
         run: |
           uv sync --locked --all-packages
           NAUTIONETTE_DOCKER_TESTS=1 uv run pytest tests/broker/test_git_credentials_docker.py tests/broker/test_chat_sessions_docker.py
+
+      - name: Build broker conformance fixture overlays
+        run: |
+          docker build --target node-fixture -f services/docker-broker-rust/tests/Dockerfile.fixture -t nautionette/broker-node-fixture:ci .
+          docker build --build-arg PI_BASE_IMAGE=nautionette/pi-base:dev -f services/docker-broker-rust/tests/Dockerfile.pi-fixture -t nautionette/broker-pi-fixture:ci .
+
+      - name: Inventory broker Node fixture packages
+        uses: anchore/sbom-action@v0.24.3
+        with:
+          image: nautionette/broker-node-fixture:ci
+          artifact-name: sbom-broker-node-fixture.spdx.json
+          output-file: sbom-broker-node-fixture.spdx.json
+          upload-release-assets: false
+
+      - uses: ./.github/actions/report-vulnerabilities
+        with:
+          sbom: sbom-broker-node-fixture.spdx.json
+          output-file: vulnerabilities-broker-node-fixture.json
+
+      - name: Inventory broker Pi fixture packages
+        uses: anchore/sbom-action@v0.24.3
+        with:
+          image: nautionette/broker-pi-fixture:ci
+          artifact-name: sbom-broker-pi-fixture.spdx.json
+          output-file: sbom-broker-pi-fixture.spdx.json
+          upload-release-assets: false
+
+      - uses: ./.github/actions/report-vulnerabilities
+        with:
+          sbom: sbom-broker-pi-fixture.spdx.json
+          output-file: vulnerabilities-broker-pi-fixture.json
 
       - name: Inventory Pi base packages
         uses: anchore/sbom-action@v0.24.3

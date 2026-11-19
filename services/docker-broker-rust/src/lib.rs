@@ -609,7 +609,7 @@ async fn health(State(state): State<Arc<Broker>>) -> Json<Value> {
             .iter()
             .all(|value| value["status"] == "ready");
         return Json(
-            json!({"status":if ready {"ok"} else {"degraded"},"docker":true,"error":images["error"],"workers":workers,"temporal_migration":maintenance,
+            json!({"status":if ready {"ok"} else {"degraded"},"implementation":"rust","docker":true,"error":images["error"],"workers":workers,"temporal_migration":maintenance,
             "images":images["images"],"image_status":images["status"],"missing_images":images["missing"]}),
         );
     }

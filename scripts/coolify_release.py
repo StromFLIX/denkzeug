@@ -244,6 +244,19 @@ def healthy(target: str) -> None:
                 status = matches[0].get("status")
                 label = status if status in ("down", "degraded") else "missing or unrecognized status"
                 problems.append(f"{name}: {label}")
+    expected_broker = os.environ.get("EXPECTED_BROKER_IMPLEMENTATION", "").strip()
+    if expected_broker:
+        if expected_broker not in {"rust", "python"}:
+            raise ValueError("Invalid EXPECTED_BROKER_IMPLEMENTATION")
+        matches = [
+            item
+            for item in (components if isinstance(components, list) else [])
+            if isinstance(item, dict) and item.get("name") == "broker"
+        ]
+        if len(matches) != 1 or not isinstance(matches[0].get("detail"), dict):
+            problems.append("broker implementation identity is missing")
+        elif matches[0]["detail"].get("implementation") != expected_broker:
+            problems.append("broker implementation does not match staging candidate")
     if problems:
         raise RuntimeError("Health checks failed: " + "; ".join(problems))
     try:
