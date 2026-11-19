@@ -9,8 +9,7 @@
       <button v-if="store.liveStatus === 'failed'" class="btn" @click="actions.connect()">Reconnect</button>
     </div>
   <div v-if="!gate" :key="account.user.id" class="shell" data-skin-part="shell" :class="{ 'shell--detail': hasSelection, 'shell--full': fullPage, 'shell--collapsed': sideCollapsed }">
-    <NavRail class="shell__rail" :mobile="mobile" :show-sidebar-toggle="!fullPage" :sidebar-collapsed="sideCollapsed"
-      @open-sidebar="openSidebar" @toggle-sidebar="preferences.sideCollapsed = !sideCollapsed" />
+    <NavRail class="shell__rail" :mobile="mobile" :sidebar-collapsed="sideCollapsed" @open-sidebar="openSidebar" />
     <template v-if="!fullPage">
       <aside v-show="!sideCollapsed" data-skin-part="sidebar" id="shell-sidebar" class="shell__side" :style="{ width: `${sideWidth}px` }">
         <SidePanel :mobile="mobile" :is-chat-active="isChatActive">

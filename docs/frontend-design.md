@@ -67,9 +67,11 @@ and supports filtered CSV downloads. See [Usage](usage.md) for the accounting an
 ## Workspace navigation
 
 Desktop puts Chats, Workflows, and Settings in a top bar with centered workspace
-search and persistent New chat and list-toggle actions. The resizable list sits
-below, with agent selection inside its chat header. On mobile, keep the bottom
-navigation on list screens and the Back button on full-screen detail views.
+search and a persistent New chat action. The resizable list sits below, with
+agent selection inside its chat header. To hide the desktop list, use **Collapse
+sidebar** under **Settings → Workspace**; click **Chats** or **Workflows** to
+reopen it. On mobile, keep the bottom navigation on list screens and the Back
+button on full-screen detail views.
 
 ## Device preferences
 

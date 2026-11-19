@@ -27,17 +27,10 @@
 
     <WorkspaceSearchButton v-if="!mobile" class="rail__search" label="Search workspace" scope="all" :shortcut="searchShortcut"
       aria-keyshortcuts="Meta+K Control+K" />
-    <div v-if="!mobile" class="rail__actions">
-      <button v-if="showSidebarToggle" type="button" class="btn btn--icon rail__toggle" :class="{ 'rail__toggle--active': !sidebarCollapsed }"
-        :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'" :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-        :aria-expanded="!sidebarCollapsed" aria-controls="shell-sidebar" @click="$emit('toggle-sidebar')">
-        <span class="material-icons" aria-hidden="true">{{ sidebarCollapsed ? 'menu' : 'menu_open' }}</span>
-      </button>
-      <button type="button" class="btn btn--primary rail__new" aria-label="New chat" title="New chat" :disabled="route.params.id === 'new'"
-        @click="router.push(chatLocation('new'))">
-        <span class="material-icons" aria-hidden="true">add</span><span class="rail__label">New chat</span>
-      </button>
-    </div>
+    <button v-if="!mobile" type="button" class="btn btn--primary rail__new" aria-label="New chat" title="New chat" :disabled="route.params.id === 'new'"
+      @click="router.push(chatLocation('new'))">
+      <span class="material-icons" aria-hidden="true">add</span><span class="rail__label">New chat</span>
+    </button>
   </nav>
 </template>
 
@@ -52,8 +45,8 @@ import { brand } from '../brand'
 import { chatLocation } from '../router'
 
 // Reopening the current list should not leave its detail view or discard a draft.
-defineProps({ mobile: Boolean, sidebarCollapsed: Boolean, showSidebarToggle: Boolean })
-defineEmits(['open-sidebar', 'toggle-sidebar'])
+defineProps({ mobile: Boolean, sidebarCollapsed: Boolean })
+defineEmits(['open-sidebar'])
 
 const searchShortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 const route = useRoute()
@@ -77,12 +70,10 @@ const items = computed(() => [
   background: var(--surface-panel);
   border-bottom: 1px solid var(--border);
 }
-.rail__start, .rail__actions, .rail__nav { display: flex; align-items: center; gap: 4px; }
+.rail__start, .rail__nav { display: flex; align-items: center; gap: 4px; }
 .rail__start { gap: 10px; }
-.rail__actions { justify-content: flex-end; gap: 8px; }
 .rail__search { width: 100%; max-width: 420px; justify-self: center; }
-.rail__toggle--active { color: var(--accent); background: var(--accent-soft); }
-.rail__new { gap: 6px; white-space: nowrap; }
+.rail__new { justify-self: end; gap: 6px; white-space: nowrap; }
 .rail__brand { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: var(--radius-md); }
 .rail__brand :deep(.brand-mark) { width: 30px; height: 30px; }
 
