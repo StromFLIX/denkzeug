@@ -241,6 +241,61 @@ async def test_staging_must_have_new_release_commits(preparation):
         await preparation.run({})
 
 
+@pytest.mark.parametrize("base_is_ancestor", [True, False])
+async def test_rate_limited_release_uses_authenticated_git_range(preparation, monkeypatch, base_is_ancestor):
+    side = "c" * 40
+    shared = "d" * 40
+    original_get = preparation.get
+    original_mcp = preparation.mcp
+
+    async def get(url):
+        if url.startswith(release.API):
+            raise release.GitHubRateLimit()
+        return await original_get(url)
+
+    async def mcp(tool, arguments):
+        if tool == "github_get_commit":
+            assert arguments["sha"] == "main"
+            return {"sha": SHA}
+        if tool == "github_list_commits":
+            assert arguments["page"] == 1
+            if arguments["sha"] == BASE:
+                return [{"sha": BASE}, {"sha": shared}]
+            assert arguments["sha"] == SHA
+            # A commit ordered after the base still belongs to the range if it
+            # is reachable only from staging (such as a merge's side parent).
+            shas = [SHA, BASE, side, shared] if base_is_ancestor else [SHA, side, shared]
+            return [{"sha": key, "commit": {"message": MESSAGE}} for key in shas]
+        return await original_mcp(tool, arguments)
+
+    monkeypatch.setattr(preparation, "get", get)
+    monkeypatch.setattr(preparation, "mcp", mcp)
+    if not base_is_ancestor:
+        with pytest.raises(ApplicationError, match="release ancestry diverged"):
+            await preparation.run({"version": "patch"})
+    else:
+        summary = (await preparation.run({"version": "patch"}))["summary"]
+        assert f"git tag -a v1.7.2 {SHA}" in summary
+        assert "2 commits read with complete pagination" in summary
+        assert "changed-file patches are not included" in summary
+
+
+async def test_public_rate_limit_is_distinguished_from_access_denial(monkeypatch):
+    instance = release.PrepareNautionetteRelease()
+    result = {"status": 403, "json": {"message": "API rate limit exceeded"}}
+
+    async def fetch(*args, **kwargs):
+        return result
+
+    monkeypatch.setattr(instance, "activity", fetch)
+    with pytest.raises(release.GitHubRateLimit):
+        await instance.get(release.API + "/compare/a...b")
+    result["json"] = {"message": "Resource not accessible"}
+    with pytest.raises(ValueError, match=r"Repository read failed \(HTTP 403\)") as error:
+        await instance.get(release.API + "/compare/a...b")
+    assert not isinstance(error.value, release.GitHubRateLimit)
+
+
 async def test_evidenced_release_blockers_still_block(preparation):
     preparation.report["blockers"] = ["Evidenced migration safety problem"]
     with pytest.raises(ApplicationError, match="Release review blocked"):

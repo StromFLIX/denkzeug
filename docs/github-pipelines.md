@@ -224,7 +224,10 @@ ready agent sets and ready workers; persistent failures and auth errors stay red
 The read-only **Prepare Denkzeug release** workflow checks the healthy staging
 commit, ancestry, unused/increasing stable version, and evidence-backed notes. Its
 source is tracked in `workflows/prepare_nautionette_release.py` and regression-tested
-in CI. It does not publish or deploy. It deliberately does **not** pin checksums of
+in CI. It does not publish or deploy. If public GitHub rate-limits the comparison,
+the workflow uses the authenticated GitHub integration to verify ancestry and the
+commit range. The result flags that changed-file patches are missing in that mode.
+It deliberately does **not** pin checksums of
 these docs, the Deploy Action, or its script: routine pipeline edits must not require
 updating an unrelated live workflow. Preparation does not certify deployment code
 or environment configuration; the current Deploy Action remains the authority for

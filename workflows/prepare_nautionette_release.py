@@ -307,6 +307,19 @@ A failed push may leave the new tag locally.
 """  # noqa: S608 - Markdown instructions, not a SQL query.
 
 
+class GitHubRateLimit(ValueError):
+    """The public REST quota failed; authenticated MCP may still be available."""
+
+
+def github_rate_limited(result):
+    payload = result.get("json")
+    return result.get("status") == 429 or (
+        result.get("status") == 403
+        and isinstance(payload, dict)
+        and "rate limit" in str(payload.get("message", "")).lower()
+    )
+
+
 @workflow.defn(name="prepare_nautionette_release")
 class PrepareNautionetteRelease:
     async def activity(self, name, params, minutes=3):
@@ -331,6 +344,8 @@ class PrepareNautionetteRelease:
         result = await self.activity(
             "http_fetch", {"url": url, "method": "GET", "headers": {"Accept": "application/vnd.github+json"}}
         )
+        if url.startswith(f"{API}/") and github_rate_limited(result):
+            raise GitHubRateLimit("Public GitHub REST API rate limit reached")
         if result.get("status") != 200:
             raise ValueError(
                 f"Repository read failed (HTTP {result.get('status')}): {url}. "
@@ -379,19 +394,66 @@ class PrepareNautionetteRelease:
             raise ValueError("A staging deployment is active; rerun after it completes")
         return sha, rows[0]
 
-    async def prepare(self, params):
-        requested = params.get("version", "auto").strip()
-        if requested not in {"auto", "patch", "minor", "major"}:
-            version_tuple(requested)
-        sha, deployment = await self.snapshot()
-        releases = await self.pages("github_list_releases")
-        tags = await self.pages("github_list_tags")
-        stable = [
-            r["tag_name"]
-            for r in releases
-            if not r.get("draft") and not r.get("prerelease") and re.fullmatch(SEMVER, r.get("tag_name", ""))
-        ]
-        previous = max(stable, key=version_tuple) if stable else None
+    async def github_history(self, ref, *, until_commit=None, messages=False):
+        owner, repo = REPO.split("/")
+        fields = ["sha", "commit"] if messages else ["sha"]
+        rows = {}
+        for page in range(1, 21):
+            batch = await self.mcp(
+                "github_list_commits",
+                {"owner": owner, "repo": repo, "sha": ref, "page": page, "perPage": 100, "fields": fields},
+            )
+            if not isinstance(batch, list) or len(batch) > 100:
+                raise ValueError("Invalid authenticated GitHub commit page")
+            for row in batch:
+                sha = row.get("sha", "")
+                if not re.fullmatch(SHA, sha) or sha in rows:
+                    raise ValueError("Invalid or repeated SHA in authenticated GitHub commit history")
+                if messages and not isinstance((row.get("commit") or {}).get("message"), str):
+                    raise ValueError("Missing message in authenticated GitHub commit history")
+                rows[sha] = row
+            if page == 1 and (not rows or next(iter(rows)) != ref):
+                raise ValueError("Authenticated GitHub history did not start at its pinned SHA")
+            if until_commit in rows or len(batch) < 100:
+                return rows
+        raise ValueError("Authenticated GitHub commit pagination limit reached")
+
+    async def authenticated_comparison(self, sha, previous, tags):
+        owner, repo = REPO.split("/")
+        main = (
+            await self.mcp(
+                "github_get_commit", {"owner": owner, "repo": repo, "sha": "main", "detail": "none"}
+            )
+        ).get("sha", "")
+        if not re.fullmatch(SHA, main):
+            raise ValueError("Unable to resolve main to a full commit SHA")
+        if sha != main and sha not in await self.github_history(main, until_commit=sha):
+            raise ValueError("Staging SHA is not an ancestor of current main")
+        base_history = {}
+        if previous:
+            bases = [row.get("sha", "") for row in tags if row.get("name") == previous]
+            if len(bases) != 1 or not re.fullmatch(SHA, bases[0]):
+                raise ValueError("Unable to resolve the previous release to one full commit SHA")
+            base = bases[0]
+            base_history = await self.github_history(base)
+        staged_history = await self.github_history(sha, messages=True)
+        if previous and (base == sha or base not in staged_history):
+            raise ValueError(
+                "Staging has no new commits since the previous release, or release ancestry diverged"
+            )
+        # Git ranges are reachability differences, not a list prefix ending at
+        # the previous tag (which can miss or include the wrong merge parents).
+        commits = [row for key, row in staged_history.items() if key not in base_history]
+        return (
+            commits,
+            [],
+            [
+                "Public GitHub API was rate-limited. Verified release ancestry and complete commit range "
+                "using authenticated GitHub; changed-file patches are not included in this run."
+            ],
+        )
+
+    async def public_comparison(self, sha, previous):
         # Verify ancestry using GitHub's graph comparison, never dates or main's HEAD.
         ancestry = (await self.get(f"{API}/compare/{sha}...main?per_page=1"))["json"]
         if ancestry.get("status") not in {"ahead", "identical"}:
@@ -436,6 +498,25 @@ class PrepareNautionetteRelease:
                     break
             else:
                 raise ValueError("Initial-release history exceeded pagination limit")
+        return commits, changes, coverage
+
+    async def prepare(self, params):
+        requested = params.get("version", "auto").strip()
+        if requested not in {"auto", "patch", "minor", "major"}:
+            version_tuple(requested)
+        sha, deployment = await self.snapshot()
+        releases = await self.pages("github_list_releases")
+        tags = await self.pages("github_list_tags")
+        stable = [
+            r["tag_name"]
+            for r in releases
+            if not r.get("draft") and not r.get("prerelease") and re.fullmatch(SEMVER, r.get("tag_name", ""))
+        ]
+        previous = max(stable, key=version_tuple) if stable else None
+        try:
+            commits, changes, coverage = await self.public_comparison(sha, previous)
+        except GitHubRateLimit:
+            commits, changes, coverage = await self.authenticated_comparison(sha, previous, tags)
         if not commits:
             raise ValueError("No release commits found")
         files = {}
@@ -493,6 +574,9 @@ class PrepareNautionetteRelease:
         prs = []
         for number in pr_numbers[:20]:
             result = await self.activity("http_fetch", {"url": f"{API}/pulls/{number}", "method": "GET"})
+            if github_rate_limited(result):
+                coverage.append("Some PR descriptions were omitted due to the public GitHub API rate limit.")
+                break
             if result.get("status") == 404:
                 coverage.append(f"Commit reference #{number} could not be resolved as a pull request.")
                 continue
