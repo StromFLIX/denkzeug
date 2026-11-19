@@ -73,6 +73,11 @@ sidebar** under **Settings → Workspace**; click **Chats** or **Workflows** to
 reopen it. On mobile, keep the bottom navigation on list screens and the Back
 button on full-screen detail views.
 
+The chat header keeps the agent picker on one row until **+N** is opened. Extra
+agents wrap below it, with vertical scrolling for long lists. The default order
+uses the account's accepted messages over the last seven days, with alphabetical
+ties. **Settings → Workspace → Chat list** can switch to alphabetical order.
+
 ## Device preferences
 
 `preferences-schema.js` describes workspace controls, their defaults and allowed

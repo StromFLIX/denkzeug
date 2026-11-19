@@ -79,7 +79,11 @@ async def list_chats() -> dict[str, Any]:
     owner = access.human_id()
     if owner is None:
         raise HTTPException(403, "User account required")
-    return {"chats": db.list_chats(owner_user_id=owner), "activity": db.chat_activity(owner_user_id=owner)}
+    return {
+        "chats": db.list_chats(owner_user_id=owner),
+        "activity": db.chat_activity(owner_user_id=owner),
+        "agent_usage_7d": db.recent_agent_usage(owner),
+    }
 
 
 @router.post("/api/chats")

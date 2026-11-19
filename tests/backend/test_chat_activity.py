@@ -1,5 +1,7 @@
 """Agent rail activity comes from durable turns, not a truncated chat list."""
 
+import time
+
 from nautionette_backend import conversations
 
 
@@ -20,6 +22,7 @@ def test_activity_counts_all_chats_and_only_current_agent_membership(client, db)
         db.create_chat(f"Newer idle chat {index}", "default")
     response = client.get("/api/chats").json()
     assert len(response["chats"]) == 200
+    assert response["agent_usage_7d"] == {"ada": 6, "grace": 2}
     assert not {chat["id"] for chat in chats} & {chat["id"] for chat in response["chats"]}
     assert response["activity"] == {
         "running": 5,
@@ -34,6 +37,25 @@ def test_activity_counts_all_chats_and_only_current_agent_membership(client, db)
         "queued": 5,
         "agents": {"ada": {"running": 2, "queued": 2}, "grace": {"running": 2, "queued": 2}},
     }
+
+
+def test_agent_usage_counts_only_recent_direct_user_messages_for_the_account(client, db):
+    chat = db.create_chat("Ada", "default", agent_id="ada")
+    delegated = db.create_chat("Grace delegate", "default", agent_id="grace")
+    other = db.create_chat("Another account", "default", agent_id="ada", owner_user_id="another-user")
+    db.execute("UPDATE chats SET delegated_parent_chat_id = ? WHERE id = ?", (chat["id"], delegated["id"]))
+    db.accept_chat_message(delegated["id"], "Delegated prompt", "delegated")
+    db.accept_chat_message(other["id"], "Other user's prompt", "private")
+    db.add_message(chat["id"], "assistant", "Reply")
+    db.add_message(chat["id"], "user", "Copied prompt without a turn")
+    db.accept_chat_message(chat["id"], "Recent prompt", "recent")
+    db.accept_chat_message(chat["id"], "Old prompt", "old", queue=True)
+    db.execute("UPDATE messages SET created_at = ? WHERE id = 'old'", (time.time() - 8 * 86400,))
+    db.execute("UPDATE chat_turns SET job = ? WHERE id = 'recent'", ('{"agent_id":"ada"}',))
+    db.update_chat(chat["id"], {"agent_id": "grace"})
+
+    assert client.get("/api/chats").json()["agent_usage_7d"] == {"ada": 1}
+    assert db.recent_agent_usage("another-user") == {"ada": 1}
 
 
 def test_activity_tracks_steering_pause_resume_discard_and_completion(client, db, monkeypatch):

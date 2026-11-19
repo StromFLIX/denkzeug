@@ -28,6 +28,7 @@ const state = reactive({
   agentNavigation: agentNavigation.state,
   chats: [],
   chatActivity: null,
+  agentUsage7d: null,
   projects: [],
   workflows: [],
   workflowInputDraft: null,
@@ -130,6 +131,7 @@ export const actions = {
       state.chats = data.chats
       // Activity is server-wide and never restored from the offline list cache.
       state.chatActivity = data.activity || null
+      state.agentUsage7d = data.agent_usage_7d || null
       await chatCache.saveList(data.chats, scope)
       warmChatCache(data.chats, scope)
     }
@@ -207,7 +209,7 @@ export const actions = {
     state.catalogError = ''
     state.catalog = emptyCatalog()
     state.system = { components: [], agent_sets: [] }
-    state.chats = []; state.chatActivity = null; state.projects = []
+    state.chats = []; state.chatActivity = null; state.agentUsage7d = null; state.projects = []
     state.workflows = []; state.workflowInputDraft = null; state.drafts = []; state.runs = []; state.events = []
     agentNavigation.reset({ restoreCached: Boolean(account.user) })
     mcpAuth.clear()
@@ -222,6 +224,7 @@ export const actions = {
     chatsRequest++
     state.chats = []
     state.chatActivity = null
+    state.agentUsage7d = null
     chatCache.list(scope).then((chats) => {
       if (scope === chatCacheScope() && !state.chats.length) state.chats = chats || []
     })

@@ -767,6 +767,26 @@ class Database:
             )
         return rows
 
+    def recent_agent_usage(self, owner_user_id: str) -> dict[str, int]:
+        """Count user messages sent to each saved agent in the past seven days."""
+        cutoff = time.time() - 7 * 24 * 60 * 60
+        # Only accepted prompts have a turn; copied messages in a chat branch don't.
+        # Prefer the recorded agent so changing a chat's agent doesn't reassign its history.
+        return {
+            row["agent_id"]: row["n"]
+            for row in self.query(
+                "SELECT agent_id, COUNT(*) AS n FROM ("
+                "SELECT CASE WHEN json_type(t.job, '$.agent_id') IS NULL THEN c.agent_id "
+                "ELSE json_extract(t.job, '$.agent_id') END AS agent_id "
+                "FROM messages m JOIN chat_turns t ON t.user_id = m.id AND t.chat_id = m.chat_id "
+                "JOIN chats c ON c.id = m.chat_id "
+                "WHERE m.created_at >= ? AND m.role = 'user' AND c.owner_user_id = ? "
+                "AND c.delegated_parent_chat_id IS NULL) "
+                "WHERE agent_id IS NOT NULL GROUP BY agent_id",
+                (cutoff, owner_user_id),
+            )
+        }
+
     def chat_activity(self, *, owner_user_id: str | None = None) -> dict[str, Any]:
         """Count live turns across all chats, not just the recent sidebar page.
 
