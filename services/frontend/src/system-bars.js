@@ -15,17 +15,11 @@ function opaque (color, background) {
 
 export function systemBarAppearance (themeId, tokens, mobileList) {
   const preset = themeById(themeId).colors
-  const statusToken = mobileList ? 'surface-panel' : 'surface-app'
-  const navigationToken = mobileList ? 'surface-rail' : 'surface-app'
-  const statusBarColor = opaque(tokens[statusToken], preset[statusToken])
-  const navigationBarColor = opaque(tokens[navigationToken], preset[navigationToken])
-  const darkIcons = color => contrastRatio('#000000', color) > contrastRatio('#ffffff', color)
-  return {
-    statusBarColor,
-    navigationBarColor,
-    darkStatusBarIcons: darkIcons(statusBarColor),
-    darkNavigationBarIcons: darkIcons(navigationBarColor)
-  }
+  // The list panel reaches both edges now that the dock floats above it.
+  const surface = mobileList ? 'surface-panel' : 'surface-app'
+  const color = opaque(tokens[surface], preset[surface])
+  const darkIcons = contrastRatio('#000000', color) > contrastRatio('#ffffff', color)
+  return { statusBarColor: color, navigationBarColor: color, darkStatusBarIcons: darkIcons, darkNavigationBarIcons: darkIcons }
 }
 
 let pending = Promise.resolve()

@@ -70,8 +70,10 @@ Desktop puts Chats, Workflows, and Settings in a top bar with centered workspace
 search and a persistent New chat action. The resizable list sits below, with
 agent selection inside its chat header. To hide the desktop list, use **Collapse
 sidebar** under **Settings → Workspace**; click **Chats** or **Workflows** to
-reopen it. On mobile, keep the bottom navigation on list screens and the Back
-button on full-screen detail views.
+reopen it. On mobile, Settings, Chats, and Workflows live in an inset floating
+dock on list screens; New chat floats above it on the Chats list. Keep the
+controls neutral and use the shared mobile offsets for scroll clearance so the
+last row can move above the controls. Full-screen details keep their Back button.
 
 The chat header keeps the agent picker on one row until **+N** is opened. Extra
 agents wrap below it, with vertical scrolling for long lists. The default order

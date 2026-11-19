@@ -95,8 +95,16 @@ test('mobile keeps contextual list search, bottom navigation and focused chat de
   const nav = page.getByRole('navigation', { name: 'Main navigation' })
   await expect(page.getByRole('button', { name: 'Group', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Search chats', exact: true })).toBeInViewport({ ratio: 1 })
-  await expect(nav.getByRole('link', { name: 'Workflows', exact: true })).toBeInViewport({ ratio: 1 })
-  expect((await nav.boundingBox()).y).toBeGreaterThan((await list.boundingBox()).y)
+  const workflows = nav.getByRole('link', { name: 'Workflows', exact: true })
+  await expect(workflows).toBeInViewport({ ratio: 1 })
+  await expect(nav.getByRole('link', { name: 'Chats', exact: true })).toHaveAttribute('aria-current', 'page')
+  await expect(page.locator('.side__head').getByRole('link', { name: 'Settings', exact: true })).toHaveCount(0)
+  await workflows.tap()
+  await expect(workflows).toHaveAttribute('aria-current', 'page')
+  await expect(list.getByRole('link', { name: /Morning digest/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'New chat', exact: true })).toHaveCount(0)
+  await nav.getByRole('link', { name: 'Chats', exact: true }).tap()
+  await expect(nav.getByRole('link', { name: 'Chats', exact: true })).toHaveAttribute('aria-current', 'page')
   await page.screenshot({ path: testInfo.outputPath('mobile-chat-list.png') })
   await list.getByText('Design review', { exact: true }).tap()
   await expect(page.getByRole('button', { name: 'Back to chats', exact: true })).toBeInViewport({ ratio: 1 })
@@ -104,6 +112,63 @@ test('mobile keeps contextual list search, bottom navigation and focused chat de
   await expect(page.getByRole('button', { name: 'Search workspace', exact: true })).toHaveCount(0)
   await page.screenshot({ path: testInfo.outputPath('mobile-chat-detail.png') })
 })
+
+for (const [width, interfaceSize] of [[390, 125], [320, 150]]) {
+  test(`floating chat controls clear the last row at ${width}px and ${interfaceSize}%`, async ({ page, context }, testInfo) => {
+    const { data } = await mockDesign(context)
+    const chats = Array.from({ length: 28 }, (_, index) => ({
+      ...data.chat, id: `chat-${index + 1}`, title: `Chat ${index + 1}`, last_activity_at: data.chat.updated_at - index * 60
+    }))
+    let finishCreation
+    const pendingCreation = new Promise(resolve => { finishCreation = resolve })
+    const created = { ...data.chat, id: 'new-from-dock', title: 'New chat' }
+    await context.route('**/api/chats', async route => {
+      if (route.request().method() !== 'POST') return route.fulfill({ json: { chats } })
+      await pendingCreation
+      return route.fulfill({ json: created })
+    })
+    await context.route('**/api/chats/new-from-dock', route => route.fulfill({ json: { ...data, chat: created } }))
+    await context.addInitScript(({ key, interfaceSize }) => {
+      localStorage.setItem(key, JSON.stringify({ interfaceSize, theme: 'orbit', chatGroupBy: 'date' }))
+    }, { key: PREFERENCES_KEY, interfaceSize })
+    await page.setViewportSize({ width, height: 640 })
+    await page.goto('/chats')
+    const list = page.locator('.side__list')
+    const last = list.getByRole('link', { name: 'Chat 28', exact: true })
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const compose = page.getByRole('button', { name: 'New chat', exact: true })
+    await expect(list.locator('.chat-list-item .row-item').last()).toHaveAccessibleName('Chat 28')
+    await expect(last).not.toBeInViewport()
+    await expect(compose).toBeInViewport({ ratio: 1 })
+    await expect(nav).toBeInViewport({ ratio: 1 })
+    await expect(page.locator('.side__head').getByRole('button', { name: 'New chat', exact: true })).toHaveCount(0)
+    const [dock, button, scrollport] = await Promise.all([nav.boundingBox(), compose.boundingBox(), list.boundingBox()])
+    expect(dock.x).toBeGreaterThan(0)
+    expect(dock.x + dock.width).toBeLessThan(width)
+    expect(dock.y + dock.height).toBeLessThan(scrollport.y + scrollport.height)
+    expect(button.x + button.width).toBeGreaterThan(width - 32)
+    expect(button.y + button.height).toBeLessThan(dock.y)
+    expect(button.width).toBeGreaterThanOrEqual(44)
+    await page.screenshot({ path: testInfo.outputPath('mobile-dock-top.png') })
+
+    await list.evaluate(el => { el.scrollTop = el.scrollHeight })
+    await expect(last).toBeInViewport({ ratio: 1 })
+    const row = await last.boundingBox()
+    expect(row.y + row.height).toBeLessThan(button.y)
+    expect(await nav.boundingBox()).toEqual(dock)
+    expect(await compose.boundingBox()).toEqual(button)
+    await page.screenshot({ path: testInfo.outputPath('mobile-dock-end.png') })
+
+    await compose.tap()
+    try {
+      await expect(page).toHaveURL('/chats/new')
+      await expect(nav).toBeHidden()
+      await expect(compose).toBeHidden()
+      await expect(page.getByRole('textbox', { name: 'Message', exact: true })).toBeVisible()
+    } finally { finishCreation() }
+    await expect(page).toHaveURL('/chats/new-from-dock')
+  })
+}
 
 test('settings Back restores agent query and sign-out actions fit at 150%', async ({ page, context }) => {
   const state = await mockAgents(context)

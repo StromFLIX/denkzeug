@@ -7,20 +7,18 @@
       <div class="rail__nav">
         <RouterLink
           v-for="item in items" :key="item.name" class="rail__item"
-          :to="sidebarCollapsed && active === item.name ? route.fullPath : item.to"
-          :class="{ 'rail__item--active': active === item.name }" :style="{ '--nav-color': item.tone }" :aria-current="active === item.name ? 'page' : undefined"
-          @click="$emit('open-sidebar')"
+          :to="item.name !== 'settings' && sidebarCollapsed && active === item.name ? route.fullPath : item.to"
+          :class="{ 'rail__item--active': active === item.name, 'rail__settings': item.name === 'settings' }"
+          :style="{ '--nav-color': item.tone }" :aria-current="active === item.name ? 'page' : undefined"
+          :title="item.title" @click="item.name !== 'settings' && $emit('open-sidebar')"
         >
-          <span class="material-icons" aria-hidden="true">{{ item.icon }}</span>
+          <svg v-if="mobile && item.name === 'workflows'" class="rail__icon" viewBox="0 -960 960 960" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z" />
+          </svg>
+          <span v-else class="material-icons" aria-hidden="true">{{ item.icon }}</span>
           <span class="rail__label">{{ item.label }}</span>
           <span v-if="item.badge" class="rail__badge">{{ item.badge }}</span>
-        </RouterLink>
-        <RouterLink v-if="!mobile" class="rail__item rail__settings" :class="{ 'rail__item--active': active === 'settings' }"
-          :aria-current="active === 'settings' ? 'page' : undefined" :to="`/settings/${account.user?.role === 'admin' && health === 'degraded' ? 'system' : 'account'}`"
-          :title="health === 'degraded' ? 'Settings — something needs attention' : 'Settings'" aria-label="Settings">
-          <span class="material-icons" aria-hidden="true">settings</span>
-          <span class="rail__label">Settings</span>
-          <span v-if="health !== 'ok'" class="dot rail__settings-dot" :class="{ 'dot--bad': health === 'degraded' }" />
+          <span v-if="item.name === 'settings' && health !== 'ok'" class="dot rail__settings-dot" :class="{ 'dot--bad': health === 'degraded' }" />
         </RouterLink>
       </div>
     </div>
@@ -45,18 +43,24 @@ import { brand } from '../brand'
 import { chatLocation } from '../router'
 
 // Reopening the current list should not leave its detail view or discard a draft.
-defineProps({ mobile: Boolean, sidebarCollapsed: Boolean })
+const props = defineProps({ mobile: Boolean, sidebarCollapsed: Boolean })
 defineEmits(['open-sidebar'])
 
 const searchShortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K'
 const route = useRoute()
 const router = useRouter()
 const active = computed(() => route.meta.section || route.name)
-const items = computed(() => [
-  { name: 'chats', label: 'Chats', icon: 'chat_bubble_outline', tone: 'var(--agent-color)', to: chatLocation() },
-  { name: 'workflows', label: 'Workflows', icon: 'account_tree', tone: 'var(--workflow-color)', to: '/workflows', badge: draftCount.value || 0 }
-].filter(item => account.user?.role === 'admin' || item.name === 'chats' ||
-  (item.name === 'workflows' && (store.workflows.length || store.runs.length))))
+const items = computed(() => {
+  const admin = account.user?.role === 'admin'
+  const settings = { name: 'settings', label: 'Settings', icon: 'settings',
+    to: `/settings/${admin && health.value === 'degraded' ? 'system' : 'account'}`,
+    title: health.value === 'degraded' ? 'Settings — something needs attention' : 'Settings' }
+  const workspace = [{ name: 'chats', label: 'Chats', icon: 'chat_bubble_outline', tone: 'var(--agent-color)', to: chatLocation() }]
+  if (admin || store.workflows.length || store.runs.length) {
+    workspace.push({ name: 'workflows', label: 'Workflows', icon: 'account_tree', tone: 'var(--workflow-color)', to: '/workflows', badge: draftCount.value || 0 })
+  }
+  return props.mobile ? [settings, ...workspace] : [...workspace, settings]
+})
 </script>
 
 <style scoped>
@@ -123,16 +127,36 @@ const items = computed(() => [
     display: flex;
     align-items: stretch;
     gap: 0;
-    height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
-    padding: 4px max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
-    background: var(--surface-rail);
-    border-bottom: 0;
-    border-top: 1px solid var(--border);
+    height: var(--mobile-nav-height);
+    padding: 3px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-md);
   }
   .rail__start { display: contents; }
   .rail__nav { flex: 1 1 auto; align-items: stretch; gap: 2px; min-width: 0; }
-  .rail__item { flex: 1 1 0; flex-direction: column; min-width: 0; min-height: 3.125rem; padding-inline: 0; border-radius: var(--radius-sm); }
-  .rail__label { font-size: 0.625rem; letter-spacing: 0.01em; }
+  .rail__item {
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 0;
+    border-radius: var(--radius-pill);
+    color: var(--text-muted);
+    touch-action: manipulation;
+  }
+  .rail__item--active { color: var(--text); background: transparent; }
+  .rail__item--active .rail__label { font-weight: 600; }
+  .rail__item > .material-icons, .rail__icon { font-size: 1.05rem; width: 1em; height: 1em; }
+  .rail__label { font-size: 0.625rem; line-height: 1.2; }
   .rail__badge { position: absolute; top: 4px; right: max(8px, calc(50% - 24px)); }
+  .rail__settings-dot { top: 4px; right: calc(50% - 19px); border-color: var(--surface-raised); }
+  .rail__item:active { background: var(--surface-active); }
+  @media (hover: none) {
+    .rail__item:hover:not(:active) { background: transparent; }
+    .rail__item:not(.rail__item--active):hover:not(:active) { color: var(--text-muted); }
+  }
 }
 </style>

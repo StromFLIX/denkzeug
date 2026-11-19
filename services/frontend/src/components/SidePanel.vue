@@ -3,32 +3,15 @@
     <header class="side__head">
       <div class="row side__heading">
         <h1 class="side__title grow truncate" :title="heading">{{ heading }}</h1>
-        <button
-          v-if="mobile && section === 'chats'" class="btn btn--icon side__new" title="New chat" aria-label="New chat"
-          :disabled="route.params.id === 'new'" @click="startChat"
-        >
-          <span class="material-icons">add</span>
-        </button>
-        <button
-          v-else-if="section !== 'chats'" class="btn btn--icon" title="Refresh"
-          @click="refresh"
-        >
+        <button v-if="section !== 'chats'" class="btn btn--icon" title="Refresh" @click="refresh">
           <span class="material-icons">refresh</span>
         </button>
-        <RouterLink
-          class="btn btn--icon side__cog" :to="`/settings/${account.user?.role === 'admin' && health === 'degraded' ? 'system' : 'account'}`"
-          :title="health === 'degraded' ? 'Settings — something needs attention' : 'Settings'"
-          aria-label="Settings"
-        >
-          <span class="material-icons" aria-hidden="true">settings</span>
-          <span v-if="health !== 'ok'" class="dot side__cog-dot" :class="{ 'dot--bad': health === 'degraded' }" />
-        </RouterLink>
       </div>
       <WorkspaceSearchButton v-if="mobile" class="side__search" :scope="section" :label="`Search ${section}`" />
       <slot name="agents" />
     </header>
 
-    <div class="side__list scroll-y grow" :class="{ 'side__list--grouped': section === 'chats' && groupBy !== 'none' }">
+    <div class="side__list scroll-y grow" :class="{ 'side__list--chats': section === 'chats', 'side__list--grouped': section === 'chats' && groupBy !== 'none' }">
       <!-- chats -->
       <template v-if="section === 'chats'">
         <div v-for="group in chatGroups" :key="group.key" class="side__chat-group">
@@ -108,6 +91,13 @@
       </template>
 
     </div>
+
+    <button v-if="mobile && section === 'chats'" type="button" class="btn btn--icon side__new"
+      title="New chat" aria-label="New chat" :disabled="route.params.id === 'new'" @click="startChat">
+      <svg viewBox="0 -960 960 960" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h357l-80 80H200v560h560v-278l80-80v358q0 33-23.5 56.5T760-120H200Zm280-360ZM360-360v-170l367-367q12-12 27-18t30-6q16 0 30.5 6t26.5 18l56 57q11 12 17 26.5t6 29.5q0 15-5.5 29.5T897-728L530-360H360Zm481-424-56-56 56 56ZM440-440h56l232-232-28-28-29-28-231 231v57Zm260-260-29-28 29 28 28 28-28-28Z" />
+      </svg>
+    </button>
   </div>
 </template>
 
@@ -117,8 +107,7 @@ import { useRoute, useRouter } from 'vue-router'
 import WorkspaceSearchButton from './WorkspaceSearchButton.vue'
 import { scheduleTime } from '../format'
 import { nextWorkflowSchedule, workflowSchedules } from '../workflow-schedules'
-import { actions, health, store } from '../store'
-import { account } from '../auth-session.js'
+import { actions, store } from '../store'
 import { api } from '../api'
 import ChatTree from './ChatTree.vue'
 import { preferences } from '../preferences'
@@ -234,31 +223,6 @@ function refresh () {
   letter-spacing: -0.045em;
 }
 
-.side__new {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.side__cog {
-  display: none;
-  position: relative;
-  color: var(--text-muted);
-  text-decoration: none;
-}
-
-@media (max-width: 900px) {
-  .side__cog {
-    display: inline-flex;
-  }
-}
-
-.side__cog-dot {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  border: 2px solid var(--surface-panel);
-}
-
 .side__search { margin-top: 18px; }
 @media (max-height: 420px) { .side__search { margin-top: 8px; } }
 
@@ -305,6 +269,7 @@ function refresh () {
   /* Rows follow the panel width; long titles truncate instead of stretching. */
   min-width: 0;
   overflow-x: hidden;
+  isolation: isolate;
 }
 
 .side__list--grouped {
@@ -327,7 +292,8 @@ function refresh () {
   padding: 14px 10px 6px;
   position: sticky;
   top: 0;
-  z-index: 1;
+  /* Keep the opaque heading above the positioned chat status and menu. */
+  z-index: 2;
   background: var(--surface-panel);
 }
 
@@ -384,9 +350,35 @@ function refresh () {
   }
 
   .side__list {
+    /* Scroll through the overlay, but let the final row come to rest above it. */
+    --list-bottom-space: calc(var(--mobile-nav-clearance) + 10px);
     padding-right: max(6px, env(safe-area-inset-right));
     padding-left: max(6px, env(safe-area-inset-left));
+    padding-bottom: var(--list-bottom-space);
+    scroll-padding-block-end: var(--list-bottom-space);
   }
+
+  .side__list--chats {
+    --list-bottom-space: calc(var(--mobile-compose-bottom) + var(--mobile-compose-size) + 10px);
+  }
+
+  .side__new {
+    position: absolute;
+    z-index: 2;
+    inset-inline-end: max(14px, env(safe-area-inset-right));
+    inset-block-end: var(--mobile-compose-bottom);
+    width: var(--mobile-compose-size);
+    height: var(--mobile-compose-size);
+    color: var(--text-muted);
+    background: var(--surface-overlay);
+    border-color: var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    touch-action: manipulation;
+  }
+  .side__new svg { width: 1.15rem; height: 1.15rem; }
+  .side__new:not(:disabled):hover { background: var(--surface-overlay); }
+  .side__new:not(:disabled):active { color: var(--text); border-color: var(--text-muted); }
 
   .row-item {
     min-height: 58px;

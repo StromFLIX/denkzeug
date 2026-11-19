@@ -76,7 +76,11 @@
   --rail-width: 4.5rem;
   --side-width: 320px;
   --header-height: 4rem;
-  --mobile-nav-height: 3.875rem;
+  --mobile-nav-height: max(56px, 2.8rem);
+  --mobile-nav-bottom: calc(10px + env(safe-area-inset-bottom));
+  --mobile-nav-clearance: calc(var(--mobile-nav-bottom) + var(--mobile-nav-height));
+  --mobile-compose-size: max(48px, 2.4rem);
+  --mobile-compose-bottom: calc(var(--mobile-nav-clearance) + 12px);
   --list-padding: 0.6875rem;
   --keyboard-inset: 0px;
   --app-height: calc(100dvh - var(--keyboard-inset));

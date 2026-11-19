@@ -4,11 +4,11 @@ import { THEMES, resolveTheme } from './themes.js'
 import { syncSystemBars, systemBarAppearance } from './system-bars.js'
 
 for (const theme of THEMES) {
-  test(`${theme.name} system bars match the mobile panel and navigation surfaces`, () => {
+  test(`${theme.name} system bars match the mobile list panel`, () => {
     const tokens = resolveTheme(theme.id)
     assert.deepEqual(systemBarAppearance(theme.id, tokens, true), {
       statusBarColor: tokens['surface-panel'],
-      navigationBarColor: tokens['surface-rail'],
+      navigationBarColor: tokens['surface-panel'],
       darkStatusBarIcons: theme.mode === 'light',
       darkNavigationBarIcons: theme.mode === 'light'
     })
@@ -23,18 +23,18 @@ for (const theme of THEMES) {
 }
 
 test('custom surfaces choose icon contrast independently of the preset mode', () => {
-  const tokens = resolveTheme('orbit', { 'surface-panel': '#ffffff', 'surface-rail': '#000000' })
+  const tokens = resolveTheme('orbit', { 'surface-panel': '#ffffff' })
   assert.deepEqual(systemBarAppearance('orbit', tokens, true), {
-    statusBarColor: '#ffffff', navigationBarColor: '#000000',
-    darkStatusBarIcons: true, darkNavigationBarIcons: false
+    statusBarColor: '#ffffff', navigationBarColor: '#ffffff',
+    darkStatusBarIcons: true, darkNavigationBarIcons: true
   })
 })
 
 test('CSS alpha colors become opaque RGB rather than Android ARGB', () => {
-  const tokens = resolveTheme('orbit', { 'surface-panel': '#ffffff00', 'surface-rail': '#ffffff80' })
+  const tokens = resolveTheme('orbit', { 'surface-panel': '#ffffff80' })
   const appearance = systemBarAppearance('orbit', tokens, true)
-  assert.equal(appearance.statusBarColor, '#151c1f')
-  assert.equal(appearance.navigationBarColor, '#868889')
+  assert.equal(appearance.statusBarColor, '#8a8e8f')
+  assert.equal(appearance.navigationBarColor, '#8a8e8f')
   assert.match(appearance.navigationBarColor, /^#[a-f0-9]{6}$/)
 })
 

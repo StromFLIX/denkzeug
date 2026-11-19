@@ -594,7 +594,7 @@ pre.code {
   }
 
   .q-notifications__list--bottom {
-    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    bottom: var(--mobile-nav-clearance);
   }
 
   .picker {

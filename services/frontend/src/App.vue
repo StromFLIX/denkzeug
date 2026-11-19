@@ -258,11 +258,7 @@ onUnmounted(() => {
 
 @media (max-width: 900px) {
   .shell {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
-  }
-
-  .shell--full {
+    position: relative;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
   }
@@ -299,8 +295,12 @@ onUnmounted(() => {
   }
 
   .shell__rail {
-    grid-row: 2;
+    position: absolute;
+    z-index: 3;
+    inset-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+    inset-block-end: var(--mobile-nav-bottom);
+    margin-inline: auto;
+    max-inline-size: 15rem;
   }
-
 }
 </style>

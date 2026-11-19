@@ -24,7 +24,8 @@ for (const width of [1440, 901, 900, 390]) {
       await expect(settings).toHaveCount(1)
       await expect(settings).toBeVisible()
       await expect(page.getByRole('button', { name: 'Account menu' })).toHaveCount(0)
-      await expect(page.locator(desktop ? '.side__cog' : '.rail__settings')).toBeHidden()
+      const rail = page.getByRole('navigation', { name: 'Main navigation' })
+      await expect(rail.getByRole('link', { name: 'Settings', exact: true })).toBeVisible()
       await expect(settings).toHaveCSS('text-decoration-line', 'none')
       await settings.hover()
       await expect(settings).toHaveCSS('text-decoration-line', 'none')
@@ -34,16 +35,11 @@ for (const width of [1440, 901, 900, 390]) {
       await expect(settings.locator('.dot')).toHaveCount(health === 'ok' ? 0 : 1)
       if (health === 'degraded') await expect(settings.locator('.dot')).toHaveClass(/dot--bad/)
 
-      const box = await settings.boundingBox()
-      if (desktop) {
-        const rail = await page.locator('.rail').boundingBox()
-        expect(box.x).toBeGreaterThanOrEqual(rail.x)
-        expect(box.x + box.width).toBeLessThanOrEqual(rail.x + rail.width)
-      } else {
-        const header = await page.locator('.side__head').boundingBox()
-        expect(box.y).toBeGreaterThanOrEqual(header.y)
-        expect(box.y + box.height).toBeLessThanOrEqual(header.y + header.height)
-        expect(box.x).toBeGreaterThan(width - 70)
+      if (!desktop) {
+        await expect(rail.getByRole('link').first()).toHaveAccessibleName('Settings')
+        const dock = await rail.boundingBox()
+        expect(dock.y).toBeGreaterThan(800)
+        expect(dock.width).toBeLessThan(width)
       }
 
       await settings.press('Enter')
@@ -70,13 +66,13 @@ test('native workspace switching is available from the Settings session section'
   await expect.poll(() => page.evaluate(() => localStorage.getItem('nautionette.server'))).toBeNull()
 })
 
-test('settings moves between header and rail when resizing', async ({ page, context }) => {
+test('settings stays in the navigation when it moves between the top bar and floating dock', async ({ page, context }) => {
   await mockApi(context, 'ok')
   await page.goto('/chats')
   for (const width of [1440, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 })
     await expect(page.getByRole('link', { name: 'Settings', exact: true })).toHaveCount(1)
-    await expect(page.locator(width > 900 ? '.rail__settings' : '.side__cog')).toBeVisible()
-    await expect(page.locator(width > 900 ? '.side__cog' : '.rail__settings')).toBeHidden()
+    const links = page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link')
+    await expect(width > 900 ? links.last() : links.first()).toHaveAccessibleName('Settings')
   }
 })
