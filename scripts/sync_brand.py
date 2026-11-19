@@ -195,28 +195,6 @@ def expected_files(root: Path = ROOT) -> dict[Path, bytes]:
             for old, new in public_origins.items():
                 text = text.replace(old, new)
             files[path] = text.encode()
-    release_workflow = root / "workflows/prepare_nautionette_release.py"
-    if release_workflow.exists():
-        text = re.sub(
-            r'^DISPLAY_NAME = "[^"]*"',
-            lambda _: "DISPLAY_NAME = " + json.dumps(brand["name"]),
-            release_workflow.read_text(),
-            flags=re.MULTILINE,
-        )
-        text = re.sub(
-            r'("title"\s*:\s*)"Prepare [^"]* release"',
-            lambda match: match[1] + json.dumps(f"Prepare {brand['name']} release"),
-            text,
-        )
-        text = re.sub(r'^REPO = "[^"]*"', lambda _: "REPO = " + json.dumps(repository), text, flags=re.M)
-        for name, value in (("STAGING_URL", brand["stagingApp"]), ("PRODUCTION_URL", brand["app"])):
-            text = re.sub(
-                rf'^{name} = "[^"]*"',
-                lambda _, value=value, name=name: name + " = " + json.dumps(value),
-                text,
-                flags=re.M,
-            )
-        files[release_workflow] = text.encode()
     template = website / "index.template.html"
     if template.exists():
         html = template.read_text()

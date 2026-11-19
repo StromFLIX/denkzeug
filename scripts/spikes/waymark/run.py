@@ -36,7 +36,8 @@ from waymark import (
 from waymark.actions import deserialize_workflow_outcome
 
 ROOT = Path(__file__).resolve().parents[3]
-sys.path[:0] = [str(ROOT / "services/worker"), str(ROOT / "workflows")]
+sys.path.insert(0, str(ROOT / "services/worker"))
+TEMPORAL_BASELINE = "38314073ea38daf6b823e294b32c9a3ed1a7e03b:workflows/url_digest.py"
 import workflows as cases  # noqa: E402
 
 OUT = Path(os.environ.get("SPIKE_OUTPUT", "/workspace/waymark-results")).resolve()
@@ -184,7 +185,12 @@ async def benchmark_waymark():
 
 async def temporal_tests():
     # Dev server is NOT our deployed Postgres-backed Temporal cluster.
-    spec = importlib.util.spec_from_file_location("original_url_digest", ROOT / "workflows/url_digest.py")
+    # The original workflow is historical test input, not a bundled definition.
+    source = OUT / "historical_url_digest.py"
+    source.write_bytes(
+        subprocess.check_output(["git", "show", TEMPORAL_BASELINE], cwd=ROOT)  # noqa: S603, S607
+    )
+    spec = importlib.util.spec_from_file_location("original_url_digest", source)
     original = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(original)
     async with await WorkflowEnvironment.start_local() as env:

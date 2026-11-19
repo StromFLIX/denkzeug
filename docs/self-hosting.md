@@ -157,7 +157,7 @@ Back up these datasets consistently, including their permissions and private key
 | `backend-data` **and** `maxio-data` together | Chats/settings/output manifests plus original files, editable sources, previews and MaxIO metadata/master keys. Database-only backups do not contain output files. |
 | `agentgateway-data` | Model/MCP configuration and stored credentials. |
 | `postgres-data` | Temporal history, namespaces and schedules. |
-| `workflows` | Deployed workflow files, not only the checked-in seeds. |
+| `workflows` | Deployed workflow files. Fresh installations start without deployed workflows. |
 | `projects` and `chat-sessions` | Git caches/worktrees, unpushed work, native agent sessions and original attachments. |
 | `artifacts` | Workflow artifacts. |
 

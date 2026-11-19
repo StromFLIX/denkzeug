@@ -29,9 +29,6 @@ RUN uv sync --locked --no-dev --package nautionette-backend
 RUN python -c "from nautionette_backend.search_model import load_encoder; load_encoder('/opt/nautionette-search-model')" \
     && chmod -R a+rX /opt/nautionette-search-model
 
-# Committed workflows travel with the image and are seeded into the volume.
-COPY workflows/ /seed/
-
 # Backend, workflow-mcp and worker share one uid: the shared volume has to be
 # writable by all three, and a fresh named volume inherits these permissions.
 RUN useradd --create-home --uid 10001 app \

@@ -62,7 +62,6 @@ services:
       FRONTEND_WEB_URL: http://frontend-web:80
       MCP_APPS_SANDBOX_URL: ${MCP_APPS_SANDBOX_URL:-}
       WORKFLOWS_DIR: /workflows
-      WORKFLOWS_SEED_DIR: /seed
       DATA_DIR: /data
       ARTIFACTS_DIR: /artifacts
       PROJECTS_DIR: /projects

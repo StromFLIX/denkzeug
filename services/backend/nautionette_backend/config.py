@@ -38,7 +38,6 @@ class Settings:
         self.frontend_web_url = os.environ.get("FRONTEND_WEB_URL", "http://frontend-web:80")
 
         self.workflows_dir = os.environ.get("WORKFLOWS_DIR", "/workflows")
-        self.seed_dir = os.environ.get("WORKFLOWS_SEED_DIR", "/seed")
         self.data_dir = os.environ.get("DATA_DIR", "/data")
         self.artifacts_dir = os.environ.get("ARTIFACTS_DIR", "/data/artifacts")
 

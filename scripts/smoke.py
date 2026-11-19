@@ -140,24 +140,24 @@ def run(client) -> int:
             break
     check("the workflow completes", status == "COMPLETED", f"{status} {json.dumps(result)[:120]}")
 
-    client.post(
-        f"/api/workflows/{name}/schedule",
-        json={
-            "frequency": "weekly",
-            "at": "08:00",
-            "days": ["monday"],
-            "timezone": "Europe/Berlin",
-            "input": {},
-        },
-    )
-    listing = client.get("/api/workflows").json()["workflows"]
-    schedule = next((w.get("schedule") for w in listing if w["name"] == name), None)
-    check(
-        "the schedule reads back",
-        (schedule or {}).get("description") == "Every Monday at 08:00"
-        and (schedule or {}).get("timezone") == "Europe/Berlin",
-        str(schedule),
-    )
+    schedules = [
+        (
+            {"frequency": "weekly", "at": "08:00", "days": ["monday"], "timezone": "Europe/Berlin"},
+            "Every Monday at 08:00",
+        ),
+        ({"frequency": "daily", "at": "17:30", "timezone": "America/New_York"}, "Every day at 17:30"),
+    ]
+    for expected, description in schedules:
+        saved = client.post(f"/api/workflows/{name}/schedule", json={**expected, "input": payload})
+        listing = client.get("/api/workflows").json()["workflows"]
+        schedule = next((w.get("schedule") for w in listing if w["name"] == name), None) or {}
+        check(
+            f"the {expected['frequency']} schedule reads back",
+            saved.is_success
+            and schedule.get("description") == description
+            and all(schedule.get(key) == value for key, value in expected.items()),
+            str(schedule),
+        )
 
     client.request("DELETE", f"/api/workflows/{name}/schedule")
     client.request("DELETE", f"/api/workflows/{name}")

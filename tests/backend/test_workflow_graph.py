@@ -43,7 +43,7 @@ class Demo:
 
 
 def test_digest_branches_and_early_return():
-    code = (Path(__file__).parents[2] / "workflows/url_digest.py").read_text()
+    code = (Path(__file__).parents[1] / "fixtures/workflow_graph_source.txt").read_text()
     graph = definition_graph(code, "url_digest")
     nodes = graph["nodes"]
     assert [node["label"] for node in nodes if node["kind"] == "activity"] == [

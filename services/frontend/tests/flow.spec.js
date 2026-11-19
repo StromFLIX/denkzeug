@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../../../', import.meta.url))
-const source = readFileSync(`${root}/workflows/url_digest.py`, 'utf8')
+const source = readFileSync(`${root}/tests/fixtures/workflow_graph_source.txt`, 'utf8')
 const proposedSource = source.replace('"save_artifact"', '"notify_warehouse"').replace('timedelta(minutes=10)', 'timedelta(minutes=12)')
 function python (script, input) {
   // These graph projections use only stdlib and never execute workflow code.

@@ -10,8 +10,9 @@ change live schedules, call a real model, or alter the application dependency lo
 - `run.py`: real Postgres-backed Waymark; retries, timeout/late side effect,
   node SIGKILL recovery, worker-only SIGKILL, schedule CRUD; 150 three-action
   workflows per engine at concurrency 1/10/50 and 20-way fan-out.
-- The original `workflows/url_digest.py` runs **unmodified** on a local Temporal
-  dev server. The Waymark port uses the existing HTTP/artifact implementations.
+- The original URL digest is read from a pinned Git revision and runs **unmodified**
+  on a local Temporal dev server. Use a checkout that includes that revision.
+  The Waymark port uses the existing HTTP/artifact implementations.
   The `agent_call` implementation is deliberately replaced with a deterministic
   fixture. Both engines fetch a real public GitHub README and produce identical
   JSON and Markdown. A local 404 server tests the early-return branch.

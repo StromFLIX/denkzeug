@@ -94,7 +94,7 @@ Production owns these persistent datasets (verify actual mounts on the host):
 | `maxio-data` | Output originals/sources/previews **and** MaxIO metadata/master keys; back up consistently with `backend-data` |
 | `agentgateway-data` | Runtime model/MCP integrations, stored credentials, gateway databases |
 | `postgres-data` | Temporal execution history, visibility DB, namespaces and schedules |
-| `workflows` | Live workflow Python and dependency files, not just Git seeds |
+| `workflows` | Live workflow Python and dependency files |
 | `artifacts` | Workflow artifacts referenced by history |
 | `projects` | Repository caches **and** `.sessions` worktrees and their shared Git metadata |
 

@@ -26,12 +26,13 @@ def test_a_good_file_passes_every_step():
     assert report["manifest"]["timeout_minutes"] == 30
 
 
-def test_the_committed_workflows_still_validate(repo_root):
-    files = sorted((repo_root / "workflows").glob("*.py"))
-    assert files, "there should be workflows committed to the repository"
-    for path in files:
-        report = run_checks(path.stem, path.read_text(encoding="utf-8"))
-        assert report["valid"], f"{path.name}: {report['errors']}"
+def test_the_documentation_example_validates_without_bundled_workflows(repo_root):
+    docs = (repo_root / "docs/reference.md").read_text(encoding="utf-8")
+    example = docs.split("## Workflows are Python files", 1)[1].split("```python\n", 1)[1].split("```", 1)[0]
+    report = run_checks("example_hello", example)
+    assert report["valid"], report["errors"]
+    assert not list((repo_root / "workflows").glob("*.py"))
+    assert "COPY workflows/" not in (repo_root / "services/backend/Dockerfile").read_text(encoding="utf-8")
 
 
 def test_an_empty_file_stops_at_the_first_step():

@@ -70,12 +70,12 @@ of preparation. The actual cutover is a separate operation.
    python scripts/sync_brand.py
    python scripts/sync_brand.py --check
    python services/docker-broker/nautionette_docker_broker/image_context.py --write-lock
-   uv run pytest tests/test_branding.py tests/test_readme.py tests/worker/test_prepare_release.py
+   uv run pytest tests/test_branding.py tests/test_readme.py
    ```
 
    Review the diff, commit and push to main. Sync updates generated website,
    frontend, desktop and agent metadata, README/self-hosting clone instructions,
-   pipeline/staging repository references, and the release workflow's `REPO`.
+   and pipeline/staging repository references.
    Updating agent branding changes image contexts, so the fingerprint lock must
    also be regenerated. Do not hand-edit generated brand copies. Historical
    audit links and lowercase GHCR paths deliberately stay unchanged.
@@ -89,10 +89,10 @@ of preparation. The actual cutover is a separate operation.
    registry prefixes and domains. Verify GitHub App repository access and webhook
    delivery. The deployment scripts deliberately require the configured repository
    to equal `GITHUB_REPOSITORY`; stale settings should block, not be bypassed.
-5. Update the **deployed** `prepare_nautionette_release` workflow from the reviewed
-   repository source using the workflow deployment tool. Committing its file alone
-   does not update `/workflows`. Inspect/diff the live version first: it may be
-   older or independently edited. Keep its workflow name and schedule unchanged,
+5. Read and update the **deployed** `prepare_nautionette_release` workflow using
+   Denkzeug's workflow authoring tools. It is not shipped in the application repo.
+   Inspect the live version first and preserve its app reference. Keep its workflow
+   name and schedule unchanged,
    avoid replacing code while an old execution is active, check deployment readiness,
    then run it and inspect the complete run result. Resolve real staging/release
    blockers; never interpret a started run as success or publish a release to test it.
