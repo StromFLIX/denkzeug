@@ -204,23 +204,30 @@ def private_data_network(temporal: dict, postgres: dict) -> str:
 def preflight(path: Path, app: str, target: str) -> dict:
     rows = storage.containers()
     stack = storage.inventory(rows, app, target)
-    for row in rows:
-        owned = {item["id"] for item in stack["containers"]}
-        if row["Id"] not in owned and row["State"]["Status"] in {
-            "running",
-            "paused",
-            "restarting",
-            "created",
-        }:
-            if storage.mounted(row) & set(stack["volumes"].values()) or (
-                "nautionette.chat" in storage.labels(row)
-                and stack["network"] in row.get("NetworkSettings", {}).get("Networks", {})
-            ):
-                raise RuntimeError("Active agent or external volume writer; finish work before deployment")
     version = current_version(stack)
-    release = next((item for item in plan(path)["releases"] if item["version"] == version), None)
+    upgrade = plan(path)
+    release = next((item for item in upgrade["releases"] if item["version"] == version), None)
     if release is None or schemas(stack) != (release["core"], release["visibility"]):
         raise RuntimeError("Unsupported Temporal version/schema pair; refusing automatic migration")
+    if version != upgrade["target"]:
+        # Only a migration takes stopped-volume backups and writes schemas. A
+        # verified current install takes neither path and must allow normal deploys.
+        owned = {item["id"] for item in stack["containers"]}
+        volumes = set(stack["volumes"].values())
+        for row in rows:
+            if row["Id"] not in owned and row["State"]["Status"] in {
+                "running",
+                "paused",
+                "restarting",
+                "created",
+            }:
+                if storage.mounted(row) & volumes or (
+                    "nautionette.chat" in storage.labels(row)
+                    and stack["network"] in row.get("NetworkSettings", {}).get("Networks", {})
+                ):
+                    raise RuntimeError(
+                        "Active agent or external volume writer; finish work before deployment"
+                    )
     temporal = next(row for row in rows if row["Id"] == member(stack, "temporal"))
     postgres = next(row for row in rows if row["Id"] == member(stack, "postgres"))
     stack["data_network"] = private_data_network(temporal, postgres)

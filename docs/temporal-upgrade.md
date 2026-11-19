@@ -24,8 +24,10 @@ publish/promote stable release at that exact tested staging commit
 There is no production data copy and no automatic production release from a main
 push. Production retains the existing exact-commit staging/release gates. A
 migration failure prevents promotion/deployment success; it is not a silent skip.
-Routine later deployments check the existing version/schema and avoid taking a
-backup or running schema updates when already current. Completed controllers are
+Routine later deployments verify the existing version and both schemas. When
+already current, they do not wait for active chat agents or other external writers,
+take a backup, or run schema updates. Actual migrations still require quiescent
+writers before taking the stopped-volume backup. Completed controllers are
 retired, not left running with Docker access. Keep the managed hooks and synchronized
 version/fence settings: they are future-deployment safeguards, not one-off debris.
 

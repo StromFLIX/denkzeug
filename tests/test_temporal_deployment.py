@@ -100,6 +100,50 @@ def test_preflight_selects_private_data_network_not_coolifys_shared_network(monk
         host.private_data_network(container, container)
 
 
+@pytest.mark.parametrize("version", ["1.29.7", "1.32.2"])
+@pytest.mark.parametrize("writer_kind", ["chat", "volume"])
+def test_only_schema_migrations_require_quiescent_external_writers(
+    tmp_path, monkeypatch, version, writer_kind
+):
+    row = {
+        "Id": "external",
+        "State": {"Status": "running"},
+        "Config": {"Labels": {"nautionette.chat": "chat"} if writer_kind == "chat" else {}},
+        "NetworkSettings": {"Networks": {"app": {}}},
+        "Mounts": [{"Type": "volume", "Name": "data"}] if writer_kind == "volume" else [],
+    }
+    rows = [
+        {"Id": "temporal", "Config": {"Env": ["DB=postgres12"]}},
+        {"Id": "postgres"},
+        {"Id": "backend", "Config": {}},
+        row,
+    ]
+    stack = {
+        "containers": [{"id": name, "service": name} for name in ("temporal", "postgres", "backend")],
+        "backend": "backend",
+        "network": "app",
+        "volumes": {"postgres": "data"},
+    }
+    releases = [
+        {"version": "1.29.7", "core": "1.17", "visibility": "1.8"},
+        {"version": "1.32.2", "core": "1.18", "visibility": "1.9"},
+    ]
+    observed = next(release for release in releases if release["version"] == version)
+    monkeypatch.setattr(host.storage, "containers", lambda: rows)
+    monkeypatch.setattr(host.storage, "inventory", lambda *_: stack)
+    monkeypatch.setattr(host, "plan", lambda _: {"target": "1.32.2", "releases": releases})
+    monkeypatch.setattr(host, "current_version", lambda _: version)
+    monkeypatch.setattr(host, "schemas", lambda _: (observed["core"], observed["visibility"]))
+    monkeypatch.setattr(host, "private_data_network", lambda *_: "private")
+    monkeypatch.delenv("MAINTENANCE_SHARDS", raising=False)
+
+    if version != "1.32.2":
+        with pytest.raises(RuntimeError, match="Active agent or external volume writer"):
+            host.preflight(tmp_path, "app", "production")
+    else:
+        assert host.preflight(tmp_path, "app", "production")["from"] == version
+
+
 @pytest.mark.parametrize(
     "version,kind,dockerfile",
     [
