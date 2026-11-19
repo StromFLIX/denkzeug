@@ -1,0 +1,190 @@
+Client:
+ Version:    26.1.4
+ Context:    default
+ Debug Mode: false
+
+Server:
+ Containers: 0
+  Running: 0
+  Paused: 0
+  Stopped: 0
+ Images: 0
+ Server Version: 26.1.4
+ Storage Driver: overlay2
+  Backing Filesystem: extfs
+  Supports d_type: true
+  Using metacopy: false
+  Native Overlay Diff: true
+  userxattr: false
+ Logging Driver: json-file
+ Cgroup Driver: cgroupfs
+ Cgroup Version: 2
+ Plugins:
+  Volume: local
+  Network: bridge host ipvlan macvlan null overlay
+  Log: awslogs fluentd gcplogs gelf journald json-file local splunk syslog
+ Swarm: inactive
+ Runtimes: io.containerd.runc.v2 runc
+ Default Runtime: runc
+ Init Binary: docker-init
+ containerd version: ae71819c4f5e67bb4d5ae76a6b735f29cc25774e
+ runc version: v1.1.12-0-g51d5e94
+ init version: de40ad0
+ Security Options:
+  seccomp
+   Profile: builtin
+  cgroupns
+ Kernel Version: 6.12.118-0-virt
+ OSType: linux
+ Architecture: x86_64
+ CPUs: 1
+ Total Memory: 499.3MiB
+ Name: (none)
+ ID: bbd75a94-54b9-4c0c-9473-777f9b108629
+ Docker Root Dir: /var/lib/docker
+ Debug Mode: false
+ Experimental: false
+ Insecure Registries:
+  127.0.0.0/8
+ Live Restore Enabled: false
+ Product License: Community Engine
+
+WARNING: No swap limit support
+WARNING: IPv4 forwarding is disabled
+WARNING: bridge-nf-call-iptables is disabled
+WARNING: bridge-nf-call-ip6tables is disabled
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            BuildKit is currently disabled; enable it by removing the DOCKER_BUILDKIT=0
+            environment-variable.
+
+Sending build context to Docker daemon  557.1kB
+Sending build context to Docker daemon  2.228MB
+Sending build context to Docker daemon  3.342MB
+Sending build context to Docker daemon  4.456MB
+Sending build context to Docker daemon  5.571MB
+Sending build context to Docker daemon  6.685MB
+Sending build context to Docker daemon  7.799MB
+Sending build context to Docker daemon  8.913MB
+Sending build context to Docker daemon  10.03MB
+Sending build context to Docker daemon  10.58MB
+Sending build context to Docker daemon  10.69MB
+
+
+Step 1/17 : FROM scratch AS compile
+ --->
+Step 2/17 : COPY broker /broker
+ ---> e4872cd3db29
+Step 3/17 : COPY runtime /runtime
+ ---> 9a9eefc5ffb7
+Step 4/17 : FROM scratch AS candidate
+ --->
+Step 5/17 : COPY --from=compile /broker /broker
+ ---> Using cache
+ ---> e4872cd3db29
+Step 6/17 : COPY --from=compile /runtime/root-owned/ /
+ ---> c7869721cc7c
+Step 7/17 : COPY --from=compile --chown=10001:10001 /runtime/shared/ /
+ ---> cb043a0b61ae
+Step 8/17 : COPY images/ /agent-images/
+ ---> 6252c89de014
+Step 9/17 : COPY images/source-fingerprints.json /etc/nautionette/image-fingerprints.json
+ ---> 916fed3ba0e6
+Step 10/17 : ENV AGENT_IMAGES_DIR=/agent-images BROKER_PORT=9100 BROKER_DOCKER_SOCKET=/var/run/docker.sock
+ ---> Running in 9ade5d5bb3de
+ ---> Removed intermediate container 9ade5d5bb3de
+ ---> 904334c6f53e
+Step 11/17 : HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=5 CMD ["/broker", "healthcheck"]
+ ---> Running in fc37214cf66c
+ ---> Removed intermediate container fc37214cf66c
+ ---> dc0d6cc89ec1
+Step 12/17 : ENTRYPOINT ["/broker"]
+ ---> Running in c19e1475345e
+ ---> Removed intermediate container c19e1475345e
+ ---> c59eaf8bf6a8
+Step 13/17 : CMD ["--local-runtime"]
+ ---> Running in a99d86b2e05b
+ ---> Removed intermediate container a99d86b2e05b
+ ---> 4eb101bef21d
+Step 14/17 : FROM candidate AS smoke
+ ---> 4eb101bef21d
+Step 15/17 : USER 10001:10001
+ ---> Running in f069b92a7f53
+ ---> Removed intermediate container f069b92a7f53
+ ---> ba968caed364
+Step 16/17 : HEALTHCHECK NONE
+Note: overriding previous HEALTHCHECK: [CMD /broker healthcheck]
+ ---> Running in 8a70bfb18479
+ ---> Removed intermediate container 8a70bfb18479
+ ---> ce298ff988a0
+Step 17/17 : CMD ["fingerprints", "/agent-images", "/etc/nautionette/image-fingerprints.json"]
+ ---> Running in 0d8618ceff92
+ ---> Removed intermediate container 0d8618ceff92
+ ---> 1ed77f3d5cfd
+Successfully built 1ed77f3d5cfd
+Successfully tagged broker-scratch:smoke
+docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: "/bin/sh": stat /bin/sh: no such file or directory: unknown.
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            BuildKit is currently disabled; enable it by removing the DOCKER_BUILDKIT=0
+            environment-variable.
+
+Sending build context to Docker daemon  557.1kB
+Sending build context to Docker daemon  2.228MB
+Sending build context to Docker daemon  3.899MB
+Sending build context to Docker daemon  5.571MB
+Sending build context to Docker daemon  7.242MB
+Sending build context to Docker daemon  8.913MB
+Sending build context to Docker daemon  10.03MB
+Sending build context to Docker daemon  10.58MB
+Sending build context to Docker daemon  10.69MB
+
+
+Step 1/13 : FROM scratch AS compile
+ --->
+Step 2/13 : COPY broker /broker
+ ---> Using cache
+ ---> e4872cd3db29
+Step 3/13 : COPY runtime /runtime
+ ---> Using cache
+ ---> 9a9eefc5ffb7
+Step 4/13 : FROM scratch AS candidate
+ --->
+Step 5/13 : COPY --from=compile /broker /broker
+ ---> Using cache
+ ---> e4872cd3db29
+Step 6/13 : COPY --from=compile /runtime/root-owned/ /
+ ---> Using cache
+ ---> c7869721cc7c
+Step 7/13 : COPY --from=compile --chown=10001:10001 /runtime/shared/ /
+ ---> Using cache
+ ---> cb043a0b61ae
+Step 8/13 : COPY images/ /agent-images/
+ ---> Using cache
+ ---> 6252c89de014
+Step 9/13 : COPY images/source-fingerprints.json /etc/nautionette/image-fingerprints.json
+ ---> Using cache
+ ---> 916fed3ba0e6
+Step 10/13 : ENV AGENT_IMAGES_DIR=/agent-images BROKER_PORT=9100 BROKER_DOCKER_SOCKET=/var/run/docker.sock
+ ---> Using cache
+ ---> 904334c6f53e
+Step 11/13 : HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=5 CMD ["/broker", "healthcheck"]
+ ---> Using cache
+ ---> dc0d6cc89ec1
+Step 12/13 : ENTRYPOINT ["/broker"]
+ ---> Using cache
+ ---> c59eaf8bf6a8
+Step 13/13 : CMD ["--local-runtime"]
+ ---> Using cache
+ ---> 4eb101bef21d
+Successfully built 4eb101bef21d
+Successfully tagged broker-scratch:candidate
+scratch-sessions
+scratch-projects
+db12b74efe4a8c15815c0aebdb3e92835b89411dada33b26c3a9c357b55192ec
+Error: "broker is not ready"
+SCRATCH_IMAGE_BYTES=10648347
+scratch-broker
+scratch-sessions
+scratch-projects
+test docker_scratch_runtime_is_static_shell_free_and_fails_closed ... ok
+DENKZEUG_VM_RESULT=0
+[   52.685026] reboot: Power down

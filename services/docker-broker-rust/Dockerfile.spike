@@ -1,0 +1,38 @@
+# Build from the repository root. The default target is socket-free smoke.
+# The explicit candidate target is for isolated migration/compatibility runs.
+FROM rust:1.91.1-bookworm AS compile
+ARG TARGETARCH
+RUN apt-get update && apt-get install -y --no-install-recommends musl-tools && rm -rf /var/lib/apt/lists/*
+WORKDIR /work/services/docker-broker-rust
+COPY services/docker-broker-rust/Cargo.toml services/docker-broker-rust/Cargo.lock ./
+COPY services/docker-broker-rust/src/ ./src/
+COPY images/pi-base/artcraft/catalog.json /work/images/pi-base/artcraft/catalog.json
+COPY services/docker-broker/nautionette_docker_broker/artcraft_offline.py /work/services/docker-broker/nautionette_docker_broker/artcraft_offline.py
+RUN set -eu; \
+    case "${TARGETARCH:-$(uname -m)}" in \
+      amd64|x86_64) target=x86_64-unknown-linux-musl ;; \
+      arm64|aarch64) target=aarch64-unknown-linux-musl ;; \
+      *) echo "Unsupported architecture: $TARGETARCH" >&2; exit 1 ;; \
+    esac; \
+    rustup target add "$target"; \
+    TARGET_CC=musl-gcc RUSTFLAGS='-C linker=rust-lld' cargo build --locked --release --target "$target"; \
+    cp "target/$target/release/denkzeug-docker-broker-spike" /broker; \
+    install -d -m 1777 /runtime/root-owned/tmp; \
+    install -d -m 0755 /runtime/shared/projects; \
+    install -d -m 0700 /runtime/shared/chat-sessions
+
+FROM scratch AS candidate
+COPY --from=compile /broker /broker
+COPY --from=compile /runtime/root-owned/ /
+COPY --from=compile --chown=10001:10001 /runtime/shared/ /
+COPY images/ /agent-images/
+COPY images/source-fingerprints.json /etc/nautionette/image-fingerprints.json
+ENV AGENT_IMAGES_DIR=/agent-images BROKER_PORT=9100 BROKER_DOCKER_SOCKET=/var/run/docker.sock
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=5 CMD ["/broker", "healthcheck"]
+ENTRYPOINT ["/broker"]
+CMD ["--local-runtime"]
+
+FROM candidate AS smoke
+USER 10001:10001
+HEALTHCHECK NONE
+CMD ["fingerprints", "/agent-images", "/etc/nautionette/image-fingerprints.json"]

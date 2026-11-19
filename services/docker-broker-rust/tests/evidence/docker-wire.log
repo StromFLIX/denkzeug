@@ -1,0 +1,67 @@
+Client:
+ Version:    26.1.4
+ Context:    default
+ Debug Mode: false
+
+Server:
+ Containers: 0
+  Running: 0
+  Paused: 0
+  Stopped: 0
+ Images: 0
+ Server Version: 26.1.4
+ Storage Driver: overlay2
+  Backing Filesystem: extfs
+  Supports d_type: true
+  Using metacopy: false
+  Native Overlay Diff: true
+  userxattr: false
+ Logging Driver: json-file
+ Cgroup Driver: cgroupfs
+ Cgroup Version: 2
+ Plugins:
+  Volume: local
+  Network: bridge host ipvlan macvlan null overlay
+  Log: awslogs fluentd gcplogs gelf journald json-file local splunk syslog
+ Swarm: inactive
+ Runtimes: io.containerd.runc.v2 runc
+ Default Runtime: runc
+ Init Binary: docker-init
+ containerd version: ae71819c4f5e67bb4d5ae76a6b735f29cc25774e
+ runc version: v1.1.12-0-g51d5e94
+ init version: de40ad0
+ Security Options:
+  seccomp
+   Profile: builtin
+  cgroupns
+ Kernel Version: 6.12.118-0-virt
+ OSType: linux
+ Architecture: x86_64
+ CPUs: 1
+ Total Memory: 499.3MiB
+ Name: (none)
+ ID: b365c563-37de-4271-83a2-1b99a0998dd7
+ Docker Root Dir: /var/lib/docker
+ Debug Mode: false
+ Experimental: false
+ Insecure Registries:
+  127.0.0.0/8
+ Live Restore Enabled: false
+ Product License: Community Engine
+
+WARNING: No swap limit support
+WARNING: IPv4 forwarding is disabled
+WARNING: bridge-nf-call-iptables is disabled
+WARNING: bridge-nf-call-ip6tables is disabled
+sha256:5a07c8b26af609d3c5cdca7cd784d75d3d49bf3793dbffff801f70af4c477e3f
+sha256:4fded9851c4a48a42fdcae4a7cfbf804d8b2abbc458ea47f8e0f70dafbbb0756
+
+running 3 tests
+test docker_named_mount_inventory_and_recovery_only_touch_owned_fixtures ... ok
+test docker_project_mounts_steer_and_git_rotation_preserve_private_state ... ok
+test docker_worker_drain_and_temporal_receipt_are_scoped_and_fail_closed ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 102.12s
+
+DENKZEUG_VM_RESULT=0
+[  128.055523] reboot: Power down

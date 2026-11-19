@@ -1,0 +1,46 @@
+Using CPython 3.13.18
+Creating virtual environment at: /tmp/denkzeug-parity-py
+   Building nautionette-docker-broker @ file:///projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/services/docker-broker
+   Building nautionette-worker @ file:///projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/services/worker
+   Building nautionette-workflow-mcp @ file:///projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/services/workflow-mcp
+   Building nautionette @ file:///projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/libs/nautionette
+   Building nautionette-backend @ file:///projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/services/backend
+Downloading pillow (6.8MiB)
+Downloading tokenizers (3.2MiB)
+Downloading pydantic-core (2.2MiB)
+Downloading onnxruntime (26.5MiB)
+Downloading numpy (15.0MiB)
+Downloading ruff (10.1MiB)
+Downloading pygments (1.2MiB)
+Downloading hf-xet (4.1MiB)
+Downloading botocore (15.6MiB)
+Downloading temporalio (13.9MiB)
+Downloading uvloop (4.3MiB)
+Downloading cryptography (4.5MiB)
+ Downloaded pygments
+ Downloaded pydantic-core
+ Downloaded tokenizers
+ Downloaded hf-xet
+ Downloaded uvloop
+ Downloaded cryptography
+ Downloaded pillow
+ Downloaded ruff
+ Downloaded numpy
+ Downloaded botocore
+ Downloaded temporalio
+ Downloaded onnxruntime
+      Built nautionette @ file:///projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/libs/nautionette
+      Built nautionette-workflow-mcp @ file:///projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/services/workflow-mcp
+      Built nautionette-backend @ file:///projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/services/backend
+      Built nautionette-worker @ file:///projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/services/worker
+      Built nautionette-docker-broker @ file:///projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/services/docker-broker
+Installed 97 packages in 778ms
+/tmp/denkzeug-parity-py/lib/python3.13/site-packages/pytest_asyncio/plugin.py:306: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to "function" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session". Set it to "fixture-scope" to keep the current behavior.
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+........................................................................ [ 29%]
+...............................................ss...................s... [ 58%]
+.ss.........................s.................................s......... [ 88%]
+................s...........s                                            [100%]
+236 passed, 9 skipped in 3.67s

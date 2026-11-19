@@ -1,0 +1,10 @@
+# Build context: repository root. Test fixtures, not agent images.
+FROM busybox:1.37 AS busybox-fixture
+RUN mkdir -p /tmp && chmod 1777 /tmp
+CMD ["/bin/busybox", "true"]
+
+FROM node:24-bookworm-slim AS node-fixture
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+COPY services/docker-broker-rust/tests/docker_chat_fixture.cjs /agent-fixture.cjs
+COPY images/pi-base/project-git.mjs images/pi-base/brand.json /usr/local/lib/nautionette/
+CMD ["node", "/agent-fixture.cjs"]

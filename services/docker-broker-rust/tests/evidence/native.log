@@ -1,0 +1,209 @@
+   Compiling denkzeug-docker-broker-spike v0.1.0 (/projects/.sessions/75877a2836524b4ab436b7e594a360b5/6c9be807f7f6/services/docker-broker-rust)
+    Finished `test` profile [unoptimized] target(s) in 4.38s
+     Running unittests src/lib.rs (/tmp/denkzeug-broker-target/debug/deps/denkzeug_docker_broker_spike-5a8ca77504d1d072)
+
+running 61 tests
+test artcraft::tests::downloader_fixed_urls_bounded_digest_and_fallback_cannot_substitute_a_version_or_origin ... ok
+test artcraft::tests::real_gridcraft_archive_is_bounded_and_matches_the_packaged_digest ... ignored, downloads a pinned public GridCraft release from GitHub
+test artcraft::tests::release_504_uses_only_the_matching_github_asset_api_and_keeps_the_pinned_digest ... ok
+test artcraft::tests::staging_archive_has_only_verified_bytes_and_the_unchanged_root_owned_offline_helper ... ok
+test artcraft::tests::unavailable_assets_do_not_retry_and_bad_tag_metadata_cannot_switch_the_version ... ok
+test engine::tests::env_and_cli_context_precedence_use_pinned_metadata_and_fail_closed ... ok
+test engine::tests::negotiates_engine_api_over_loopback_tcp_instead_of_using_a_socket ... ok
+test engine::tests::verified_docker_tls_uses_the_client_identity_and_never_ignores_hostname ... ok
+test parity_tests::admission_cases::administrative_json_rejections_are_422_and_never_echo_private_input ... ok
+test parity_tests::admission_cases::control_requires_an_exact_chat_turn_and_mount_even_with_forged_stack_labels ... ok
+test parity_tests::admission_cases::package_runtime_validation_rejects_resource_escape_before_mount_or_container_creation ... ok
+test parity_tests::admission_cases::retired_execution_and_network_routes_are_absent_in_the_full_runtime ... ok
+test parity_tests::admission_cases::unknown_agent_set_is_a_single_explicit_ndjson_error_without_any_docker_request ... ok
+test parity_tests::artifact_cases::artcraft_failure_reaps_helper_unpublished_volume_and_returns_every_slot ... ok
+test parity_tests::artifact_cases::artifact_reuse_is_verified_and_ownership_mismatch_never_removes_or_runs ... ok
+test parity_tests::artifact_cases::artifacts_are_pinned_readonly_and_defaults_reverify_after_restart ... ok
+test parity_tests::artifact_cases::capacity_and_slots_and_missing_images_fail_before_resources_are_created ... ok
+test parity_tests::artifact_cases::invalid_unreferenced_artifact_is_replaced_but_held_artifact_is_preserved ... ok
+test parity_tests::artifact_cases::new_artcraft_installs_have_only_a_fixed_network_none_helper_and_private_staging ... ok
+test parity_tests::artifact_cases::package_failure_reaps_all_unpublished_resources_and_rejects_overwrite ... ok
+test parity_tests::artifact_cases::package_runtime_mounts_are_read_only_scoped_and_never_implicitly_created ... ok
+test parity_tests::artifact_cases::package_sources_filters_and_configuration_match_reference_vectors ... ok
+test parity_tests::artifact_cases::parallel_artcraft_installs_make_no_network_even_with_no_address_pool ... ok
+test parity_tests::artifact_cases::stale_helpers_and_unused_legacy_networks_are_reaped_without_artifact_deletion ... ok
+test parity_tests::credential_cases::renewal_never_targets_wrong_stopped_retired_or_foreign_turn ... ok
+test parity_tests::credential_cases::renewal_scope_is_exact_and_every_failure_is_retryable_and_redacted ... ok
+test parity_tests::credential_cases::renewals_upload_private_data_then_activate_atomically_without_argv_secrets ... ok
+test parity_tests::credential_cases::stalled_turn_renewal_does_not_block_another_chat ... ok
+test parity_tests::image_cases::a_changed_context_pulls_only_the_new_source_tag_and_staging_aliases_stay_local ... ok
+test parity_tests::image_cases::artifact_failure_blocks_readiness_and_can_be_repaired_without_rebuilding_images ... ok
+test parity_tests::image_cases::builds_once_reuses_images_and_repairs_pruned_alias_without_a_rebuild ... ok
+test parity_tests::image_cases::image_wait_reports_build_status_then_a_terminal_failure_or_deadline_instead_of_hanging ... ok
+test parity_tests::image_cases::pulled_base_is_used_by_hash_for_the_agent_fallback_build ... ok
+test parity_tests::image_cases::registry_images_are_source_addressed_and_retagged_into_the_stack_namespace ... ok
+test parity_tests::image_cases::registry_outage_falls_back_to_pinned_base_build_and_combined_failure_stays_degraded ... ok
+test parity_tests::project_cases::a_failed_stale_container_removal_never_releases_project_ownership ... ok
+test parity_tests::project_cases::bad_project_ids_paths_missing_mounts_and_symlinks_fail_before_create ... ok
+test parity_tests::project_cases::selected_project_mounts_are_exact_deduplicated_subpaths_and_claims_release ... ok
+test parity_tests::project_cases::session_wrong_volume_symlinks_quota_and_orphan_fail_closed ... ok
+test parity_tests::project_cases::stale_project_owners_are_removed_only_when_exited_on_the_same_volume ... ok
+test parity_tests::retired_cases::retired_cleanup_is_idempotent_scoped_and_never_uses_global_prune ... ok
+test parity_tests::retired_cases::retired_cleanup_without_own_stack_identity_does_not_list_or_remove ... ok
+test parity_tests::retired_cases::retired_partial_failure_is_not_marked_complete_and_retries_safely ... ok
+test parity_tests::temporal_cases::controller_receipts_gate_the_exact_commit_and_cleanup_policy_without_leaking_state ... ok
+test parity_tests::temporal_cases::missing_or_duplicate_controller_fails_only_the_required_receipt_fence ... ok
+test parity_tests::worker_cases::failed_create_and_daemon_loss_retry_and_recover ... ok
+test parity_tests::worker_cases::health_requires_all_resources_and_pruning_one_does_not_hide_healthy_workers ... ok
+test parity_tests::worker_cases::managed_lifespan_joins_the_monitor_without_waiting_for_its_poll_interval ... ok
+test parity_tests::worker_cases::missing_workers_are_recreated_once_with_shared_workflows ... ok
+test parity_tests::worker_cases::monitor_does_not_skip_worker_repair_after_image_inspection_failure ... ok
+test parity_tests::worker_cases::monitor_starts_immediately_repairs_after_pruning_and_stops_when_its_router_is_dropped ... ok
+test parity_tests::worker_cases::readiness_requires_an_explicit_health_probe ... ok
+test parity_tests::worker_cases::restart_and_reconcile_are_serialized_and_stack_scoped ... ok
+test parity_tests::worker_cases::restart_fails_closed_without_stack_identity_and_empty_is_success ... ok
+test parity_tests::worker_cases::stopped_unhealthy_paused_and_dead_workers_are_repaired_in_place ... ok
+test parity_tests::worker_cases::unstartable_workers_do_not_create_unbounded_replacements ... ok
+test registry::tests::helper_protocol_uses_stdin_and_distinguishes_a_missing_key_from_failure ... ok
+test registry::tests::pull_auth_contains_only_the_selected_registry_and_never_uses_anonymous_on_helper_failure ... ok
+test runtime::ownership_tests::cancellation_waits_for_a_blocking_session_preparation_before_releasing_ownership ... ok
+test runtime::ownership_tests::configured_memory_sizes_match_docker_sdk_units_and_preserve_explicit_overrides ... ok
+test workers::tests::accepts_one_small_completed_receipt_and_nothing_else ... ok
+
+test result: ok. 60 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 7.73s
+
+     Running unittests src/main.rs (/tmp/denkzeug-broker-target/debug/deps/denkzeug_docker_broker_spike-d84549bdaf172fb8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/contract.rs (/tmp/denkzeug-broker-target/debug/deps/contract-3deba22e8b18a8e2)
+
+running 20 tests
+test artcraft_reuses_only_verified_owned_volumes_using_a_network_none_helper ... ok
+test artifact_installer_inputs_fail_closed_before_docker ... ok
+test chat_releases_its_session_claim_after_an_explicit_stop_even_with_no_logs ... ok
+test docker_api_negotiation_retries_failed_discovery_and_uses_reported_version ... ok
+test docker_deadline_covers_a_stalled_response_body ... ok
+test experimental_cleanup_does_not_send_mutations_for_invalid_docker_ids ... ok
+test experimental_cleanup_removes_only_a_daemon_id_with_the_expected_turn_and_mount ... ok
+test forced_image_rebuild_is_single_flight_and_reports_a_streamed_failure ... ok
+test inventory_fails_closed_when_inspection_unavailable ... ok
+test inventory_is_scoped_by_named_mount_not_copied_labels_and_needs_no_inspects ... ok
+test malformed_docker_inventory_is_not_an_empty_success ... ok
+test missing_internal_token_is_rejected_at_configuration_time ... ok
+test older_docker_keeps_ordinary_inventory_but_refuses_a_chat_subpath ... ok
+test only_health_is_exempt_and_auth_precedes_dispatch ... ok
+test otlp_exports_three_redacted_signals_and_parents_the_agent_to_the_broker ... ok
+test package_install_publishes_only_an_immutable_artifact_with_a_fixed_helper ... ok
+test reachable_docker_does_not_make_an_incomplete_broker_ready ... ok
+test source_fingerprints_match_the_checked_in_python_lock ... ok
+test worker_restart_filters_for_its_own_compose_project_and_preserves_grace ... ok
+test workflow_launch_uses_the_docker_wire_and_never_uses_caller_selected_container_options ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.55s
+
+     Running tests/credentials.rs (/tmp/denkzeug-broker-target/debug/deps/credentials-a9a9cdd23ef206b9)
+
+running 2 tests
+test initial_and_renewed_delivery_use_fixed_paths_owner_and_modes ... ok
+test invalid_batches_fail_without_echoing_input_and_scope_cannot_change ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/docker_inventory.rs (/tmp/denkzeug-broker-target/debug/deps/docker_inventory-7a1004eb8b9f1a17)
+
+running 6 tests
+test docker_named_mount_inventory_and_recovery_only_touch_owned_fixtures ... ignored, requires Docker 26+, Docker CLI, and an existing local fixture image
+test docker_project_mounts_steer_and_git_rotation_preserve_private_state ... ignored, requires Docker 26+, local volume storage access, and the offline Node fixture image
+test docker_real_artcraft_probe_reuses_release_and_preserves_a_referenced_failed_volume ... ignored, requires Docker 26+, local volume storage access, and a prepared pinned GridCraft artifact
+test docker_real_pi_native_session_replay ... ignored, requires Docker 26+, local volume storage access, and the offline pinned Pi 1.5.2 base
+test docker_real_pi_original_tool_steering_and_stop ... ignored, requires Docker 26+, local volume storage access, pinned Pi 1.5.2 and the original steering fixture
+test docker_worker_drain_and_temporal_receipt_are_scoped_and_fail_closed ... ignored, requires Docker 26+, local volume storage access, and an offline BusyBox image with /bin/sh
+
+test result: ok. 0 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/docker_package.rs (/tmp/denkzeug-broker-target/debug/deps/docker_package-fe1c3fa10bbe7910)
+
+running 1 test
+test public_npm_install_is_immutable_reaped_and_mounted_readonly ... ignored, requires a disposable Docker daemon with internet egress and a production Node/npm installer image
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/docker_registry.rs (/tmp/denkzeug-broker-target/debug/deps/docker_registry-038deb0a2988bd50)
+
+running 1 test
+test docker_pull_uses_configured_auth_against_an_actual_tls_registry_and_restores_alias ... ignored, requires a disposable local Docker daemon and access to /etc/docker/certs.d
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/image_context.rs (/tmp/denkzeug-broker-target/debug/deps/image_context-8c364bbcd28a8d39)
+
+running 5 tests
+test an_agent_set_missing_from_the_lock_uses_its_source_fingerprint ... ok
+test build_and_import_caches_do_not_change_source_identities ... ok
+test finds_only_declared_agent_sets_and_base_change_retags_them ... ok
+test missing_packaged_lock_uses_source_but_malformed_present_lock_fails_closed ... ok
+test packaged_fingerprints_survive_deployment_dockerfile_rewriting ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/job.rs (/tmp/denkzeug-broker-target/debug/deps/job-85d39d07730ebc50)
+
+running 3 tests
+test large_jobs_current_files_and_history_files_use_owner_only_tar_entries ... ok
+test output_and_package_files_are_private_and_credentials_do_not_mix_with_job_data ... ok
+test role_policies_keep_chats_and_members_off_the_control_network ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/runner.rs (/tmp/denkzeug-broker-target/debug/deps/runner-70b11de038f5f778)
+
+running 6 tests
+test explicit_stop_and_stream_disconnect_wake_exempt_silent_turns ... ok
+test failed_archive_never_starts_and_still_removes_and_releases ... ok
+test image_waiters_are_visible_and_stop_cancels_before_container_creation ... ok
+test launch_stages_before_start_and_closes_after_removal_and_claim_release ... ok
+test silent_timeout_wins_over_failed_kill_and_still_removes_and_releases ... ok
+test timeout_exemption_keeps_oom_exit_classification_and_resource_cleanup ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/session.rs (/tmp/denkzeug-broker-target/debug/deps/session-44f719e8e698bf11)
+
+running 3 tests
+test claims_use_the_same_stable_flock_inode_as_the_python_broker ... ok
+test durable_session_tree_rejects_symlinks_and_checks_nested_bytes_without_removing_state ... ok
+test rejects_ambiguous_names_and_symlinks_in_session_mounts_and_locks ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/shutdown.rs (/tmp/denkzeug-broker-target/debug/deps/shutdown-c8d0e329b52d38ff)
+
+running 1 test
+test sigterm_drains_the_http_server_and_exits_successfully ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/stream.rs (/tmp/denkzeug-broker-target/debug/deps/stream-79da6b3f6eaf4cec)
+
+running 4 tests
+test cancellation_wins_over_sigkill_and_timeout_wins_over_engine_failures ... ok
+test docker_chunks_and_ndjson_records_can_split_at_any_byte ... ok
+test oversized_and_truncated_streams_do_not_get_silently_reported_as_success ... ok
+test watchdog_exemption_applies_only_to_explicit_interactive_turns ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/turns.rs (/tmp/denkzeug-broker-target/debug/deps/turns-1aa13ae03f367d26)
+
+running 5 tests
+test cleanup_during_create_waits_for_release_and_prevents_late_start ... ok
+test cleanup_timeout_does_not_release_someone_elses_claim ... ok
+test delayed_and_duplicate_run_requests_are_fenced ... ok
+test exact_orphan_cleanup_is_idempotent_and_requires_docker_confirmation ... ok
+test slow_start_only_serializes_control_for_that_turn ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests denkzeug_docker_broker_spike
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

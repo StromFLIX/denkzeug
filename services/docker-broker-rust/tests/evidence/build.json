@@ -1,0 +1,24 @@
+{
+  "reference_commit": "2ce96e92edfee57ee0c4b3ba84bd07a6bea86fbf",
+  "rustc": "rustc 1.91.1 (ed61e7d7e 2025-11-07)",
+  "platform": "Linux x86_64",
+  "docker_version": "26.1.4",
+  "python_reference": {
+    "passed": 236,
+    "docker_cases_replaced_by_rust": 9
+  },
+  "node_pi_reference": {
+    "pi_version": "1.5.2",
+    "passed": 78
+  },
+  "rust_native_passed": 109,
+  "rust_live_passed": 9,
+  "scratch": {
+    "passed": true,
+    "unpacked_image_bytes": 10648347,
+    "static_elf_bytes": 10462984,
+    "static_elf_sha256": "5afddf875e7ce99b07c141167000fae4db0cd56cc7eb496d93f7868975a42e43"
+  },
+  "pushed": false,
+  "deployed": false
+}

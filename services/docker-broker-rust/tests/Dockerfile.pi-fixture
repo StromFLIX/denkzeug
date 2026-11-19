@@ -1,0 +1,6 @@
+# Build context: repository root. Start from the locally built, pinned Pi base.
+ARG PI_BASE_IMAGE=nautionette/pi-base:dev
+FROM ${PI_BASE_IMAGE}
+COPY tests/agent/fixtures/chat-model.mjs tests/agent/fixtures/chat-provider.ts /fixture/
+COPY services/docker-broker-rust/tests/docker_pi_steer.cjs /fixture/steer.cjs
+ENTRYPOINT ["node", "/fixture/steer.cjs"]

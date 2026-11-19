@@ -1,0 +1,16 @@
+# Explicit opt-in for a disposable same-host comparison, not for deployment.
+# Merge from the repo root after docker-compose.yaml, using isolated stack names
+# and volumes. Do not run both broker implementations against the same stack.
+services:
+  docker-broker:
+    build:
+      context: .
+      dockerfile: services/docker-broker-rust/Dockerfile.spike
+      target: candidate
+    image: ${STACK_NAMESPACE:-nautionette}/docker-broker-rust:candidate
+    environment:
+      BROKER_BIND_ADDR: 0.0.0.0
+      BROKER_PORT: "9100"
+      BROKER_DOCKER_SOCKET: /var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "/broker", "healthcheck"]
