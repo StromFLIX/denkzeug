@@ -3,6 +3,9 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+// IntersectionObserver exposes float32 ratios, so a fully visible node can be
+// 0.9999999403953552. This tolerates rounding, not a clipped CSS pixel.
+const fullyVisibleRatio = 1 - 1e-6
 const root = fileURLToPath(new URL('../../../', import.meta.url))
 const source = readFileSync(`${root}/tests/fixtures/workflow_graph_source.txt`, 'utf8')
 const proposedSource = source.replace('"save_artifact"', '"notify_warehouse"').replace('timedelta(minutes=10)', 'timedelta(minutes=12)')
@@ -165,12 +168,12 @@ for (const width of [1440, 320]) {
     await expect(inspector).toContainText('Exception handler')
     await expect(inspector).toContainText('except ValueError as error')
     await expect(inspector).toContainText('recover_page')
-    await expect(page.locator('.flow-node--selected')).toBeInViewport({ ratio: 1 })
+    await expect(page.locator('.flow-node--selected')).toBeInViewport({ ratio: fullyVisibleRatio })
     await page.getByRole('button', { name: 'Close step details' }).click()
     await page.getByRole('textbox', { name: 'Search steps' }).fill('Finally (always)')
     await page.getByRole('button', { name: 'Next matching step' }).click()
     await expect(inspector).toContainText('cleanup_page')
-    await expect(page.locator('.flow-node--selected')).toBeInViewport({ ratio: 1 })
+    await expect(page.locator('.flow-node--selected')).toBeInViewport({ ratio: fullyVisibleRatio })
     await page.mouse.move(5, 5)
     await page.screenshot({ path: `/tmp/nautionette-try-finally-${width}.png` })
     await page.getByRole('button', { name: 'Close step details' }).click()
@@ -227,7 +230,7 @@ for (const width of [390, 320]) {
     await mockApi(page)
     await page.goto('/runs/digest-run')
     await expect(page.locator('.flow-node')).toHaveCount(3)
-    await expect(page.locator('.flow-node').filter({ hasText: 'agent_call' })).toBeInViewport({ ratio: 1 })
+    await expect(page.locator('.flow-node').filter({ hasText: 'agent_call' })).toBeInViewport({ ratio: fullyVisibleRatio })
     await page.screenshot({ path: `/tmp/nautionette-flow-mobile-${width}.png` })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     const toolbar = await page.locator('.flow__zoom').boundingBox()
@@ -295,7 +298,7 @@ for (const width of [1440, 320]) {
     await expect(inspector).toContainText('Output schema')
     await expect(inspector).toContainText('Expression')
     const selected = page.locator('.flow-node--selected')
-    await expect(selected).toBeInViewport({ ratio: 1 })
+    await expect(selected).toBeInViewport({ ratio: fullyVisibleRatio })
     if (width === 320) {
       await expect.poll(async () => {
         const nodeBox = await selected.boundingBox()
