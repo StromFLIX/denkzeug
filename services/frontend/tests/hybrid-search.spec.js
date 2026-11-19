@@ -32,9 +32,9 @@ test('full-history results jump to an older message, focus it and retain drafts'
   // A repeated snapshot must not jump to the bottom after following the link.
   await page.waitForTimeout(1200)
   await expect(page.locator('#message-question')).toBeInViewport()
-  // Reopening the exact same result must still leave Outputs and focus the match,
+  // Reopening the exact same result must still leave Workspace and focus the match,
   // rather than having the dialog restore focus to the previous tab/composer.
-  await page.getByRole('tab', { name: /^Outputs/ }).click()
+  await page.getByRole('tab', { name: /^Workspace/ }).click()
   await open(page)
   await search(page).fill('archival')
   await expect(palette(page)).toContainText('Archival passage')
