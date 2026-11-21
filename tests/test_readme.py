@@ -65,8 +65,12 @@ def test_readme_is_a_short_branded_front_page_with_real_images_and_status_badges
     assert [image["src"] for image in screenshots] == [
         "services/website/assets/product-tour/chat.png",
         "services/website/assets/product/phone.png",
+        "services/website/assets/product-tour/show.png",
     ]
-    assert all(image.get("alt", "").startswith(f"Actual {brand['name']}") for image in screenshots)
+    assert all(brand["name"] in image.get("alt", "") for image in screenshots)
+    assert "MCP App" in screenshots[-1]["alt"]
+    assert "### Show" in text
+    assert "(docs/mcp-apps.md)" in text
     assert "workspace-demo" not in text
     assert "data:image" not in text
     if not (ROOT / "LICENSE").exists():
