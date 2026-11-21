@@ -13,14 +13,25 @@ export const productTour = Object.freeze({
       "alt": "Actual Denkzeug Vue app — Chats, with fictional sample data",
       "hotspots": [
         {
-          "id": "tab-outputs",
-          "label": "Show Outputs screenshot",
+          "id": "tab-workspace",
+          "label": "Show Workspace screenshot",
           "target": "outputs",
           "rect": {
-            "x": 0.44375,
-            "y": 0.09523809523809523,
-            "width": 0.0984375,
+            "x": 0.3203125,
+            "y": 0.16785714285714284,
+            "width": 0.1203125,
             "height": 0.05238095238095238
+          }
+        },
+        {
+          "id": "briefing-chat",
+          "label": "Show MCP Apps screenshot",
+          "target": "show",
+          "rect": {
+            "x": 0.00625,
+            "y": 0.3253720238095238,
+            "width": 0.23671875,
+            "height": 0.04977678571428571
           }
         },
         {
@@ -28,10 +39,10 @@ export const productTour = Object.freeze({
           "label": "Show Workflows screenshot",
           "target": "workflows",
           "rect": {
-            "x": 0.00625,
-            "y": 0.20476190476190476,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.1296875,
+            "y": 0.009523809523809525,
+            "width": 0.10390625,
+            "height": 0.05238095238095238
           }
         },
         {
@@ -39,31 +50,31 @@ export const productTour = Object.freeze({
           "label": "Show Settings screenshot",
           "target": "settings",
           "rect": {
-            "x": 0.00625,
-            "y": 0.8071428571428572,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.23671875,
+            "y": 0.009523809523809525,
+            "width": 0.08984375,
+            "height": 0.05238095238095238
           }
         }
       ],
       "source": {
         "route": "/chats/alpha",
-        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
+        "commit": "e3b99dd9eb87735e034e9c8d647726b1cf53df32"
       }
     },
     {
       "id": "outputs",
-      "title": "Outputs",
+      "title": "Workspace",
       "src": "/assets/product-tour/outputs.webp",
-      "alt": "Actual Denkzeug Vue app — Outputs, with fictional sample data",
+      "alt": "Actual Denkzeug Vue app — Workspace, with fictional sample data",
       "hotspots": [
         {
           "id": "tab-chat",
           "label": "Show Chats screenshot",
           "target": "chat",
           "rect": {
-            "x": 0.3859375,
-            "y": 0.09523809523809523,
+            "x": 0.2625,
+            "y": 0.16785714285714284,
             "width": 0.0546875,
             "height": 0.05238095238095238
           }
@@ -73,10 +84,10 @@ export const productTour = Object.freeze({
           "label": "Show Chats screenshot",
           "target": "chat",
           "rect": {
-            "x": 0.00625,
-            "y": 0.11904761904761904,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.0515625,
+            "y": 0.009523809523809525,
+            "width": 0.075,
+            "height": 0.05238095238095238
           }
         },
         {
@@ -84,10 +95,10 @@ export const productTour = Object.freeze({
           "label": "Show Workflows screenshot",
           "target": "workflows",
           "rect": {
-            "x": 0.00625,
-            "y": 0.20476190476190476,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.1296875,
+            "y": 0.009523809523809525,
+            "width": 0.10390625,
+            "height": 0.05238095238095238
           }
         },
         {
@@ -95,16 +106,72 @@ export const productTour = Object.freeze({
           "label": "Show Settings screenshot",
           "target": "settings",
           "rect": {
-            "x": 0.00625,
-            "y": 0.8071428571428572,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.23671875,
+            "y": 0.009523809523809525,
+            "width": 0.08984375,
+            "height": 0.05238095238095238
           }
         }
       ],
       "source": {
         "route": "/chats/alpha",
-        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
+        "commit": "e3b99dd9eb87735e034e9c8d647726b1cf53df32"
+      }
+    },
+    {
+      "id": "show",
+      "title": "MCP Apps",
+      "src": "/assets/product-tour/show.webp",
+      "alt": "Actual Denkzeug Vue app — MCP Apps, with fictional sample data",
+      "hotspots": [
+        {
+          "id": "original-chat",
+          "label": "Show product brief chat screenshot",
+          "target": "chat",
+          "rect": {
+            "x": 0.00625,
+            "y": 0.2755952380952381,
+            "width": 0.23671875,
+            "height": 0.04977678571428571
+          }
+        },
+        {
+          "id": "nav-chat",
+          "label": "Show Chats screenshot",
+          "target": "chat",
+          "rect": {
+            "x": 0.0515625,
+            "y": 0.009523809523809525,
+            "width": 0.075,
+            "height": 0.05238095238095238
+          }
+        },
+        {
+          "id": "nav-workflows",
+          "label": "Show Workflows screenshot",
+          "target": "workflows",
+          "rect": {
+            "x": 0.1296875,
+            "y": 0.009523809523809525,
+            "width": 0.10390625,
+            "height": 0.05238095238095238
+          }
+        },
+        {
+          "id": "nav-settings",
+          "label": "Show Settings screenshot",
+          "target": "settings",
+          "rect": {
+            "x": 0.23671875,
+            "y": 0.009523809523809525,
+            "width": 0.08984375,
+            "height": 0.05238095238095238
+          }
+        }
+      ],
+      "source": {
+        "route": "/chats/briefing",
+        "commit": "e3b99dd9eb87735e034e9c8d647726b1cf53df32"
       }
     },
     {
@@ -118,10 +185,10 @@ export const productTour = Object.freeze({
           "label": "Show Chats screenshot",
           "target": "chat",
           "rect": {
-            "x": 0.00625,
-            "y": 0.11904761904761904,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.0515625,
+            "y": 0.009523809523809525,
+            "width": 0.075,
+            "height": 0.05238095238095238
           }
         },
         {
@@ -129,16 +196,16 @@ export const productTour = Object.freeze({
           "label": "Show Settings screenshot",
           "target": "settings",
           "rect": {
-            "x": 0.00625,
-            "y": 0.8071428571428572,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.23671875,
+            "y": 0.009523809523809525,
+            "width": 0.08984375,
+            "height": 0.05238095238095238
           }
         }
       ],
       "source": {
         "route": "/workflows/digest",
-        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
+        "commit": "e3b99dd9eb87735e034e9c8d647726b1cf53df32"
       }
     },
     {
@@ -152,8 +219,8 @@ export const productTour = Object.freeze({
           "label": "Show Statistics screenshot",
           "target": "statistics",
           "rect": {
-            "x": 0.44765625,
-            "y": 0.1625,
+            "x": 0.37734375,
+            "y": 0.23511904761904762,
             "width": 0.08046875,
             "height": 0.05282738095238095
           }
@@ -163,10 +230,10 @@ export const productTour = Object.freeze({
           "label": "Show Chats screenshot",
           "target": "chat",
           "rect": {
-            "x": 0.00625,
-            "y": 0.11904761904761904,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.0515625,
+            "y": 0.009523809523809525,
+            "width": 0.075,
+            "height": 0.05238095238095238
           }
         },
         {
@@ -174,10 +241,10 @@ export const productTour = Object.freeze({
           "label": "Show Workflows screenshot",
           "target": "workflows",
           "rect": {
-            "x": 0.00625,
-            "y": 0.20476190476190476,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.1296875,
+            "y": 0.009523809523809525,
+            "width": 0.10390625,
+            "height": 0.05238095238095238
           }
         },
         {
@@ -185,16 +252,16 @@ export const productTour = Object.freeze({
           "label": "Show Settings screenshot",
           "target": "settings",
           "rect": {
-            "x": 0.00625,
-            "y": 0.8071428571428572,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.23671875,
+            "y": 0.009523809523809525,
+            "width": 0.08984375,
+            "height": 0.05238095238095238
           }
         }
       ],
       "source": {
         "route": "/workflows/digest/runs/digest-record",
-        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
+        "commit": "e3b99dd9eb87735e034e9c8d647726b1cf53df32"
       }
     },
     {
@@ -208,8 +275,8 @@ export const productTour = Object.freeze({
           "label": "Show Runs screenshot",
           "target": "runs",
           "rect": {
-            "x": 0.38203125,
-            "y": 0.1625,
+            "x": 0.31171875,
+            "y": 0.23511904761904762,
             "width": 0.0640625,
             "height": 0.05282738095238095
           }
@@ -219,10 +286,10 @@ export const productTour = Object.freeze({
           "label": "Show Chats screenshot",
           "target": "chat",
           "rect": {
-            "x": 0.00625,
-            "y": 0.11904761904761904,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.0515625,
+            "y": 0.009523809523809525,
+            "width": 0.075,
+            "height": 0.05238095238095238
           }
         },
         {
@@ -230,10 +297,10 @@ export const productTour = Object.freeze({
           "label": "Show Workflows screenshot",
           "target": "workflows",
           "rect": {
-            "x": 0.00625,
-            "y": 0.20476190476190476,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.1296875,
+            "y": 0.009523809523809525,
+            "width": 0.10390625,
+            "height": 0.05238095238095238
           }
         },
         {
@@ -241,16 +308,16 @@ export const productTour = Object.freeze({
           "label": "Show Settings screenshot",
           "target": "settings",
           "rect": {
-            "x": 0.00625,
-            "y": 0.8071428571428572,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.23671875,
+            "y": 0.009523809523809525,
+            "width": 0.08984375,
+            "height": 0.05238095238095238
           }
         }
       ],
       "source": {
         "route": "/workflows/digest/runs/digest-record",
-        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
+        "commit": "e3b99dd9eb87735e034e9c8d647726b1cf53df32"
       }
     },
     {
@@ -264,8 +331,8 @@ export const productTour = Object.freeze({
           "label": "Show Statistics screenshot",
           "target": "statistics",
           "rect": {
-            "x": 0.0859375,
-            "y": 0.021726190476190475,
+            "x": 0.015625,
+            "y": 0.0943452380952381,
             "width": 0.03125,
             "height": 0.050595238095238096
           }
@@ -275,10 +342,10 @@ export const productTour = Object.freeze({
           "label": "Show Chats screenshot",
           "target": "chat",
           "rect": {
-            "x": 0.00625,
-            "y": 0.11904761904761904,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.0515625,
+            "y": 0.009523809523809525,
+            "width": 0.075,
+            "height": 0.05238095238095238
           }
         },
         {
@@ -286,16 +353,16 @@ export const productTour = Object.freeze({
           "label": "Show Workflows screenshot",
           "target": "workflows",
           "rect": {
-            "x": 0.00625,
-            "y": 0.20476190476190476,
-            "width": 0.05703125,
-            "height": 0.08333333333333333
+            "x": 0.1296875,
+            "y": 0.009523809523809525,
+            "width": 0.10390625,
+            "height": 0.05238095238095238
           }
         }
       ],
       "source": {
         "route": "/settings/general",
-        "commit": "8ea92d5c6723de102140dec769c8904427e4f422"
+        "commit": "e3b99dd9eb87735e034e9c8d647726b1cf53df32"
       }
     }
   ]

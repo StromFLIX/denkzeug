@@ -27,8 +27,8 @@ into a durable workflow. Your agents run on your server; you connect from your
 computer or phone.
 
 <p align="center">
-  <a href="services/website/assets/product-tour/chat.png"><img src="services/website/assets/product-tour/chat.png" width="73%" alt="Actual Denkzeug desktop app: agents and chats beside a conversation and its published output." /></a>
-  <a href="services/website/assets/product/phone.png"><img src="services/website/assets/product/phone.png" width="22%" alt="Actual Denkzeug phone app: the same conversation’s Outputs view with editable files and a PDF." /></a>
+  <a href="services/website/assets/product-tour/chat.png"><img src="services/website/assets/product-tour/chat.png" width="73%" alt="Denkzeug at desktop size: agents and chats beside a conversation and its published output." /></a>
+  <a href="services/website/assets/product/phone.png"><img src="services/website/assets/product/phone.png" width="22%" alt="Actual Denkzeug web app at phone size: the chat’s Workspace with editable files and a PDF." /></a>
 </p>
 <p align="center"><sub>Actual app screenshots with demo data. Click to enlarge, or <a href="https://denkzeug.ai/#workspace">explore the screenshot tour</a>.</sub></p>
 
@@ -40,13 +40,13 @@ computer or phone.
 | **Remote** | Work happens on your server. Switch devices or close the client without stopping an accepted agent turn. |
 | **Extensible** | Bring your models, MCP tools, agent instructions, skills and GitHub projects. Workflows are readable Python, not a proprietary diagram format. |
 
-## Create. Process.
+## Create. Process. Show.
 
 ### Create
 
 Go from a conversation to software, a document, an editable presentation or a CAD
 model. Agents use [Pi](https://pi.dev/) and native [ArtCraft applications](https://getartcraft.com/apps).
-Published files, previews and editable sources stay with the chat in **Outputs**.
+Published files, previews and editable sources stay with the chat in its **Workspace** tab.
 
 [Creative apps](docs/creative-apps.md) · [Durable outputs](docs/chat-outputs.md)
 
@@ -59,6 +59,17 @@ trigger, then inspect its runs, results and statistics. [Temporal](https://tempo
 handles durable execution; workflow code remains plain Python you can read and edit.
 
 [Workflow authoring and execution](docs/reference.md#workflows-are-python-files)
+
+### Show
+
+Give results an interface with **MCP Apps**. Filter a briefing, explore a report
+or copy a result without another agent turn. Use apps from connected MCP tools,
+or publish a private app in **Settings → Apps** to render workflow results in
+Denkzeug. Self-hosted instances need a separate sandbox origin to display apps.
+
+<a href="services/website/assets/product-tour/show.png"><img src="services/website/assets/product-tour/show.png" width="73%" alt="Denkzeug chat showing a weekly briefing MCP App filtered to two decisions, using demo data." /></a>
+
+[MCP Apps guide](docs/mcp-apps.md)
 
 ## Run it
 

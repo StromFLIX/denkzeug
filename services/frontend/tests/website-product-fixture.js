@@ -4,7 +4,27 @@ import { mockAgents } from './agent-fixture.js'
 // files are involved: metadata illustrates the real app's published-output UI.
 export const captureTime = new Date('2026-06-15T10:30:00Z')
 export const chatPath = '/chats/alpha'
-export async function mockWebsiteProduct (context) {
+export const briefingTitle = 'Weekly briefing'
+const briefing = { id: 'weekly-briefing', title: briefingTitle, app_id: 'weekly-briefing', revision: 1 }
+
+// Styles inside the demo MCP App belong to its authored HTML, not to the host UI.
+export function briefingHtml (script) {
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><title>${briefingTitle}</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;padding:20px;font:15px/1.5 system-ui,sans-serif;color:#202744;background:#f2f4fc}
+  header{display:flex;justify-content:space-between;align-items:start;gap:8px;flex-wrap:wrap}
+  h2{margin:0;font-size:22px;letter-spacing:-.025em}p{margin:2px 0 12px;color:#495578}
+  select{font:inherit;color:inherit;background:#fff;border:1px solid #aeb7d5;border-radius:6px;padding:6px}
+  ul{list-style:none;padding:0;margin:0;border-top:1px solid #c8d0e8}
+  li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #c8d0e8}
+  li span{font-size:12px;color:#334887;background:#e1e7fb;border-radius:4px;padding:2px 7px}
+</style>
+<body><header><div><h2>Weekly briefing</h2><p>What changed and what needs a decision.</p></div>
+<label>Filter <select><option value="">All updates</option><option>Decision</option><option>Shipped</option></select></label></header>
+<ul aria-label="Briefing updates"></ul><script>${script.replace(/<\/script/gi, '<\\/script')}</script></body></html>`
+}
+
+export async function mockWebsiteProduct (context, app) {
   const state = await mockAgents(context)
   const now = captureTime.getTime() / 1000
   const research = state.addAgent('Research')
@@ -41,6 +61,16 @@ export async function mockWebsiteProduct (context) {
     const id = `sample-${index}`
     state.chats[id] = { chat: { ...state.data.chat, id, title, agent_id: index % 2 ? writing.id : research.id, agent_name: index % 2 ? 'Writing' : 'Research', created_at: now - 3600 * (index + 1), updated_at: now - 3600 * (index + 1), last_read_message_id: null }, messages: [], active_turn: null }
   }
+  if (app) {
+    state.chats.briefing = {
+      chat: { ...state.data.chat, id: 'briefing', title: briefingTitle, updated_at: now - 1800, last_read_message_id: 'briefing-result' },
+      active_turn: null,
+      messages: [
+        { id: 'briefing-request', role: 'user', created_at: now - 1860, content: 'What shipped this week, and what still needs a decision?', meta: {} },
+        { id: 'briefing-result', role: 'assistant', created_at: now - 1800, content: 'The weekly briefing is ready. Filter for decisions to see what needs your input.', meta: { apps: [briefing], origin: { kind: 'workflow', workflow: 'digest', relation: 'result' } } }
+      ]
+    }
+  }
   const run = { workflow_id: 'digest-record', workflow: 'digest', status: 'completed', input: { topic: 'Product updates' }, result: { summary: 'Weekly product notes prepared', items: 6 }, created_at: now - 900, trigger: 'manual' }
   Object.assign(state.workflow, { description: 'Collect product updates and prepare a focused morning summary.', runs: [run] })
   const statistics = {
@@ -59,6 +89,14 @@ export async function mockWebsiteProduct (context) {
     requests.push({ path: pathname, method })
     if (method !== 'GET' && method !== 'HEAD' && !pathname.endsWith('/read-state')) throw new Error(`Unexpected capture mutation: ${method} ${pathname}`)
     if (pathname.endsWith('/draft')) return route.fulfill({ json: { text: '', attachments: [], revision: 0 } })
+    if (app && pathname === '/api/mcp-apps/runtime') return route.fulfill({ json: { sandbox_url: app.origin } })
+    if (app && pathname === '/api/chats/briefing/apps/weekly-briefing') return route.fulfill({ json: {
+      html: app.html, title: briefingTitle, input: {}, result: { content: [], structuredContent: { items: [
+        { title: 'Pick the next onboarding experiment', group: 'Decision' },
+        { title: 'Publish the revised onboarding guide', group: 'Shipped' },
+        { title: 'Choose a date for the feedback session', group: 'Decision' }
+      ] } }
+    } })
     if (pathname === '/api/drafts') return route.fulfill({ json: { drafts: [] } })
     if (pathname === '/api/workflows') return route.fulfill({ json: { workflows: [state.workflow] } })
     if (pathname === '/api/runs') return route.fulfill({ json: { runs: [run] } })
@@ -67,6 +105,7 @@ export async function mockWebsiteProduct (context) {
     return route.fallback()
   })
   await context.addInitScript(() => {
+    if (window !== window.top) return
     localStorage.setItem('nautionette.token', 'sample-capture-token-not-a-credential')
     localStorage.setItem('nautionette.preferences.v1', JSON.stringify({ theme: 'denkzeug', skin: '', interfaceSize: 125 }))
   })

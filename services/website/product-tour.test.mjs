@@ -8,8 +8,11 @@ const clone = () => structuredClone(productTour)
 
 test('the tour uses captured app screens and measured, bounded click targets', () => {
   assert.equal(validateProductTour(productTour), productTour)
-  for (const id of ['chat', 'workflows', 'runs', 'statistics', 'settings']) assert.ok(productTour.scenes.some(scene => scene.id === id), id)
+  for (const id of ['chat', 'outputs', 'show', 'workflows', 'runs', 'statistics', 'settings']) assert.ok(productTour.scenes.some(scene => scene.id === id), id)
   assert.equal(productTour.initial, 'chat')
+  const chat = productTour.scenes.find(scene => scene.id === 'chat')
+  assert.ok(chat.hotspots.some(hotspot => hotspot.target === 'show'))
+  assert.equal(productTour.scenes.find(scene => scene.id === 'show').title, 'MCP Apps')
   for (const scene of productTour.scenes) {
     assert.match(scene.source.commit, /^[a-f0-9]{40}$/)
     assert.ok(scene.source.route.startsWith('/'))

@@ -1,5 +1,5 @@
 {
-  "commit": "8ea92d5c6723de102140dec769c8904427e4f422",
+  "commit": "e3b99dd9eb87735e034e9c8d647726b1cf53df32",
   "clock": "2026-06-15T10:30:00.000Z",
   "errors": [],
   "forbidden": [],
@@ -11,7 +11,7 @@
         "height": 840
       },
       "deviceScaleFactor": 1.5,
-      "pngBytes": 162152,
+      "pngBytes": 172723,
       "requests": [
         {
           "path": "/api/auth/me",
@@ -78,12 +78,12 @@
           "method": "GET"
         },
         {
-          "path": "/api/chats/alpha/read-state",
-          "method": "PATCH"
-        },
-        {
           "path": "/api/chats/alpha/draft",
           "method": "GET"
+        },
+        {
+          "path": "/api/chats/alpha/read-state",
+          "method": "PATCH"
         },
         {
           "path": "/api/chats",
@@ -111,6 +111,10 @@
         },
         {
           "path": "/api/chats/sample-5",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/briefing",
           "method": "GET"
         }
       ]
@@ -122,7 +126,7 @@
         "height": 840
       },
       "deviceScaleFactor": 1,
-      "pngBytes": 100323,
+      "pngBytes": 106203,
       "requests": [
         {
           "path": "/api/auth/me",
@@ -222,6 +226,10 @@
         },
         {
           "path": "/api/chats/sample-5",
+          "method": "GET"
+        },
+        {
+          "path": "/api/chats/briefing",
           "method": "GET"
         }
       ]
@@ -233,7 +241,7 @@
         "height": 844
       },
       "deviceScaleFactor": 2,
-      "pngBytes": 127793,
+      "pngBytes": 149644,
       "requests": [
         {
           "path": "/api/auth/me",
@@ -334,6 +342,10 @@
         {
           "path": "/api/chats/sample-5",
           "method": "GET"
+        },
+        {
+          "path": "/api/chats/briefing",
+          "method": "GET"
         }
       ]
     }
@@ -343,65 +355,72 @@
     "files": [
       {
         "id": "desktop-small",
-        "webpBytes": 35950,
-        "pngSha256": "01f0264a7338172c5a619f2216abb4d4ac63488e6c7fb02b5240c6692c91748a",
-        "webpSha256": "c5721ca283b87893f184d231c83acf6642a439e0525108417576dd1ca725157b",
+        "webpBytes": 38526,
+        "pngSha256": "7f96d0a58396e7ed4234090f1eaf62fec2dad86b4a58e7d1cc5a5caddba511ea",
+        "webpSha256": "f3557eadbe45b719a7e3d4acc59bfc7fcda7c7d525f4e6904014e08a0ec9b404",
         "pixelIdentical": true
       },
       {
         "id": "desktop",
-        "webpBytes": 54808,
-        "pngSha256": "0c831f5e156487f2febc131788b7e495caaf74be4913c2d5a6fc44f69bf2ca08",
-        "webpSha256": "a4372fb70ada450a3ea2e14e690eb30782a546ea8349f5609d91b326555898fa",
+        "webpBytes": 58776,
+        "pngSha256": "36e6273daf966076b5fdbbef3729448eefaf54beb58efde7b000cf9c0eed2108",
+        "webpSha256": "79d77d642f4600fcfa7562da7881bde10ec0727d2632bc45ac46ee808f0846c6",
         "pixelIdentical": true
       },
       {
         "id": "phone",
-        "webpBytes": 39036,
-        "pngSha256": "c05070ece57be40c130074ed6ae4a56736ab41ee1e535ed0f922775741a673fa",
-        "webpSha256": "513cec4b101a5f83c6fd30f5c817e25f429880047b595a6a606be57500de9723",
+        "webpBytes": 44406,
+        "pngSha256": "443701961feace8a906ef70ce96ccf8d5561506a08fbff62982794bae6f762a1",
+        "webpSha256": "1931be23308235d3110464639b68be63ce2407a33dcd650c7af9539355c4b656",
         "pixelIdentical": true
       },
       {
         "id": "chat",
-        "webpBytes": 54808,
-        "pngSha256": "0c831f5e156487f2febc131788b7e495caaf74be4913c2d5a6fc44f69bf2ca08",
-        "webpSha256": "a4372fb70ada450a3ea2e14e690eb30782a546ea8349f5609d91b326555898fa",
+        "webpBytes": 58776,
+        "pngSha256": "36e6273daf966076b5fdbbef3729448eefaf54beb58efde7b000cf9c0eed2108",
+        "webpSha256": "79d77d642f4600fcfa7562da7881bde10ec0727d2632bc45ac46ee808f0846c6",
         "pixelIdentical": true
       },
       {
         "id": "outputs",
-        "webpBytes": 53646,
-        "pngSha256": "3ee58cbb179a3a13621145536c40e06826902e9028780fee6cb7f8a0a6874fef",
-        "webpSha256": "b563a37aebbe4b761daea29bf6e8e25b4edac29dbd9f7d720cbdc9311f5f50af",
+        "webpBytes": 62986,
+        "pngSha256": "3dccefe0a79191abc1c92812894559f7daa60ad43cf443e08f590225cbf7f93a",
+        "webpSha256": "876870b929eaf78c1c0a267ff87c7cf318e5094679cbefdcf74922174cf85b4c",
         "pixelIdentical": true
       },
       {
         "id": "runs",
-        "webpBytes": 41810,
-        "pngSha256": "209d3b6755451a2826d0aebdd107a5ac52c498c040548a53bd8d095186cf043a",
-        "webpSha256": "cc4f549abd663cb43f4334b10c1c558aff99dc889cd82a6ce0e97d076021c935",
+        "webpBytes": 41390,
+        "pngSha256": "76d96db4417452f8e9016cce03c5e43524afb1cbe4b116d9d9dcc37381db314b",
+        "webpSha256": "aee38ba1ef99c7cc8c85bf3ea7ce03673a3e3b5f2c8590d271c6e48d3eea74cb",
         "pixelIdentical": true
       },
       {
         "id": "settings",
-        "webpBytes": 55204,
-        "pngSha256": "1cee3a3a57bd4f1e007a34fd618e93ce70964515eaf9fee516f62416ed4633a5",
-        "webpSha256": "544f4d72bc18363aa311e2e87e647c0239150e08dcf31e2327e58e8936bb2131",
+        "webpBytes": 54456,
+        "pngSha256": "58bf9820dac8dda0aee877bc04843d469a120fa4963f729fbe23e04f7c579caa",
+        "webpSha256": "20ffe2e4e2df51161eeb7bdd83ebbf999fce705ea66eebf4bd14bb0b9951c596",
+        "pixelIdentical": true
+      },
+      {
+        "id": "show",
+        "webpBytes": 65318,
+        "pngSha256": "2860ad9834e8af137458567dd8d58980ac53625c5a3a86888836187294beaf22",
+        "webpSha256": "b514ec169bf18f70dee512d2492a9096cb58a70446f9d5042e44bfc209645988",
         "pixelIdentical": true
       },
       {
         "id": "statistics",
-        "webpBytes": 53722,
-        "pngSha256": "eff2aeeaba84bafbf5c263f6dd7532ea54b7a5a3ad831d39005e49f819f7e644",
-        "webpSha256": "64cf19c2bf8d1db75a6bae5d3c71850af23cac6195d9db91c22cf55605935d20",
+        "webpBytes": 52390,
+        "pngSha256": "898bb7a4a78856ec0b6200eb7a59eb9770fdd764e9cc3404a035fa12841d9960",
+        "webpSha256": "4cd43aab92653ef300433293d340dbc335e8bd773acb4bc44a2f395cd72e03de",
         "pixelIdentical": true
       },
       {
         "id": "workflows",
-        "webpBytes": 41328,
-        "pngSha256": "cb318927abeeddcebf8cd1282324fdd978eb268e856f9e5729fceba3f573e505",
-        "webpSha256": "7a59c327a409cdb5ebda6bac8f4efa1974879753615238d8f5d07e0c05429d51",
+        "webpBytes": 40590,
+        "pngSha256": "c21e445dcf5ef000933417b9ce3e1c8d2de72f46b0414f145dc52f707b45d707",
+        "webpSha256": "44bf22346223f305641918d27a6a9fa68d21ee23c4439c21ad33f2ab53b644a6",
         "pixelIdentical": true
       }
     ]

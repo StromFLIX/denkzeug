@@ -2,9 +2,12 @@
 import { chromium, expect } from '@playwright/test'
 import { createServer } from 'vite'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
+import { once } from 'node:events'
+import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
-import { mockWebsiteProduct, captureTime, chatPath } from '../tests/website-product-fixture.js'
+import { rolldown } from 'rolldown'
+import { mockWebsiteProduct, captureTime, chatPath, briefingHtml, briefingTitle } from '../tests/website-product-fixture.js'
 
 // Browser pixels only: no CSS injection, DOM alteration, resizing or compositing.
 const frontendRoot = fileURLToPath(new URL('../', import.meta.url))
@@ -16,9 +19,33 @@ await mkdir(destination, { recursive: true })
 const server = await createServer({ root: frontendRoot, server: { host: '127.0.0.1', port: 0 } })
 await server.listen()
 const origin = server.resolvedUrls.local[0].replace(/\/$/, '')
-let browser
+const python = process.env.PYTHON || 'python3'
+let browser, sandbox
 const scenes = [], captures = [], staticCaptures = [], errors = [], forbidden = []
 try {
+  const bundle = await rolldown({ input: fileURLToPath(new URL('../tests/fixtures/website-briefing-app.js', import.meta.url)) })
+  let html
+  try {
+    const { output } = await bundle.generate({ format: 'iife', minify: true })
+    html = briefingHtml(output[0].code)
+  } finally { await bundle.close() }
+  // Match the separate loopback origin allowed by the Vite shell's frame CSP.
+  const sandboxSource = fileURLToPath(new URL('../../backend/nautionette_backend/app_sandbox.py', import.meta.url))
+  sandbox = spawn(python, ['-u', '-c', `
+import runpy, sys
+sandbox = runpy.run_path(sys.argv[1])
+sandbox['approved_origins']()
+server = sandbox['ThreadingHTTPServer'](('127.0.0.1', 8092), sandbox['Handler'])
+print(server.server_port)
+server.serve_forever()
+`, sandboxSource], { env: { ...process.env, MCP_APPS_HOST_ORIGINS: origin }, stdio: ['ignore', 'pipe', 'inherit'] })
+  const lines = createInterface({ input: sandbox.stdout })
+  const [port] = await Promise.race([
+    once(lines, 'line'),
+    once(sandbox, 'exit').then(([code]) => { throw new Error(`Capture sandbox exited: ${code}`) })
+  ])
+  lines.close()
+  const app = { html, origin: `http://127.0.0.1:${port}` }
   browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: { width: 1280, height: 840 }, deviceScaleFactor: 1.5, locale: 'en-US', timezoneId: 'UTC', colorScheme: 'light', reducedMotion: 'reduce', serviceWorkers: 'block' })
   const page = await context.newPage()
@@ -26,10 +53,10 @@ try {
   page.on('pageerror', error => errors.push(error.message))
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
   page.on('response', response => { if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`) })
-  const fixture = await mockWebsiteProduct(context)
+  const fixture = await mockWebsiteProduct(context, app)
   await context.route('**/*', route => {
     const request = route.request(), url = new URL(request.url())
-    if (!['127.0.0.1', 'localhost'].includes(url.hostname) || (url.pathname.startsWith('/api/') && !['GET', 'HEAD'].includes(request.method()) && !url.pathname.endsWith('/read-state'))) {
+    if (![origin, app.origin].includes(url.origin) || (url.pathname.startsWith('/api/') && !['GET', 'HEAD'].includes(request.method()) && !url.pathname.endsWith('/read-state'))) {
       forbidden.push(`${request.method()} ${url.pathname}`)
       return route.abort()
     }
@@ -78,10 +105,24 @@ try {
   await page.goto(`${origin}${chatPath}`)
   await expect(page.getByRole('textbox', { name: 'Message', exact: true })).toBeVisible()
   await expect(page.locator('.tool-group__label')).toHaveText('Ran 3 tool calls')
-  await capture('chat', 'Chats', [{ id: 'tab-outputs', label: 'Show Outputs screenshot', target: 'outputs', locator: page.getByRole('tab', { name: /Outputs/ }), selector: 'tab[name=/Outputs/]' }])
-  await page.getByRole('tab', { name: /Outputs/ }).click()
+  const workspaceTab = page => page.getByRole('tab', { name: /^Workspace/ })
+  const briefingLink = page.locator('a[href="/chats/briefing"]')
+  await capture('chat', 'Chats', [
+    { id: 'tab-workspace', label: 'Show Workspace screenshot', target: 'outputs', locator: workspaceTab(page), selector: 'tab[name=/^Workspace/]' },
+    { id: 'briefing-chat', label: 'Show MCP Apps screenshot', target: 'show', locator: briefingLink, selector: 'a[href="/chats/briefing"]' }
+  ])
+  await workspaceTab(page).click()
   await expect(page.getByRole('button', { name: 'Download product-brief.docx', exact: true })).toBeVisible()
-  await capture('outputs', 'Outputs', [{ id: 'tab-chat', label: 'Show Chats screenshot', target: 'chat', locator: page.getByRole('tab', { name: 'Chat', exact: true }), selector: 'tab[name=Chat]' }])
+  await capture('outputs', 'Workspace', [{ id: 'tab-chat', label: 'Show Chats screenshot', target: 'chat', locator: page.getByRole('tab', { name: 'Chat', exact: true }), selector: 'tab[name=Chat]' }])
+  await briefingLink.click()
+  const briefing = page.frameLocator(`iframe[title="${briefingTitle}"]`).frameLocator('iframe')
+  const updates = briefing.locator('ul > li')
+  const filter = briefing.getByRole('combobox', { name: 'Filter' })
+  await expect.poll(async () => ({ count: await updates.count(), errors, forbidden }), { message: 'The sandboxed briefing renders the saved app result' }).toEqual({ count: 3, errors: [], forbidden: [] })
+  await filter.selectOption('Decision')
+  await expect(updates).toHaveCount(2)
+  await expect(updates.first()).toBeInViewport()
+  await capture('show', 'MCP Apps', [{ id: 'original-chat', label: 'Show product brief chat screenshot', target: 'chat', locator: page.locator('a[href="/chats/alpha"]'), selector: 'a[href="/chats/alpha"]' }])
   await nav('Workflows').click()
   await page.locator('a[href="/workflows/digest"]').click()
   await page.getByRole('button', { name: 'Definition', exact: true }).click()
@@ -107,18 +148,20 @@ try {
     const shot = await device.newPage()
     await shot.clock.setFixedTime(captureTime)
     shot.on('pageerror', error => errors.push(error.message))
-    const sample = await mockWebsiteProduct(device)
+    const sample = await mockWebsiteProduct(device, app)
     await device.route('**/*', route => {
       const request = route.request(), url = new URL(request.url())
-      if (!['127.0.0.1', 'localhost'].includes(url.hostname)) { forbidden.push(request.url()); return route.abort() }
+      if (url.origin !== origin) { forbidden.push(request.url()); return route.abort() }
       return route.fallback()
     })
     await shot.goto(`${origin}${chatPath}`)
     await expect(shot.getByRole('textbox', { name: 'Message', exact: true })).toBeVisible()
-    if (id === 'phone') await shot.getByRole('tab', { name: /Outputs/ }).click()
+    if (id === 'phone') {
+      await workspaceTab(shot).click()
+      await expect(shot.getByRole('heading', { name: 'Published outputs', exact: true })).toBeVisible()
+    }
     await shot.evaluate(() => document.fonts.ready)
     await shot.waitForTimeout(700)
-    await expect(shot.getByRole('link', { name: 'Apps', exact: true })).toHaveCount(0)
     expect(await shot.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     let previous, png
     for (let attempt = 0; attempt < 12; attempt++) {
@@ -134,7 +177,7 @@ try {
     await device.close()
   }
   expect(errors).toEqual([]); expect(forbidden).toEqual([])
-  const conversions = JSON.parse(execFileSync(process.env.PYTHON || 'python3', ['-c', `
+  const conversions = JSON.parse(execFileSync(python, ['-c', `
 import sys, json, hashlib
 from pathlib import Path
 from PIL import Image, features
@@ -157,6 +200,7 @@ print(json.dumps(dict(libwebp=features.version('webp'), files=results)))
   console.log(`Captured ${scenes.length} actual Vue scenes and ${staticCaptures.length} device views`)
   await context.close()
 } finally {
+  sandbox?.kill()
   await browser?.close()
   await server.close()
 }

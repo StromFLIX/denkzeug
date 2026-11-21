@@ -46,9 +46,15 @@ for (const width of [1440, 390, 320]) {
     await page.reload()
     await expect(language).toHaveValue('de')
     await language.selectOption('en')
-    for (const name of ['Free', 'Remote', 'Extensible', 'Create', 'Process']) {
+    for (const name of ['Free', 'Remote', 'Extensible', 'Create', 'Process', 'Show']) {
       await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(1)
     }
+    const show = page.getByRole('article', { name: 'Show', exact: true })
+    const briefing = show.getByRole('img', { name: /weekly briefing MCP App/ })
+    await briefing.scrollIntoViewIfNeeded()
+    await expect.poll(() => briefing.evaluate(image => image.complete && image.naturalWidth === 1920)).toBe(true)
+    await expect(show.getByRole('link', { name: 'Read the MCP Apps guide' })).toHaveAttribute('href', /\/docs\/mcp-apps\.md$/)
+    await expect(show.locator('iframe')).toHaveCount(0)
     await page.getByRole('link', { name: 'Make it yours' }).click()
     await expect(page.getByRole('heading', { name: 'A little more room to think.' })).toBeInViewport()
     await page.getByText('Already hosting? Get a client.').click()
