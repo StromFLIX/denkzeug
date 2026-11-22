@@ -74,6 +74,14 @@ function copyCode (event) {
 .bubble__body ol { margin: 0 0 8px; padding-left: 20px; }
 .bubble__body li { margin-bottom: 3px; }
 
+.bubble__body .math-display {
+  display: block;
+  margin: 8px 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+.bubble__body .katex-display { margin: 4px 0; width: max-content; min-width: 100%; }
+
 .bubble__body h1,
 .bubble__body h2,
 .bubble__body h3,

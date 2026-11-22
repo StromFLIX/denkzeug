@@ -166,6 +166,50 @@ async function filteredChats (context, preferences = {}) {
   return state
 }
 
+test('saved chat renders LaTeX without interpreting code, prices, or unsafe commands', async ({ page, context }) => {
+  const state = initial()
+  const wide = 'a+b+c+d+e+f+g+h+i+j+k+l+m+n+o+p+q+r+s+t+u+v+w+x+y+z'
+  const content = [
+    String.raw`Inline $x_i^2$ and \(\frac{1}{2}\). Prices: $10 and $20. Escaped: \$x$.`,
+    `$$\n${wide}\n$$`,
+    String.raw`\[\begin{aligned}x &= 1 \\ y &= 2\end{aligned}\]`,
+    '`$inline_code$`\n\n```tex\n$$fenced_code$$\n```',
+    String.raw`Invalid: $\notACommand{x}$.`,
+    String.raw`Blocked: $\includegraphics{https://example.test/image.png}$ and $\htmlClass{injected}{x}$.`
+  ].join('\n\n')
+  state.chats.alpha.messages = [{ id: 'answer', role: 'assistant', content, meta: {} }]
+  await mockChats(context, state)
+  await page.setViewportSize({ width: 390, height: 900 })
+  await page.goto('/chats/alpha')
+  const body = page.locator('.msg--assistant .bubble__body')
+  await expect(body.locator('math annotation').nth(0)).toHaveText('x_i^2')
+  await expect(body.locator('math annotation').nth(1)).toHaveText(String.raw`\frac{1}{2}`)
+  const displays = body.locator('.math-display')
+  await expect(displays).toHaveCount(2)
+  await expect(displays.first().locator('math')).toHaveAttribute('display', 'block')
+  await expect(displays.last().locator('mtable')).toHaveCount(1)
+  await page.evaluate(() => document.fonts.ready.then(() => true))
+  expect(await displays.first().evaluate(el => el.scrollWidth > el.clientWidth)).toBe(true)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await expect(body.locator('code')).toHaveText(['$inline_code$', '$$fenced_code$$'])
+  await expect(body).toContainText('Prices: $10 and $20. Escaped: $x$.')
+  await expect(body).toContainText(String.raw`Invalid: $\notACommand{x}$.`)
+  await expect(body.locator('img, .injected, denkzeug-math')).toHaveCount(0)
+})
+
+test('streaming LaTeX renders once its closing delimiter arrives', async ({ page, context }) => {
+  const state = initial()
+  const step = { kind: 'text', text: 'Energy: $E = mc^2' }
+  state.chats.alpha.active_turn = { id: 'turn', steps: [step], status: '' }
+  await mockChats(context, state)
+  await page.goto('/chats/alpha')
+  const body = page.locator('.msg--assistant .bubble__body')
+  await expect(body).toContainText(step.text)
+  await expect(body.locator('math')).toHaveCount(0)
+  step.text += '$.'
+  await expect(body.locator('math annotation')).toHaveText('E = mc^2')
+})
+
 const chatRow = (page, id) => page.locator(`#shell-sidebar a[href="/chats/${id}"]`)
 const mainNav = page => page.getByRole('navigation', { name: 'Main navigation' })
 

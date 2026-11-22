@@ -60,6 +60,7 @@
     "dompurify": "^3.4.18",
     "highlight.js": "^11.12.0",
     "idb": "^8.0.4",
+    "katex": "^0.19.1",
     "marked": "^18.2.0",
     "pdfjs-dist": "^6.5.438",
     "quasar": "^2.35.4",
