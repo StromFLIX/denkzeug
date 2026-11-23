@@ -346,21 +346,34 @@ def archive(project_id: str) -> None:
 
 
 async def agent_credentials(project_ids: list[str]) -> list[dict[str, Any]]:
-    credentials = []
+    selected = selection(project_ids)
+    credentials: dict[int, dict[str, Any]] = {}
+
+    async def issue(index: int) -> None:
+        project = db.one("SELECT * FROM projects WHERE id = ?", (selected[index],))
+        access = await installation_access(project["repository_id"], project["connection_id"])
+        # Record each success before yielding so cancellation cannot lose it.
+        credentials[index] = {
+            "full_name": project["full_name"],
+            "token": access["token"],
+            "expires_at": access["expires_at"],
+        }
+
     try:
-        for project_id in selection(project_ids):
-            project = db.one("SELECT * FROM projects WHERE id = ?", (project_id,))
-            access = await installation_access(project["repository_id"], project["connection_id"])
-            credentials.append(
-                {
-                    "full_name": project["full_name"],
-                    "token": access["token"],
-                    "expires_at": access["expires_at"],
-                }
+        batch_size = 4
+        for start in range(0, len(selected), batch_size):
+            # Drain the batch before handling a failure: another request may
+            # already have issued a token. Don't issue further batches on error.
+            results = await asyncio.gather(
+                *(issue(index) for index in range(start, min(start + batch_size, len(selected)))),
+                return_exceptions=True,
             )
-        return credentials
+            for result in results:
+                if isinstance(result, BaseException):
+                    raise result
+        return [credentials[index] for index in range(len(selected))]
     except BaseException:
-        await revoke_credentials(credentials)
+        await revoke_credentials(list(credentials.values()))
         raise
 
 

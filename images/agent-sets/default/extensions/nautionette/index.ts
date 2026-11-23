@@ -90,6 +90,13 @@ export default async function (pi: ExtensionAPI) {
   registerSubagentTools(pi, control.rpc, chatGrant, ALLOWED);
   if (process.env.NAUTIONETTE_MEMBER_MODE !== "true") registerCraftTools(pi);
 
+  // Explicitly no bridged tools: retain native tools and the legacy loadout
+  // migration, but don't make any MCP requests until a local wrapper needs one.
+  if (ALLOWED?.size === 0) {
+    registerMcpTools(pi, []);
+    return;
+  }
+
   // Tools are discovered, not hard-coded: federate a new MCP server behind the
   // gateway and this agent set picks it up on its next run.
   try {

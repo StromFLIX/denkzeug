@@ -215,7 +215,9 @@ for (const marker of ['deferred', 'direct']) test(`native ${marker} experiment h
   assertDirect(resumed[0])
   assert.equal(resumed.length, 2)
   assert.equal(f.calls.length, 3)
+  const requestsBeforeRevocation = f.records.length
   const revoked = await f.run({ allowed: [] })
+  assert.equal(f.records.length, requestsBeforeRevocation, 'empty selection sends no MCP traffic')
   assert.ok(!revoked[0].tools.some(t => t.function.name === 'remote_lookup'))
   assert.ok(!revoked[0].tools.some(t => t.function.name === 'remote_secondary'))
   assert.ok(!revoked[0].tools.some(t => t.function.name === 'tool_search'))

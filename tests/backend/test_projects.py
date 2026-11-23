@@ -135,6 +135,69 @@ async def test_agents_receive_fresh_repository_scoped_tokens_then_revoke_them(db
     remote.assert_awaited_with("DELETE", "/installation/token", "installation-secret")
 
 
+async def test_issuance_overlaps_with_a_bounded_batch_and_keeps_selection_order(db, monkeypatch):
+    ids = [ready_project(db, f"owner/repo-{i}", i) for i in range(1, 7)]
+    started = asyncio.Queue()
+    release = {i: asyncio.Event() for i in range(1, 7)}
+    finished = asyncio.Queue()
+
+    async def issue(repo, connection):
+        assert connection == "1-2"
+        started.put_nowait(repo)
+        await release[repo].wait()
+        finished.put_nowait(repo)
+        return {"token": f"token-{repo}", "expires_at": "2099-01-01T00:00:00Z"}
+
+    monkeypatch.setattr(projects, "installation_access", issue)
+    task = asyncio.create_task(projects.agent_credentials(ids))
+    try:
+        async with asyncio.timeout(5):
+            batch = [await started.get() for _ in range(4)]
+            assert batch == [1, 2, 3, 4]
+            for repo in reversed(batch[1:]):
+                release[repo].set()
+                assert await finished.get() == repo
+            assert started.empty()
+            release[1].set()
+            assert [await started.get() for _ in range(2)] == [5, 6]
+            release[5].set()
+            release[6].set()
+            assert [item["full_name"] for item in await task] == [f"owner/repo-{i}" for i in range(1, 7)]
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_cancelling_batch_joins_requests_before_revoking_observed_tokens(db, monkeypatch):
+    first = ready_project(db)
+    second = ready_project(db, "owner/other", 456)
+    pending = asyncio.Event()
+    cancelled = asyncio.Event()
+    access = {"token": "first-token", "expires_at": "2099-01-01T00:00:00Z"}
+
+    async def issue(repo, _connection):
+        if repo == 123:
+            return access
+        pending.set()
+        try:
+            await asyncio.Future()
+        finally:
+            cancelled.set()
+
+    monkeypatch.setattr(projects, "installation_access", issue)
+    revoke = AsyncMock()
+    monkeypatch.setattr(projects, "revoke_credentials", revoke)
+    task = asyncio.create_task(projects.agent_credentials([first, second]))
+    try:
+        await asyncio.wait_for(pending.wait(), 5)
+    finally:
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    assert cancelled.is_set()
+    revoke.assert_awaited_once_with([{"full_name": "owner/repository", **access}])
+
+
 @pytest.mark.parametrize("cancelled", [False, True])
 async def test_failed_or_cancelled_batch_revokes_partially_issued_tokens(db, monkeypatch, cancelled):
     first = ready_project(db)

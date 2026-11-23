@@ -57,7 +57,15 @@ def test_counts_only_the_first_nonempty_text_delta_and_waits_for_completion():
             (0.6, {"type": "delta", "text": "READY"}),
             (0.7, {"type": "delta", "text": "ignored"}),
             (0.8, {"type": "result", "ok": True}),
-            (0.9, {"type": "done", "message": {"meta": {}}}),
+            (
+                0.9,
+                {
+                    "type": "done",
+                    "message": {
+                        "meta": {"startup_ms": {"agent_dispatch": 10, "first_text": 550, "private": "data"}}
+                    },
+                },
+            ),
         ]
     )
     assert result["ok"]
@@ -66,6 +74,7 @@ def test_counts_only_the_first_nonempty_text_delta_and_waits_for_completion():
     assert result["ttft_text_ms"] == 600
     assert result["total_ms"] == 900
     assert result["milestones_ms"]["phase_model"] == 200
+    assert result["backend_startup_ms"] == {"agent_dispatch": 10, "first_text": 550}
     assert result["tool_calls"] == 1
     assert "private" not in json.dumps(result) and "READY" not in json.dumps(result)
     assert len(requests) == 1

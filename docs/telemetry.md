@@ -56,6 +56,34 @@ agentgateway origin, never arbitrary external sites. It does not forward baggage
 Tool spans describe a tool invocation, not every internal operation of third-party
 MCP servers. Browser UI code does not receive ingestion credentials.
 
+## Chat latency: compare releases with OTLP
+
+- `denkzeug.chat.startup.duration` (histogram, `ms`): filter `stage=time_to_first_text`
+  for p50/p95 of backend execution start to the first nonempty streamed text delta.
+  Compare staging and production separately, group by `service.version`, and compare
+  the same `mcp_selection` (`all`, `pinned`, `empty`, from turn configuration) and
+  `project_count` (`none`, `one`, `multiple`). Graph sample counts with percentiles.
+- Other `stage` values split out reconciliation, input and worktree preparation,
+  GitHub credential issuance, broker dispatch to its `started` acknowledgment,
+  readiness of the native session, Pi startup through its `commands` response, and
+  model phase to first text. `time_to_first_reasoning` and `time_to_first_tool`
+  are milestones from execution start, sampled only if observed before first text
+  (or before the run ends without text). Stage histograms are not additive percentiles.
+- `denkzeug.chat.startup.turns` counts `outcome=first_text` versus `outcome=no_text`
+  in the same cohorts. Track the no-text rate beside TTFT; a failed, stopped,
+  or command-only turn without streamed text must not look like a faster sample.
+- `chat.startup` traces show the same stages as child spans, with the existing
+  chat/turn correlation IDs and model label on the parent. Metrics never have
+  chat IDs, project or tool names, prompts, payloads, or account labels.
+
+These metrics start when the backend begins executing the turn, not at HTTP
+admission or queue entry. `model_phase_to_first_text` may include hidden reasoning
+or tools before prose; it is not pure provider latency. The Pi startup stage includes
+extension startup and discovery, not just MCP. Use the [chat TTFT probe](spikes/project-chat-ttft.md#repeatable-full-app-benchmark)
+for client-observed POST-to-SSE timing. Verify with interleaved runs of the same
+model, reasoning effort, prompt, and tool/project selection; metric cohorts alone
+cannot control for workload changes. Neither metric measures browser paint.
+
 ## Privacy and operational limits
 
 Python exports allowlisted attributes and exception **types**, removing exception

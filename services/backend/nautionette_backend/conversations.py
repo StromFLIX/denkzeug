@@ -13,6 +13,7 @@ from typing import Any
 from . import chat_attachments, chat_sessions, git_authorship, projects, subagents
 from .agent import Timeline, stream_agent
 from .background import is_draining, run_blocking, spawn
+from .chat_startup import ChatStartup
 from .chat_titles import refine_chat_title
 from .clients import broker
 from .db import db
@@ -254,6 +255,7 @@ async def run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
 
 async def _run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
     timeline = Timeline()
+    startup = ChatStartup(chat_id, turn_id, job)
     received_text = False
     received_result = False
     failure = None
@@ -277,6 +279,7 @@ async def _run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
         except Exception:
             cleanup_failed = True
             raise
+        startup.mark("reconciled")
         # Only the first native turn imports legacy UI records. Pi, not SQL
         # transcript trimming, owns context and compaction from then onward.
         job["history"] = chat_sessions.legacy_history(chat_id, turn_id)
@@ -307,16 +310,31 @@ async def _run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
                 "Co-authored-by trailers with git log -1 --format=full before pushing. "
                 "Do not amend or rewrite existing commits merely to apply authorship settings.\n"
             )
+        startup.mark("input_ready")
         job.update(await run_blocking(projects.prepare_worktrees, chat_id, job.get("project_ids", [])))
+        startup.mark("worktrees_ready")
         job["project_credentials"] = await credentials.start()
+        startup.mark("git_credentials_ready")
         # Owned by this turn (not the global background task set). Cancel and
         # join it before container cleanup and revocation, including on shutdown.
         credential_renewal = asyncio.create_task(credentials.maintain(finished))
         agent_requested = True
+        startup.mark("agent_dispatch")
         async for event in stream_agent(job):
             if not db.one("SELECT id FROM chat_turns WHERE id = ?", (turn_id,)):
                 return
             kind = event.get("type")
+            first_text = (
+                kind == "delta" and bool(event.get("text")) and "first_text" not in startup.milestones
+            )
+            if kind in {"started", "session_ready", "commands", "tool"}:
+                startup.mark(kind)
+            elif kind == "phase" and event.get("phase") == "model":
+                startup.mark("model_phase")
+            elif kind == "thinking" and event.get("text"):
+                startup.mark("first_reasoning")
+            elif first_text:
+                startup.mark("first_text")
             if kind == "session_ready":
                 session_id = event.get("id")
                 current = db.get_chat(chat_id)
@@ -430,6 +448,8 @@ async def _run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
             changed = db.record_chat_progress(
                 turn_id, event, timeline.steps, status, timeline.timing.snapshot()
             )
+            if first_text:
+                startup.finish()
             # Refresh every client's sidebar, including chats that are not open.
             # Persist every event, but don't reload the list for every streamed token.
             now = monotonic()
@@ -457,6 +477,7 @@ async def _run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
             timeline.observe(event)
             db.record_chat_progress(turn_id, event, timeline.steps, "", timeline.timing.snapshot())
     finally:
+        startup.finish()
         timing = timeline.timing.finish()
         timeline.stop_tools()
         finished.set()
@@ -496,6 +517,7 @@ async def _run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
                 "error": failure,
                 "interrupted": interrupted,
                 "timing": timing,
+                "startup_ms": startup.milestones,
             },
         )
         bus.publish("chat.answered", {"chat_id": chat_id, "ok": failure is None})

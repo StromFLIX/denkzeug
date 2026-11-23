@@ -1,8 +1,71 @@
 """Agent rail activity comes from durable turns, not a truncated chat list."""
 
+import json
 import time
 
-from nautionette_backend import conversations
+from nautionette.telemetry import SafeSpanExporter
+from nautionette_backend import chat_startup, conversations
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import InMemoryMetricReader
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+
+def test_chat_startup_exports_stages_once_and_uses_only_bounded_metric_labels(monkeypatch):
+    reader = InMemoryMetricReader()
+    meter_provider = MeterProvider(metric_readers=[reader])
+    meter = meter_provider.get_meter("test")
+    exporter = InMemorySpanExporter()
+    tracer_provider = TracerProvider()
+    tracer_provider.add_span_processor(SimpleSpanProcessor(SafeSpanExporter(exporter)))
+    monkeypatch.setattr(chat_startup, "_tracer", tracer_provider.get_tracer("test"))
+    monkeypatch.setattr(chat_startup, "_duration", meter.create_histogram("denkzeug.chat.startup.duration"))
+    monkeypatch.setattr(chat_startup, "_turns", meter.create_counter("denkzeug.chat.startup.turns"))
+    monotonic = iter(n * 1_000_000 for n in range(10))
+    monkeypatch.setattr(chat_startup, "monotonic_ns", lambda: next(monotonic))
+    try:
+        startup = chat_startup.ChatStartup(
+            "chat-id", "turn-id", {"model": "test/model", "project_ids": ["private"], "tools": []}
+        )
+        for key in ("reconciled", "model_phase", "first_text", "first_text"):
+            startup.mark(key)
+        startup.finish()
+        startup.finish()
+        failed = chat_startup.ChatStartup("another-chat", "another-turn", {})
+        failed.finish()
+
+        data = reader.get_metrics_data().resource_metrics[0].scope_metrics[0].metrics
+        points = {metric.name: metric.data.data_points for metric in data}
+        durations = {
+            point.attributes["stage"]: (point.sum, point.count)
+            for point in points["denkzeug.chat.startup.duration"]
+        }
+        assert durations == {
+            "reconcile": (1, 1),
+            "model_phase_to_first_text": (1, 1),
+            "time_to_first_text": (3, 1),
+        }
+        assert all(
+            set(point.attributes) == {"project_count", "mcp_selection", "stage"}
+            and point.attributes["project_count"] == "one"
+            and point.attributes["mcp_selection"] == "empty"
+            for point in points["denkzeug.chat.startup.duration"]
+        )
+        turns = {point.attributes["outcome"]: point.value for point in points["denkzeug.chat.startup.turns"]}
+        assert turns == {"first_text": 1, "no_text": 1}
+        spans = exporter.get_finished_spans()
+        root = next(span for span in spans if span.attributes.get("nautionette.turn_id") == "turn-id")
+        assert root.end_time - root.start_time == 3_000_000
+        assert root.attributes["gen_ai.request.model"] == "test/model"
+        assert {span.name for span in spans if span.parent == root.context} == {
+            "chat.startup.reconcile",
+            "chat.startup.model_phase_to_first_text",
+        }
+        assert "private" not in str(data)
+    finally:
+        meter_provider.shutdown()
+        tracer_provider.shutdown()
 
 
 def test_activity_counts_all_chats_and_only_current_agent_membership(client, db):
@@ -125,3 +188,9 @@ async def test_consumed_input_refreshes_other_clients_without_waiting_for_progre
     monkeypatch.setattr(conversations, "stream_agent", agent)
     await conversations.run_turn("active", chat_id, {"prompt": "Run"})
     assert db.chat_activity() == {"running": 0, "queued": 0, "agents": {}}
+    done = db.one("SELECT payload FROM chat_turn_events WHERE turn_id = 'active' ORDER BY seq DESC")
+    startup = json.loads(done["payload"])["message"]["meta"]["startup_ms"]
+    assert 0 <= startup["reconciled"] <= startup["input_ready"] <= startup["worktrees_ready"]
+    assert startup["worktrees_ready"] <= startup["git_credentials_ready"] <= startup["agent_dispatch"]
+    assert startup["agent_dispatch"] <= startup["first_text"]
+    assert "first_reasoning" not in startup

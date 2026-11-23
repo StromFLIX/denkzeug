@@ -34,6 +34,20 @@ except ModuleNotFoundError:
     from account_session import AccountSession, SessionError
 
 PROMPT = "Reply with exactly READY. Do not call tools or modify files."
+STARTUP_MARKS = (
+    "reconciled",
+    "input_ready",
+    "worktrees_ready",
+    "git_credentials_ready",
+    "agent_dispatch",
+    "started",
+    "session_ready",
+    "commands",
+    "model_phase",
+    "first_reasoning",
+    "tool",
+    "first_text",
+)
 
 
 def sse_events(response: httpx.Response) -> Iterator[dict[str, Any]]:
@@ -137,6 +151,13 @@ def measure_turn(
                 elif kind == "done":
                     done = True
                     meta = (event.get("message") or {}).get("meta") or {}
+                    startup_ms = meta.get("startup_ms")
+                    if isinstance(startup_ms, dict):
+                        sample["backend_startup_ms"] = {
+                            key: value
+                            for key in STARTUP_MARKS
+                            if type(value := startup_ms.get(key)) in (int, float) and value >= 0
+                        }
                     if meta.get("error") or meta.get("interrupted"):
                         failure = "turn_failed_or_interrupted"
                     break

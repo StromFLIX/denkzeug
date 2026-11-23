@@ -186,12 +186,16 @@ and multiply per-client database load.
 **dedicated** chat, runs real turns through the authenticated HTTP/SSE endpoint,
 and retains that chat for inspection. It includes project worktree creation,
 GitHub access, broker/container startup, Pi and model latency. It does not measure
-the browser snapshot/render path. It requires the existing deployment access
-token through the environment; no provider key or new authentication is needed.
+the browser snapshot/render path. It requires staging account credentials via
+`DENKZEUG_SMOKE_USERNAME` and `DENKZEUG_SMOKE_PASSWORD_FILE` (or the password
+injected as `DENKZEUG_SMOKE_PASSWORD` by CI). It does not need a provider key.
+On versions with startup instrumentation, the report also includes backend
+execution milestones from the terminal event; see [OpenTelemetry](../telemetry.md#chat-latency-compare-releases-with-otlp)
+for aggregation and trace analysis.
 
 ```sh
 export BASE=https://app.nautionette.stage.stromflix.com
-# Set APP_TOKEN through your existing secure environment; never commit it.
+# Provide the staging account credentials through your secure environment.
 uv run python scripts/benchmark_chat_ttft.py \
   --project-id <staging-project-id> --samples 5 > /tmp/ttft-project.json
 
@@ -202,6 +206,8 @@ uv run python scripts/benchmark_chat_ttft.py --samples 5 > /tmp/ttft-no-project.
 uv run python scripts/benchmark_chat_ttft.py \
   --project-id <staging-project-id> --model copilot/gpt-6.1-sol \
   --reasoning-effort medium --samples 5 > /tmp/ttft-medium.json
+uv run python scripts/benchmark_chat_ttft.py \
+  --project-id <staging-project-id> --no-mcp-tools --samples 5 > /tmp/ttft-empty-mcp.json
 ```
 
 Use the first turn for new-worktree/session latency and subsequent turns for
