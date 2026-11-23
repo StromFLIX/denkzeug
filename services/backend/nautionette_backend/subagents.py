@@ -105,12 +105,40 @@ async def wait(grant: str, call_id: str, timeout_seconds: int) -> dict[str, Any]
         await asyncio.sleep(0.2)
 
 
-async def start(grant: str, request_id: str, agent_id: str, text: str, chat_id: str | None) -> dict[str, Any]:
+def select_tools(
+    caller_tools: list[str] | None, target_tools: list[str] | None, requested: list[str] | None
+) -> list[str] | None:
+    # None is unrestricted; a pinned list (including []) is an upper bound.
+    if caller_tools is None:
+        ceiling = target_tools
+    elif target_tools is None:
+        ceiling = caller_tools
+    else:
+        ceiling = sorted(set(caller_tools).intersection(target_tools))
+    if requested is None:
+        return ceiling
+    if ceiling is not None and (denied := set(requested).difference(ceiling)):
+        raise HTTPException(403, f"Tools not allowed by both caller and target: {', '.join(sorted(denied))}")
+    return requested
+
+
+async def start(
+    grant: str,
+    request_id: str,
+    agent_id: str,
+    text: str,
+    chat_id: str | None,
+    *,
+    model: str | None = None,
+    tools: list[str] | None = None,
+) -> dict[str, Any]:
     from .routers.chats import new_chat, submit_message
 
-    request_hash = hashlib.sha256(
-        json.dumps({"agent_id": agent_id, "text": text, "chat_id": chat_id}, sort_keys=True).encode()
-    ).hexdigest()
+    overrides = agent_profiles.normalize(
+        {key: value for key, value in (("model", model), ("tools", tools)) if value is not None}
+    )
+    arguments = {"agent_id": agent_id, "text": text, "chat_id": chat_id, **overrides}
+    request_hash = hashlib.sha256(json.dumps(arguments, sort_keys=True).encode()).hexdigest()
     async with _admission:
         parent_chat, parent_turn, job = caller(grant, "call_subagent")
         existing = db.one(
@@ -190,7 +218,7 @@ async def start(grant: str, request_id: str, agent_id: str, text: str, chat_id: 
                 db.execute("UPDATE chats SET delegated_parent_chat_id=? WHERE id=?", (parent_chat, chat_id))
                 db.execute("UPDATE agent_calls SET child_chat_id=? WHERE id=?", (chat_id, call_id))
 
-            def before_accept() -> None:
+            def before_accept(snapshot: dict[str, Any]) -> None:
                 caller(grant, "call_subagent")
                 # Discovery yielded; recheck revocations/settings before mutation.
                 if agent_id not in {agent["id"] for agent in available(job)}:
@@ -202,7 +230,12 @@ async def start(grant: str, request_id: str, agent_id: str, text: str, chat_id: 
                 if active >= min(limits["subagent_max_parallel"], runtime("subagent_max_parallel")):
                     raise HTTPException(409, "Subagent parallel limit reached")
                 current = db.get_chat(chat_id)
-                if not current or current.get("agent_id") != agent_id or current.get("agent_customized"):
+                if (
+                    not current
+                    or current.get("agent_id") != agent_id
+                    or current.get("agent_customized")
+                    or not agent_profiles.same_config(current, snapshot)
+                ):
                     raise HTTPException(409, "Target chat configuration changed during admission")
 
             sender = {
@@ -217,6 +250,8 @@ async def start(grant: str, request_id: str, agent_id: str, text: str, chat_id: 
                 sender=sender,
                 origin=provenance.agent_call(sender, job.get("origin")),
                 delegation=call_id,
+                model_override=overrides.get("model"),
+                select_tools=lambda target: select_tools(job.get("tools"), target, overrides.get("tools")),
                 before_accept=before_accept,
             )
         except Exception as exc:

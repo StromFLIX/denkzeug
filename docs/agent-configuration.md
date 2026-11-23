@@ -169,13 +169,24 @@ queueing: nested parents still occupy slots while waiting, so queueing could
 otherwise deadlock. Wait for existing children before submitting more work.
 Each independent root has its own parallel budget, not an instance-wide semaphore.
 
-`call_subagent(agent_id, text, chat_id?)` starts work asynchronously, returning
+`call_subagent(agent_id, text, chat_id?, model?, tools?)` starts work asynchronously, returning
 `id`, `chat_id`, `turn_id`, `depth`, and `state`. Without `chat_id` it creates a chat
 using the target's current resolved configuration, projects and packages. Scratch
 space and Git worktrees are separate from the caller's. To continue, supply a chat
 previously opened by the same initiating chat for the same target. Modified, busy,
 paused, unrelated and ancestor chats are rejected, never steered or silently queued.
-A continuation counts as another child call. Agent input includes a provenance
+A continuation counts as another child call. Both new calls and continuations can
+override the model with an exact ID from the configured model catalog; models are
+not ranked. Switching models uses the new model's provider-default reasoning.
+Selectable tools are capped by the intersection of the caller turn's and target
+chat's tool selections (`null` means unrestricted). Omit `tools` to use that
+intersection, pass a subset to narrow it, or pass `[]` to disable selectable
+tools. Requests for tools outside either selection are rejected, and nested calls
+inherit their parent turn's narrowed selection as a ceiling. This uses the existing
+selectable-tool contract; built-in file/shell and other always-on local tools are
+not changed. Neither override changes the saved agent or chat configuration.
+
+Agent input includes a provenance
 header and `meta.sender_agent` for UI attribution; answer identity is snapshotted
 as well, so later renames/deletions cannot turn it into a human message.
 

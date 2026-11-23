@@ -410,7 +410,9 @@ async def submit_message(
     sender: dict[str, Any] | None = None,
     origin: dict[str, Any] | None = None,
     delegation: str | None = None,
-    before_accept: Callable[[], None] | None = None,
+    model_override: str | None = None,
+    select_tools: Callable[[list[str] | None], list[str] | None] | None = None,
+    before_accept: Callable[[dict[str, Any]], None] | None = None,
 ):
     """Submit through the normal chat pipeline, including its durable follow-up queue."""
     access.require_owner_execution("chats", chat_id)
@@ -422,11 +424,17 @@ async def submit_message(
     attachment_ids = chat_attachments.attachment_ids(payload.get("attachment_ids", []))
     if not text and not attachment_ids:
         raise HTTPException(status_code=400, detail="text or an attachment is required")
-    model_id = chat.get("model") or runtime("default_model")
+    chat_model = chat.get("model") or runtime("default_model")
+    model_id = model_override or chat_model
+    tools = chat.get("tools")
+    if select_tools is not None:
+        tools = select_tools(tools)
     # Direct API clients must receive the same capability checks as the UI, even
     # after a backend restart before anyone has opened the model picker.
     model_info = await catalog.model_info(model_id)
-    effort = _effort(chat.get("reasoning_effort"), model_info)
+    if model_override is not None and not model_info:
+        raise HTTPException(422, "Unknown model ID; choose a model from the configured catalog")
+    effort = _effort(chat.get("reasoning_effort") if model_id == chat_model else None, model_info)
     has_images = any(
         chat_attachments.is_image(
             db.one("SELECT mime_type FROM chat_images WHERE id = ? AND chat_id = ?", (attachment_id, chat_id))
@@ -453,7 +461,7 @@ async def submit_message(
     # From this fence through job persistence/task registration there is no await.
     _require_chat_admission()
     if before_accept:
-        before_accept()
+        before_accept(chat)
     try:
         user_message, created = db.accept_chat_message(
             chat_id,
@@ -491,7 +499,7 @@ async def submit_message(
         mode="interactive",
         agent_set=chat["agent_set"],
         model=model_id,
-        tools=chat.get("tools"),
+        tools=tools,
         run_id=f"chat-{chat_id}",
         timeout_seconds=settings.agent_run_timeout_seconds,
     )

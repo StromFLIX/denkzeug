@@ -30,6 +30,15 @@ test('call injects private capability and stable request ID but never returns it
   assert.equal(result.details.state, 'running')
 })
 
+test('call exposes turn overrides and forwards an empty tool selection unchanged', async () => {
+  const requests = []
+  const call = tools(async (_method, params) => { requests.push(params.arguments.body); return wire({ id: 'call' }) }).get('call_subagent')
+  assert.equal(call.parameters.properties.model.type, 'string')
+  assert.equal(call.parameters.properties.tools.items.type, 'string')
+  await call.execute('call', { agent_id: 'research', text: 'Task', model: 'provider/model', tools: [] })
+  assert.deepEqual(requests[0], { ...grant, request_id: 'call', agent_id: 'research', text: 'Task', model: 'provider/model', tools: [] })
+})
+
 test('wait long polls in bounded chunks and can poll without waiting', async () => {
   const requests = []
   const all = tools(async (_method, params) => {

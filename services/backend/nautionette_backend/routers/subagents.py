@@ -16,11 +16,16 @@ class Capability(BaseModel):
     grant: Annotated[str, Field(min_length=32, max_length=128)]
 
 
+ToolName = Annotated[str, Field(min_length=1, max_length=256)]
+
+
 class AgentCall(Capability):
     request_id: Annotated[str, Field(min_length=1, max_length=256)]
     agent_id: Annotated[str, Field(min_length=1, max_length=64)]
     text: Annotated[str, Field(min_length=1, max_length=32000)]
     chat_id: str | None = None
+    model: Annotated[str, Field(min_length=1, max_length=256)] | None = None
+    tools: Annotated[list[ToolName], Field(max_length=2000)] | None = None
 
 
 class AgentWait(Capability):
@@ -41,7 +46,15 @@ async def list_callable_agents(body: Capability):
 @router.post("/api/subagents/call")
 async def call_subagent(body: AgentCall):
     """Private idempotent transport for call_subagent."""
-    return await subagents.start(body.grant, body.request_id, body.agent_id, body.text, body.chat_id)
+    return await subagents.start(
+        body.grant,
+        body.request_id,
+        body.agent_id,
+        body.text,
+        body.chat_id,
+        model=body.model,
+        tools=body.tools,
+    )
 
 
 @router.post("/api/subagents/wait")

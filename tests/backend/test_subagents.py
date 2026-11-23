@@ -122,6 +122,97 @@ def test_roundtrip_idempotence_sender_wait_and_continuation(client, db, scope):
     assert continued.json()["id"] != result["id"]
 
 
+def set_root_tools(db, tools):
+    job = json.loads(db.one("SELECT job FROM chat_turns WHERE id='root'")["job"])
+    db.execute("UPDATE chat_turns SET job=? WHERE id='root'", (json.dumps({**job, "tools": tools}),))
+
+
+def child_job(db, result):
+    return json.loads(db.one("SELECT job FROM chat_turns WHERE id=?", (result["turn_id"],))["job"])
+
+
+@pytest.mark.parametrize(
+    "caller,target,expected",
+    [
+        (None, None, None),
+        (None, ["target_only"], ["target_only"]),
+        (["call_subagent", "caller_only"], None, ["call_subagent", "caller_only"]),
+        (["call_subagent", "shared", "caller_only"], ["shared", "target_only"], ["shared"]),
+        (["call_subagent"], [], []),
+    ],
+)
+def test_omitting_tools_intersects_caller_and_target(client, db, scope, caller, target, expected):
+    set_root_tools(db, caller)
+    assert client.patch(f"/api/agents/{scope['child']['id']}", json={"config": {"tools": target}}).is_success
+    response = start(client, scope)
+    assert response.is_success, response.text
+    assert child_job(db, response.json())["tools"] == expected
+    assert db.get_chat(response.json()["chat_id"])["tools"] == target
+
+
+def test_tools_cannot_expand_either_selection_or_reappear_through_nesting(client, db, scope):
+    caller = ["call_subagent", "shared", "caller_only"]
+    target = ["call_subagent", "shared", "target_only"]
+    set_root_tools(db, caller)
+    assert client.patch(
+        f"/api/agents/{scope['child']['id']}",
+        json={"config": {"tools": target}, "allowed_subagents": [scope["child"]["id"]]},
+    ).is_success
+    for name in ("caller_only", "target_only"):
+        response = start(client, scope, name, tools=[name])
+        assert response.status_code == 403 and name in response.json()["detail"]
+    response = start(client, scope, tools=["call_subagent", "call_subagent"])
+    assert response.is_success, response.text
+    child = response.json()
+    assert child_job(db, child)["tools"] == ["call_subagent"]
+    assert start(client, scope, tools=["call_subagent"]).json()["id"] == child["id"]
+    assert start(client, scope, tools=[]).status_code == 409
+    with child_scope(db, child) as grant:
+        nested = {**scope, "grant": grant}
+        assert start(client, nested, "expand", tools=["shared"]).status_code == 403
+        assert child_job(db, start(client, nested, "inherit").json())["tools"] == ["call_subagent"]
+        assert child_job(db, start(client, nested, "empty", tools=[]).json())["tools"] == []
+
+
+def test_overrides_apply_only_to_one_turn_including_continuations(client, db, scope, monkeypatch):
+    async def model_info(model):
+        return {
+            "test/default": {"id": model, "reasoning_efforts": ["low"]},
+            "test/alternate": {"id": model, "reasoning_efforts": [], "api": "openai-completions"},
+        }.get(model, {})
+
+    monkeypatch.setattr(chats.catalog, "model_info", model_info)
+    assert client.patch(
+        f"/api/agents/{scope['child']['id']}",
+        json={"config": {"model": "test/default", "reasoning_effort": "low", "tools": ["shared"]}},
+    ).is_success
+    assert start(client, scope, "unknown", model="test/unknown").status_code == 422
+    assert start(client, scope, "invalid", model=" ").status_code == 422
+    assert start(client, scope, "invalid", tools="shared").status_code == 422
+    response = start(client, scope, model="test/alternate", tools=[])
+    assert response.is_success, response.text
+    child = response.json()
+    job = child_job(db, child)
+    assert job["model"] == "test/alternate" and job["reasoning_effort"] is None and job["tools"] == []
+    assert job["model_api"] == "openai-completions"
+    assert start(client, scope, model="test/alternate", tools=[]).json()["id"] == child["id"]
+    assert start(client, scope, model="test/default", tools=[]).status_code == 409
+    chat = db.get_chat(child["chat_id"])
+    assert chat["model"] == "test/default" and chat["reasoning_effort"] == "low"
+    assert chat["tools"] == ["shared"]
+    assert not chat["agent_customized"]
+    finish(db, child)
+    resumed = start(client, scope, "continue", chat_id=chat["id"])
+    assert resumed.is_success, resumed.text
+    job = child_job(db, resumed.json())
+    assert job["model"] == "test/default" and job["reasoning_effort"] == "low" and job["tools"] == ["shared"]
+    finish(db, resumed.json())
+    overridden = start(client, scope, "override-again", chat_id=chat["id"], model="test/alternate", tools=[])
+    assert overridden.is_success, overridden.text
+    assert child_job(db, overridden.json())["model"] == "test/alternate"
+    assert child_job(db, overridden.json())["tools"] == []
+
+
 def test_scope_cannot_be_forged_and_group_can_be_disabled(client, db, scope):
     assert client.post("/api/subagents/list", json={"grant": "x" * 40}).status_code == 401
     assert start(client, scope, agent_id=scope["root"]["id"]).status_code == 403
@@ -245,6 +336,24 @@ def test_access_is_rechecked_after_discovery_before_accepting(client, db, scope,
     call = db.one("SELECT * FROM agent_calls")
     assert call["error"] == "Subagent access was revoked"
     assert "Find facts" not in call["request_hash"]
+
+
+def test_target_tool_ceiling_cannot_change_during_discovery(client, db, scope, monkeypatch):
+    child = start(client, scope).json()
+    finish(db, child)
+    original = chats.catalog.model_info
+
+    async def narrow_during_discovery(model):
+        info = await original(model)
+        # A chat can be reset to a new profile configuration without becoming customized.
+        db.execute("UPDATE chats SET tools='[]' WHERE id=?", (child["chat_id"],))
+        return info
+
+    monkeypatch.setattr(chats.catalog, "model_info", narrow_during_discovery)
+    response = start(client, scope, "race", chat_id=child["chat_id"], tools=["shared"])
+    assert response.status_code == 409
+    assert "configuration changed" in response.json()["detail"]
+    assert db.one("SELECT COUNT(*) AS n FROM chat_turns")["n"] == 2
 
 
 @pytest.mark.asyncio

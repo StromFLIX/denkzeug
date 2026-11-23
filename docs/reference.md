@@ -194,7 +194,9 @@ create a new target-agent chat, or continue an unmodified delegated chat previou
 opened by the same initiating chat. They cannot inject tasks into arbitrary human
 chats or ancestors. Requests and answers carry saved agent attribution in the UI;
 the target is explicitly told the sender is an agent, not the human. Child runs use
-the target's own configuration and separate chat worktrees. Stop/failure propagates
+the target's configuration and separate chat worktrees. A call can choose a different
+configured model for that turn only. Selectable tools must be allowed by both the
+caller and target, and the call can narrow them further. Stop/failure propagates
 to descendants; ordinary parent completion leaves asynchronous children running.
 Interrupted/uncertain calls are never automatically replayed. Allowlist revocations
 apply immediately, unlike copied model/persona defaults. See

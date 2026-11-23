@@ -20,17 +20,19 @@ export function registerSubagentTools(pi: ExtensionAPI, rpc: Rpc, grant: { grant
   const response = (value: any) => ({ content: [{ type: "text" as const, text: JSON.stringify(value) }], details: value });
   if (allowed === null || allowed.has("list_subagents")) pi.registerTool({
     name: "list_subagents", label: "Allowed subagents",
-    description: "List saved agents this turn may call and global tree limits. Allowlist is empty by default. Calls use the target's own model, tools, projects and instructions.",
+    description: "List saved agents this turn may call and global tree limits. Allowlist is empty by default. Calls use the target's projects and instructions, its model by default, and only tools permitted by both agents' turn configurations.",
     parameters: { type: "object", properties: {}, additionalProperties: false },
     async execute(_id, _params, signal) { return response(await transport("backend_list_callable_agents", {}, signal)); },
   });
   if (allowed === null || allowed.has("call_subagent")) pi.registerTool({
     name: "call_subagent", label: "Call agent",
-    description: "Start an allowed agent asynchronously. Omit chat_id for a new conversation, or continue a chat previously opened by this caller chat with that agent. Returns a durable call ID and chat ID. Use wait_for_subagent for results. Depth, total children per turn and whole-tree parallelism are enforced server-side. At capacity, wait for an existing child before retrying; nested parents retain slots. Messages are attributed to the sending agent, not the human.",
+    description: "Start an allowed agent asynchronously. Omit chat_id for a new conversation, or continue a chat previously opened by this caller chat with that agent. Returns a durable call ID and chat ID. Use wait_for_subagent for results. Depth, total children per turn and whole-tree parallelism are enforced server-side. At capacity, wait for an existing child before retrying; nested parents retain slots. Messages are attributed to the sending agent, not the human. Optional model and selectable-tool overrides apply only to the child turn.",
     parameters: { type: "object", required: ["agent_id", "text"], additionalProperties: false, properties: {
       agent_id: { type: "string", minLength: 1, maxLength: 64 },
       text: { type: "string", minLength: 1, maxLength: 32000 },
       chat_id: { type: ["string", "null"] },
+      model: { type: "string", minLength: 1, maxLength: 256, description: "Exact model ID from the configured model catalog. Omit to use the target chat's model." },
+      tools: { type: "array", maxItems: 2000, items: { type: "string", minLength: 1, maxLength: 256 }, description: "Exact selectable tool names, limited to those allowed by both caller and target. Omit to use their intersection; [] disables selectable tools for this child turn." },
     } },
     async execute(id, params: any, signal) {
       return response(await transport("backend_call_subagent", { ...params, request_id: publicationRequestId(id) }, signal));
