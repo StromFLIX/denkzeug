@@ -36,7 +36,7 @@ for (const existing of [[], ['RECORD_AUDIO'], ['MODIFY_AUDIO_SETTINGS'], ['RECOR
       const sync = () => execFileSync(process.execPath, [join(root, 'scripts/sync-android.mjs')])
       sync()
       const gradle = await readFile(join(root, 'android/app/build.gradle'), 'utf8')
-      assert.equal(gradle.split("implementation 'androidx.webkit:webkit:1.14.0'").length - 1, 1)
+      assert.equal(gradle.split("implementation 'androidx.webkit:webkit:1.17.1'").length - 1, 1)
       const manifest = await readFile(manifestPath, 'utf8')
       for (const permission of ['RECORD_AUDIO', 'MODIFY_AUDIO_SETTINGS', 'INTERNET']) {
         assert.equal(manifest.split(`android.permission.${permission}`).length - 1, 1)

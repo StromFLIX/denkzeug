@@ -1,6 +1,6 @@
 # Private CPU streaming appliance. Full dependency graph is hash-locked below.
 moonshine-voice==0.1.6
-fastapi==0.163.1
+fastapi==0.165.0
 uvicorn==0.54.0
 websockets==17.4
 numpy==2.5.5

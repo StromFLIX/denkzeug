@@ -2,7 +2,7 @@
 # Rust HTTP runtime; Python/sh retained only for trusted Coolify maintenance hooks.
 # Build from the repository root. The default target is socket-free smoke.
 # The explicit candidate target is for isolated migration/compatibility runs.
-FROM rust:1.91.1-bookworm AS compile
+FROM rust:1.100.0-bookworm AS compile
 ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends musl-tools && rm -rf /var/lib/apt/lists/*
 WORKDIR /work/services/docker-broker-rust
@@ -24,7 +24,7 @@ RUN set -eu; \
     install -d -m 0700 /runtime/shared/chat-sessions
 
 FROM python:3.13.18-slim-bookworm
-COPY --from=ghcr.io/astral-sh/uv:0.13.8 /uv /uvx /usr/local/bin/
+COPY --from=ghcr.io/astral-sh/uv:0.13.9 /uv /uvx /usr/local/bin/
 RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 ENV UV_COMPILE_BYTECODE=1 \

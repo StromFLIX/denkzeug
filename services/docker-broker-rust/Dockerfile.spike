@@ -1,6 +1,6 @@
 # Build from the repository root. The default target is socket-free smoke.
 # The explicit candidate target is for isolated migration/compatibility runs.
-FROM rust:1.91.1-bookworm AS compile
+FROM rust:1.100.0-bookworm AS compile
 ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends musl-tools && rm -rf /var/lib/apt/lists/*
 WORKDIR /work/services/docker-broker-rust

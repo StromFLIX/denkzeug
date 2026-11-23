@@ -1,0 +1,4525 @@
+{
+  "artcraft": {
+    "cadcraft": {
+      "assets": {
+        "cadcraft-0.20.1-linux-aarch64.tar.gz": "sha256:b149db4bdf61d135fcb40ce7361828c75b18d6f3f710e165ca17f30819d23212",
+        "cadcraft-0.20.1-linux-x86_64.tar.gz": "sha256:57b6f1b41b4f3c542a82f103202ed1a779440e5ff8d25c08ef66abda1a8cb1b9"
+      },
+      "current": "0.20.1",
+      "latest": "v0.20.1",
+      "release": "https://github.com/storytold/cadcraft/releases/tag/v0.20.1",
+      "url": "https://api.github.com/repos/storytold/cadcraft/releases/latest"
+    },
+    "deckcraft": {
+      "assets": {
+        "deckcraft-0.18.1-linux-aarch64.tar.gz": "sha256:3fbd005ce382c853ad056dca7b937802fc0ef6b8564eca5a99a52b670c159e94",
+        "deckcraft-0.18.1-linux-x86_64.tar.gz": "sha256:5bae7d5566638624411ef968f2532ab3358dc280884144583e497c5631db8a26"
+      },
+      "current": "0.18.1",
+      "latest": "v0.18.1",
+      "release": "https://github.com/storytold/deckcraft/releases/tag/v0.18.1",
+      "url": "https://api.github.com/repos/storytold/deckcraft/releases/latest"
+    },
+    "designcraft": {
+      "assets": {
+        "designcraft-0.20.1-linux-aarch64.tar.gz": "sha256:208c3cf73565fa765c47eeb601f94fec425e817d15cc2131dfa1c1ebe2d06620",
+        "designcraft-0.20.1-linux-x86_64.tar.gz": "sha256:e91630d4cdf578ccb1e2f39f88e24e8520f1482d51ae4714657ee471e2237f44"
+      },
+      "current": "0.20.1",
+      "latest": "v0.20.1",
+      "release": "https://github.com/storytold/designcraft/releases/tag/v0.20.1",
+      "url": "https://api.github.com/repos/storytold/designcraft/releases/latest"
+    },
+    "effectcraft": {
+      "assets": {
+        "effectcraft-0.24.1-linux-aarch64.tar.gz": "sha256:ad10c445065681760de9353117c6e2c45167eabcccf0ed19bde2f5c5ac908695",
+        "effectcraft-0.24.1-linux-x86_64.tar.gz": "sha256:5ce0393690144227fa9186e82308ad638a6ef6d9f976c996e6d03b5b51b65a7b"
+      },
+      "current": "0.24.1",
+      "latest": "v0.24.1",
+      "release": "https://github.com/storytold/effectcraft/releases/tag/v0.24.1",
+      "url": "https://api.github.com/repos/storytold/effectcraft/releases/latest"
+    },
+    "figcraft": {
+      "assets": {
+        "figcraft-0.18.1-linux-aarch64.tar.gz": "sha256:b27dee10be5db50def03dee3be470bc2f9ce508be1690e75b4765354d2b89c88",
+        "figcraft-0.18.1-linux-x86_64.tar.gz": "sha256:8276d2ac55c6f77f7af3a411a9b00415d3feb0b59607a54523311340e653fc19"
+      },
+      "current": "0.18.1",
+      "latest": "v0.18.1",
+      "release": "https://github.com/storytold/figcraft/releases/tag/v0.18.1",
+      "url": "https://api.github.com/repos/storytold/figcraft/releases/latest"
+    },
+    "filmcraft": {
+      "assets": {
+        "filmcraft-0.20.1-linux-aarch64.tar.gz": "sha256:cdce3d832620c7cf7150e6609fd98ad9702e7d4c57f827aab562e87d816ea13f",
+        "filmcraft-0.20.1-linux-x86_64.tar.gz": "sha256:3e4fea3cb8d473e68f189a0a8792ba46160fab507adab3ab8920073fd41f24fa"
+      },
+      "current": "0.20.1",
+      "latest": "v0.20.1",
+      "release": "https://github.com/storytold/filmcraft/releases/tag/v0.20.1",
+      "url": "https://api.github.com/repos/storytold/filmcraft/releases/latest"
+    },
+    "gridcraft": {
+      "assets": {
+        "gridcraft-0.19.1-linux-aarch64.tar.gz": "sha256:c05373a366e6dded3201380cb82b3a0a137569a1b122d37c1b0ecf01cbd46b75",
+        "gridcraft-0.19.1-linux-x86_64.tar.gz": "sha256:8d97bba2d5bb00fd69ed55064852c1fd914de40d5ecd55ca01c8df81b828946d"
+      },
+      "current": "0.19.1",
+      "latest": "v0.19.1",
+      "release": "https://github.com/storytold/gridcraft/releases/tag/v0.19.1",
+      "url": "https://api.github.com/repos/storytold/gridcraft/releases/latest"
+    },
+    "lightcraft": {
+      "assets": {
+        "lightcraft-0.21.1-linux-aarch64.tar.gz": "sha256:ae8c557ef7028cbfaefe105c27c30cef9490d25c199803c3f1cbe072bc39d7b6",
+        "lightcraft-0.21.1-linux-x86_64.tar.gz": "sha256:b123de16915809a79e64ba4ee3aee9e1cded6ef23b737c06f81cdc7e2f286d62"
+      },
+      "current": "0.21.1",
+      "latest": "v0.21.1",
+      "release": "https://github.com/storytold/lightcraft/releases/tag/v0.21.1",
+      "url": "https://api.github.com/repos/storytold/lightcraft/releases/latest"
+    },
+    "pdfcraft": {
+      "assets": {
+        "pdfcraft-cli-0.21.1-linux-aarch64.tar.gz": "sha256:e41fc6d757eb6e0b4b6f6d9115a3efa530785c092fc9a5be914893416da6c9f3",
+        "pdfcraft-cli-0.21.1-linux-x86_64.tar.gz": "sha256:a97b2e789d214360424f19814bc66f3eaf6d04ef5e42e472b46f7b9ddceea5c8"
+      },
+      "current": "0.21.1",
+      "latest": "v0.21.1",
+      "release": "https://github.com/storytold/pdfcraft/releases/tag/v0.21.1",
+      "url": "https://api.github.com/repos/storytold/pdfcraft/releases/latest"
+    },
+    "photocraft": {
+      "assets": {
+        "photocraft-0.23.1-linux-aarch64.tar.gz": "sha256:fcc81c38ae62c72fa9f4fd1ec3d18396493ba261662792d6995cc35905ce71d2",
+        "photocraft-0.23.1-linux-x86_64.tar.gz": "sha256:4383aef67a07cc370ad250a6ed60015205d3e6c463faf3ff4b0f67b8178ccfc8"
+      },
+      "current": "0.23.1",
+      "latest": "v0.23.1",
+      "release": "https://github.com/storytold/photocraft/releases/tag/v0.23.1",
+      "url": "https://api.github.com/repos/storytold/photocraft/releases/latest"
+    },
+    "soundcraft": {
+      "assets": {
+        "soundcraft-0.20.1-linux-aarch64.tar.gz": "sha256:93c6c6e5e37c0e57acea76201faacc777ed0f7b8fb8b86baaa71bb55cfd33dfd",
+        "soundcraft-0.20.1-linux-x86_64.tar.gz": "sha256:caefcf85c4f1138717d592d31ce5be07f2fca616ec36d63fac6760cdefbe28a9"
+      },
+      "current": "0.20.1",
+      "latest": "v0.20.1",
+      "release": "https://github.com/storytold/soundcraft/releases/tag/v0.20.1",
+      "url": "https://api.github.com/repos/storytold/soundcraft/releases/latest"
+    },
+    "vectorcraft": {
+      "assets": {
+        "vectorcraft-0.24.1-linux-aarch64.tar.gz": "sha256:4b9735489789d336c1ca4344689eb4a1d4a3f0b6e8db7f8c0659c24d10653455",
+        "vectorcraft-0.24.1-linux-x86_64.tar.gz": "sha256:a090514252fde145495ac6fc65d6ff1311d698998e57ba434d5d0896c3d1fbfa"
+      },
+      "current": "0.24.1",
+      "latest": "v0.24.1",
+      "release": "https://github.com/storytold/vectorcraft/releases/tag/v0.24.1",
+      "url": "https://api.github.com/repos/storytold/vectorcraft/releases/latest"
+    },
+    "wordcraft": {
+      "assets": {
+        "wordcraft-0.18.1-linux-aarch64.tar.gz": "sha256:3f4afc0598357378ad8af9b2e37a2c171f6dd474c9206c9cf0cf56ea686259ed",
+        "wordcraft-0.18.1-linux-x86_64.tar.gz": "sha256:312a057d46dd80597c12dccfd1097ce25edea40baaaeb50bcb6f01ac1aebadb5"
+      },
+      "current": "0.18.1",
+      "latest": "v0.18.1",
+      "release": "https://github.com/storytold/wordcraft/releases/tag/v0.18.1",
+      "url": "https://api.github.com/repos/storytold/wordcraft/releases/latest"
+    }
+  },
+  "baseline_commit": "942c10ab13d81ddbd16c0a60e847f19e58ee435b",
+  "checked_at_utc": "2026-11-23",
+  "github": {
+    "actions/checkout": {
+      "current": "v7.0.1",
+      "latest": "v7.0.1",
+      "release": "https://github.com/actions/checkout/releases/tag/v7.0.1",
+      "url": "https://api.github.com/repos/actions/checkout/releases/latest"
+    },
+    "actions/setup-java": {
+      "current": "v6.3.0",
+      "latest": "v6.3.0",
+      "release": "https://github.com/actions/setup-java/releases/tag/v6.3.0",
+      "url": "https://api.github.com/repos/actions/setup-java/releases/latest"
+    },
+    "actions/setup-node": {
+      "current": "v7.1.0",
+      "latest": "v7.1.0",
+      "release": "https://github.com/actions/setup-node/releases/tag/v7.1.0",
+      "url": "https://api.github.com/repos/actions/setup-node/releases/latest"
+    },
+    "actions/setup-python": {
+      "current": "v7.1.0",
+      "latest": "v7.1.0",
+      "release": "https://github.com/actions/setup-python/releases/tag/v7.1.0",
+      "url": "https://api.github.com/repos/actions/setup-python/releases/latest"
+    },
+    "actions/upload-artifact": {
+      "current": "v7.0.2",
+      "latest": "v7.0.2",
+      "release": "https://github.com/actions/upload-artifact/releases/tag/v7.0.2",
+      "url": "https://api.github.com/repos/actions/upload-artifact/releases/latest"
+    },
+    "agentgateway/agentgateway": {
+      "current": "v1.7.0",
+      "latest": "v1.7.0",
+      "release": "https://github.com/agentgateway/agentgateway/releases/tag/v1.7.0",
+      "url": "https://api.github.com/repos/agentgateway/agentgateway/releases/latest"
+    },
+    "anchore/sbom-action": {
+      "current": "v0.24.3",
+      "latest": "v0.24.3",
+      "release": "https://github.com/anchore/sbom-action/releases/tag/v0.24.3",
+      "url": "https://api.github.com/repos/anchore/sbom-action/releases/latest"
+    },
+    "anchore/scan-action": {
+      "current": "v7.4.2",
+      "latest": "v7.4.2",
+      "release": "https://github.com/anchore/scan-action/releases/tag/v7.4.2",
+      "url": "https://api.github.com/repos/anchore/scan-action/releases/latest"
+    },
+    "android-actions/setup-android": {
+      "current": "v4.0.4",
+      "latest": "v4.0.4",
+      "release": "https://github.com/android-actions/setup-android/releases/tag/v4.0.4",
+      "url": "https://api.github.com/repos/android-actions/setup-android/releases/latest"
+    },
+    "astral-sh/setup-uv": {
+      "current": "v10.3.3",
+      "latest": "v10.4.0",
+      "release": "https://github.com/astral-sh/setup-uv/releases/tag/v10.4.0",
+      "url": "https://api.github.com/repos/astral-sh/setup-uv/releases/latest"
+    },
+    "astral-sh/uv": {
+      "current": "0.13.8",
+      "latest": "0.13.9",
+      "release": "https://github.com/astral-sh/uv/releases/tag/0.13.9",
+      "url": "https://api.github.com/repos/astral-sh/uv/releases/latest"
+    },
+    "coollabsio/maxio": {
+      "current": "v0.4.2",
+      "latest": "v0.4.2",
+      "release": "https://github.com/coollabsio/maxio/releases/tag/v0.4.2",
+      "url": "https://api.github.com/repos/coollabsio/maxio/releases/latest"
+    },
+    "docker/bake-action": {
+      "current": "v7.5.0",
+      "latest": "v7.5.0",
+      "release": "https://github.com/docker/bake-action/releases/tag/v7.5.0",
+      "url": "https://api.github.com/repos/docker/bake-action/releases/latest"
+    },
+    "docker/build-push-action": {
+      "current": "v7.4.0",
+      "latest": "v7.4.0",
+      "release": "https://github.com/docker/build-push-action/releases/tag/v7.4.0",
+      "url": "https://api.github.com/repos/docker/build-push-action/releases/latest"
+    },
+    "docker/buildx": {
+      "current": "v0.39.0",
+      "latest": "v0.39.1",
+      "release": "https://github.com/docker/buildx/releases/tag/v0.39.1",
+      "url": "https://api.github.com/repos/docker/buildx/releases/latest"
+    },
+    "docker/cli": {
+      "current": null,
+      "error": "HTTP Error 404: Not Found",
+      "url": "https://api.github.com/repos/docker/cli/releases/latest"
+    },
+    "docker/login-action": {
+      "current": "v4.8.0",
+      "latest": "v4.8.0",
+      "release": "https://github.com/docker/login-action/releases/tag/v4.8.0",
+      "url": "https://api.github.com/repos/docker/login-action/releases/latest"
+    },
+    "docker/setup-buildx-action": {
+      "current": "v4.4.1",
+      "latest": "v4.4.1",
+      "release": "https://github.com/docker/setup-buildx-action/releases/tag/v4.4.1",
+      "url": "https://api.github.com/repos/docker/setup-buildx-action/releases/latest"
+    },
+    "earendil-works/pi": {
+      "current": "v1.5.2",
+      "latest": "v1.6.0",
+      "release": "https://github.com/earendil-works/pi/releases/tag/v1.6.0",
+      "url": "https://api.github.com/repos/earendil-works/pi/releases/latest"
+    },
+    "microsoft/playwright": {
+      "current": null,
+      "latest": "v1.65.1",
+      "release": "https://github.com/microsoft/playwright/releases/tag/v1.65.1",
+      "url": "https://api.github.com/repos/microsoft/playwright/releases/latest"
+    },
+    "nginx/nginx": {
+      "current": "release-1.31.8",
+      "latest": "release-1.31.9",
+      "release": "https://github.com/nginx/nginx/releases/tag/release-1.31.9",
+      "url": "https://api.github.com/repos/nginx/nginx/releases/latest"
+    },
+    "npm/cli": {
+      "current": "v12.2.2",
+      "latest": "libnpmpack-v8.0.6",
+      "release": "https://github.com/npm/cli/releases/tag/libnpmpack-v8.0.6",
+      "url": "https://api.github.com/repos/npm/cli/releases/latest"
+    },
+    "open-telemetry/opentelemetry-collector-contrib": {
+      "current": "v0.165.1",
+      "latest": "v0.165.1",
+      "release": "https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.165.1",
+      "url": "https://api.github.com/repos/open-telemetry/opentelemetry-collector-contrib/releases/latest"
+    },
+    "rust-lang/rust": {
+      "current": null,
+      "latest": "1.100.0",
+      "release": "https://github.com/rust-lang/rust/releases/tag/1.100.0",
+      "url": "https://api.github.com/repos/rust-lang/rust/releases/latest"
+    },
+    "softprops/action-gh-release": {
+      "current": "v3.0.4",
+      "latest": "v3.0.4",
+      "release": "https://github.com/softprops/action-gh-release/releases/tag/v3.0.4",
+      "url": "https://api.github.com/repos/softprops/action-gh-release/releases/latest"
+    },
+    "temporalio/temporal": {
+      "current": "v1.32.2",
+      "latest": "v1.32.2",
+      "release": "https://github.com/temporalio/temporal/releases/tag/v1.32.2",
+      "url": "https://api.github.com/repos/temporalio/temporal/releases/latest"
+    },
+    "temporalio/ui": {
+      "current": "v2.58.1",
+      "latest": "v2.58.1",
+      "release": "https://github.com/temporalio/ui/releases/tag/v2.58.1",
+      "url": "https://api.github.com/repos/temporalio/ui/releases/latest"
+    },
+    "tianon/gosu": {
+      "current": "1.20",
+      "latest": "1.20",
+      "release": "https://github.com/tianon/gosu/releases/tag/1.20",
+      "url": "https://api.github.com/repos/tianon/gosu/releases/latest"
+    }
+  },
+  "npm": {
+    "@capacitor/android": {
+      "current": "8.6.2",
+      "latest": "8.6.2",
+      "url": "https://registry.npmjs.org/@capacitor/android/latest"
+    },
+    "@capacitor/app": {
+      "current": "8.1.2",
+      "latest": "8.1.2",
+      "url": "https://registry.npmjs.org/@capacitor/app/latest"
+    },
+    "@capacitor/cli": {
+      "current": "8.6.2",
+      "latest": "8.6.2",
+      "url": "https://registry.npmjs.org/@capacitor/cli/latest"
+    },
+    "@capacitor/core": {
+      "current": "8.6.2",
+      "latest": "8.6.2",
+      "url": "https://registry.npmjs.org/@capacitor/core/latest"
+    },
+    "@capacitor/filesystem": {
+      "current": "8.1.5",
+      "latest": "8.1.5",
+      "url": "https://registry.npmjs.org/@capacitor/filesystem/latest"
+    },
+    "@capacitor/ios": {
+      "current": "8.6.2",
+      "latest": "8.6.2",
+      "url": "https://registry.npmjs.org/@capacitor/ios/latest"
+    },
+    "@capacitor/keyboard": {
+      "current": "8.0.6",
+      "latest": "8.0.6",
+      "url": "https://registry.npmjs.org/@capacitor/keyboard/latest"
+    },
+    "@capacitor/share": {
+      "current": "8.0.3",
+      "latest": "8.0.3",
+      "url": "https://registry.npmjs.org/@capacitor/share/latest"
+    },
+    "@dagrejs/dagre": {
+      "current": "3.1.3",
+      "latest": "3.1.3",
+      "url": "https://registry.npmjs.org/@dagrejs/dagre/latest"
+    },
+    "@modelcontextprotocol/client": {
+      "current": "2.4.0",
+      "latest": "2.4.0",
+      "url": "https://registry.npmjs.org/@modelcontextprotocol/client/latest"
+    },
+    "@modelcontextprotocol/ext-apps": {
+      "current": "2.0.4",
+      "latest": "2.0.4",
+      "url": "https://registry.npmjs.org/@modelcontextprotocol/ext-apps/latest"
+    },
+    "@playwright/test": {
+      "current": "1.65.1",
+      "latest": "1.65.1",
+      "url": "https://registry.npmjs.org/@playwright/test/latest"
+    },
+    "@quasar/extras": {
+      "current": "2.1.0",
+      "latest": "2.1.0",
+      "url": "https://registry.npmjs.org/@quasar/extras/latest"
+    },
+    "@quasar/vite-plugin": {
+      "current": "2.0.2",
+      "latest": "2.0.2",
+      "url": "https://registry.npmjs.org/@quasar/vite-plugin/latest"
+    },
+    "@vitejs/plugin-vue": {
+      "current": "6.0.11",
+      "latest": "6.0.11",
+      "url": "https://registry.npmjs.org/@vitejs/plugin-vue/latest"
+    },
+    "@vue-flow/background": {
+      "current": "1.3.2",
+      "latest": "1.3.2",
+      "url": "https://registry.npmjs.org/@vue-flow/background/latest"
+    },
+    "@vue-flow/core": {
+      "current": "1.48.2",
+      "latest": "1.48.2",
+      "url": "https://registry.npmjs.org/@vue-flow/core/latest"
+    },
+    "css-tree": {
+      "current": "3.2.1",
+      "latest": "3.2.1",
+      "url": "https://registry.npmjs.org/css-tree/latest"
+    },
+    "dompurify": {
+      "current": "3.4.18",
+      "latest": "3.5.0",
+      "url": "https://registry.npmjs.org/dompurify/latest"
+    },
+    "electron": {
+      "current": "45.3.2",
+      "latest": "45.4.1",
+      "url": "https://registry.npmjs.org/electron/latest"
+    },
+    "electron-builder": {
+      "current": "26.18.0",
+      "latest": "26.18.0",
+      "url": "https://registry.npmjs.org/electron-builder/latest"
+    },
+    "fake-indexeddb": {
+      "current": "6.2.8",
+      "latest": "6.2.8",
+      "url": "https://registry.npmjs.org/fake-indexeddb/latest"
+    },
+    "highlight.js": {
+      "current": "11.12.0",
+      "latest": "11.12.0",
+      "url": "https://registry.npmjs.org/highlight.js/latest"
+    },
+    "idb": {
+      "current": "8.0.4",
+      "latest": "8.0.4",
+      "url": "https://registry.npmjs.org/idb/latest"
+    },
+    "katex": {
+      "current": "0.19.1",
+      "latest": "0.19.1",
+      "url": "https://registry.npmjs.org/katex/latest"
+    },
+    "marked": {
+      "current": "18.2.0",
+      "latest": "18.2.1",
+      "url": "https://registry.npmjs.org/marked/latest"
+    },
+    "pdfjs-dist": {
+      "current": "6.5.438",
+      "latest": "6.5.438",
+      "url": "https://registry.npmjs.org/pdfjs-dist/latest"
+    },
+    "quasar": {
+      "current": "2.35.4",
+      "latest": "2.35.6",
+      "url": "https://registry.npmjs.org/quasar/latest"
+    },
+    "sass-embedded": {
+      "current": "1.108.2",
+      "latest": "1.108.2",
+      "url": "https://registry.npmjs.org/sass-embedded/latest"
+    },
+    "vite": {
+      "current": "8.3.8",
+      "latest": "8.3.8",
+      "url": "https://registry.npmjs.org/vite/latest"
+    },
+    "vue": {
+      "current": "3.5.45",
+      "latest": "3.5.46",
+      "url": "https://registry.npmjs.org/vue/latest"
+    },
+    "vue-router": {
+      "current": "5.5.1",
+      "latest": "5.5.1",
+      "url": "https://registry.npmjs.org/vue-router/latest"
+    },
+    "zod": {
+      "current": "4.6.7",
+      "latest": "4.6.7",
+      "url": "https://registry.npmjs.org/zod/latest"
+    }
+  },
+  "npm_absent_optional_rows": 87,
+  "npm_remaining": [
+    {
+      "current": "7.29.15",
+      "dependent": "@babel/types",
+      "latest": "8.1.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@babel/helper-string-parser",
+      "wanted": "7.29.15"
+    },
+    {
+      "current": "7.29.7",
+      "dependent": "@babel/types",
+      "latest": "8.0.6",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@babel/helper-validator-identifier",
+      "wanted": "7.29.7"
+    },
+    {
+      "current": "7.29.15",
+      "dependent": "@vue/compiler-core",
+      "latest": "8.1.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@babel/parser",
+      "wanted": "7.29.15"
+    },
+    {
+      "current": "7.29.15",
+      "dependent": "@vue/compiler-sfc",
+      "latest": "8.1.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@babel/parser",
+      "wanted": "7.29.15"
+    },
+    {
+      "current": "7.29.15",
+      "dependent": "ast-kit",
+      "latest": "8.1.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@babel/parser",
+      "wanted": "7.29.15"
+    },
+    {
+      "current": "7.29.15",
+      "dependent": "@babel/parser",
+      "latest": "8.1.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@babel/types",
+      "wanted": "7.29.15"
+    },
+    {
+      "current": "4.0.6",
+      "dependent": "@dagrejs/dagre",
+      "latest": "4.0.7",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@dagrejs/graphlib",
+      "wanted": "4.0.6"
+    },
+    {
+      "current": "3.4.1",
+      "dependent": "@electron/universal",
+      "latest": "4.3.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@electron/asar",
+      "wanted": "3.4.1"
+    },
+    {
+      "current": "3.4.1",
+      "dependent": "app-builder-lib",
+      "latest": "4.3.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@electron/asar",
+      "wanted": "3.4.1"
+    },
+    {
+      "current": "3.4.1",
+      "dependent": "electron-winstaller",
+      "latest": "4.3.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@electron/asar",
+      "wanted": "3.4.1"
+    },
+    {
+      "current": "1.8.0",
+      "dependent": "app-builder-lib",
+      "latest": "2.1.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@electron/fuses",
+      "wanted": "1.8.0"
+    },
+    {
+      "current": "3.1.0",
+      "dependent": "app-builder-lib",
+      "latest": "5.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@electron/get",
+      "wanted": "3.1.0"
+    },
+    {
+      "current": "2.5.0",
+      "dependent": "app-builder-lib",
+      "latest": "3.1.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@electron/notarize",
+      "wanted": "2.5.0"
+    },
+    {
+      "current": "1.3.3",
+      "dependent": "app-builder-lib",
+      "latest": "2.7.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@electron/osx-sign",
+      "wanted": "1.3.3"
+    },
+    {
+      "current": "2.0.3",
+      "dependent": "app-builder-lib",
+      "latest": "3.0.6",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@electron/universal",
+      "wanted": "2.0.3"
+    },
+    {
+      "current": "1.2.2",
+      "dependent": "electron-winstaller",
+      "latest": "2.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@electron/windows-sign",
+      "wanted": "1.2.2"
+    },
+    {
+      "current": "1.8.0",
+      "dependent": "app-builder-lib",
+      "latest": "2.4.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@noble/hashes",
+      "wanted": "1.8.0"
+    },
+    {
+      "current": "1.8.0",
+      "dependent": "pkijs",
+      "latest": "2.4.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@noble/hashes",
+      "wanted": "1.8.0"
+    },
+    {
+      "current": "0.156.0",
+      "dependent": "rolldown",
+      "latest": "0.159.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@oxc-project/types",
+      "wanted": "0.156.0"
+    },
+    {
+      "current": "2.11.1",
+      "dependent": "@peculiar/webcrypto",
+      "latest": "3.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@peculiar/asn1-schema",
+      "wanted": "2.11.1"
+    },
+    {
+      "current": "2.11.1",
+      "dependent": "webcrypto-core",
+      "latest": "3.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@peculiar/asn1-schema",
+      "wanted": "2.11.1"
+    },
+    {
+      "current": "1.1.12",
+      "dependent": "@peculiar/webcrypto",
+      "latest": "3.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@peculiar/json-schema",
+      "wanted": "1.1.12"
+    },
+    {
+      "current": "1.1.12",
+      "dependent": "webcrypto-core",
+      "latest": "3.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@peculiar/json-schema",
+      "wanted": "1.1.12"
+    },
+    {
+      "current": "2.0.3",
+      "dependent": "@peculiar/asn1-schema",
+      "latest": "4.1.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@peculiar/utils",
+      "wanted": "2.0.3"
+    },
+    {
+      "current": "2.0.3",
+      "dependent": "@peculiar/webcrypto",
+      "latest": "4.1.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@peculiar/utils",
+      "wanted": "2.0.3"
+    },
+    {
+      "current": "2.0.3",
+      "dependent": "webcrypto-core",
+      "latest": "4.1.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@peculiar/utils",
+      "wanted": "2.0.3"
+    },
+    {
+      "current": "1.7.2",
+      "dependent": "app-builder-lib",
+      "latest": "2.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@peculiar/webcrypto",
+      "wanted": "1.7.2"
+    },
+    {
+      "current": "1.2.19",
+      "dependent": "rolldown",
+      "latest": "1.3.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@rolldown/binding-linux-x64-gnu",
+      "wanted": "1.2.19"
+    },
+    {
+      "current": "4.6.0",
+      "dependent": "got",
+      "latest": "8.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@sindresorhus/is",
+      "wanted": "4.6.0"
+    },
+    {
+      "current": "4.0.6",
+      "dependent": "got",
+      "latest": "5.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@szmarczak/http-timer",
+      "wanted": "4.0.6"
+    },
+    {
+      "current": "8.1.5",
+      "dependent": "@ionic/utils-fs",
+      "latest": "11.0.4",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@types/fs-extra",
+      "wanted": "8.1.5"
+    },
+    {
+      "current": "9.0.13",
+      "dependent": "app-builder-lib",
+      "latest": "11.0.4",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@types/fs-extra",
+      "wanted": "9.0.13"
+    },
+    {
+      "current": "9.0.13",
+      "dependent": "electron-publish",
+      "latest": "11.0.4",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@types/fs-extra",
+      "wanted": "9.0.13"
+    },
+    {
+      "current": "24.19.2",
+      "dependent": "electron",
+      "latest": "26.6.6",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@types/node",
+      "wanted": "24.19.2"
+    },
+    {
+      "current": "4.0.0",
+      "dependent": "@ionic/utils-terminal",
+      "latest": "5.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@types/slice-ansi",
+      "wanted": "4.0.0"
+    },
+    {
+      "current": "0.0.20",
+      "dependent": "@vueuse/core",
+      "latest": "0.0.22",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@types/web-bluetooth",
+      "wanted": "0.0.20"
+    },
+    {
+      "current": "10.11.1",
+      "dependent": "@vue-flow/core",
+      "latest": "15.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@vueuse/core",
+      "wanted": "10.11.1"
+    },
+    {
+      "current": "10.11.1",
+      "dependent": "@vueuse/core",
+      "latest": "15.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@vueuse/metadata",
+      "wanted": "10.11.1"
+    },
+    {
+      "current": "10.11.1",
+      "dependent": "@vueuse/core",
+      "latest": "15.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@vueuse/shared",
+      "wanted": "10.11.1"
+    },
+    {
+      "current": "0.8.15",
+      "dependent": "plist",
+      "latest": "0.9.12",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "@xmldom/xmldom",
+      "wanted": "0.8.15"
+    },
+    {
+      "current": "4.0.0",
+      "dependent": "nopt",
+      "latest": "5.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "abbrev",
+      "wanted": "4.0.0"
+    },
+    {
+      "current": "7.1.4",
+      "dependent": "http-proxy-agent",
+      "latest": "9.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "agent-base",
+      "wanted": "7.1.4"
+    },
+    {
+      "current": "7.1.4",
+      "dependent": "https-proxy-agent",
+      "latest": "9.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "agent-base",
+      "wanted": "7.1.4"
+    },
+    {
+      "current": "5.0.1",
+      "dependent": "strip-ansi",
+      "latest": "6.6.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "ansi-regex",
+      "wanted": "5.0.1"
+    },
+    {
+      "current": "4.3.0",
+      "dependent": "chalk",
+      "latest": "7.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "ansi-styles",
+      "wanted": "4.3.0"
+    },
+    {
+      "current": "4.3.0",
+      "dependent": "slice-ansi",
+      "latest": "7.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "ansi-styles",
+      "wanted": "4.3.0"
+    },
+    {
+      "current": "4.3.0",
+      "dependent": "wrap-ansi",
+      "latest": "7.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "ansi-styles",
+      "wanted": "4.3.0"
+    },
+    {
+      "current": "2.0.1",
+      "dependent": "js-yaml",
+      "latest": "3.0.4",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "argparse",
+      "wanted": "2.0.1"
+    },
+    {
+      "current": "3.1.0",
+      "dependent": "@peculiar/asn1-schema",
+      "latest": "4.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "asn1js",
+      "wanted": "3.1.0"
+    },
+    {
+      "current": "3.1.0",
+      "dependent": "app-builder-lib",
+      "latest": "4.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "asn1js",
+      "wanted": "3.1.0"
+    },
+    {
+      "current": "3.1.0",
+      "dependent": "pkijs",
+      "latest": "4.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "asn1js",
+      "wanted": "3.1.0"
+    },
+    {
+      "current": "3.1.0",
+      "dependent": "webcrypto-core",
+      "latest": "4.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "asn1js",
+      "wanted": "3.1.0"
+    },
+    {
+      "current": "2.2.0",
+      "dependent": "@vue-macros/common",
+      "latest": "3.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "ast-kit",
+      "wanted": "2.2.0"
+    },
+    {
+      "current": "0.4.0",
+      "dependent": "form-data",
+      "latest": "0.5.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "asynckit",
+      "wanted": "0.4.0"
+    },
+    {
+      "current": "4.0.4",
+      "dependent": "brace-expansion",
+      "latest": "5.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "balanced-match",
+      "wanted": "4.0.4"
+    },
+    {
+      "current": "1.0.2",
+      "dependent": "brace-expansion",
+      "latest": "5.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "balanced-match",
+      "wanted": "1.0.2"
+    },
+    {
+      "current": "1.0.2",
+      "dependent": "brace-expansion",
+      "latest": "5.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "balanced-match",
+      "wanted": "1.0.2"
+    },
+    {
+      "current": "1.0.2",
+      "dependent": "brace-expansion",
+      "latest": "5.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "balanced-match",
+      "wanted": "1.0.2"
+    },
+    {
+      "current": "1.0.2",
+      "dependent": "brace-expansion",
+      "latest": "5.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "balanced-match",
+      "wanted": "1.0.2"
+    },
+    {
+      "current": "2.9.0",
+      "dependent": "@vue/devtools-kit",
+      "latest": "4.2.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "birpc",
+      "wanted": "2.9.0"
+    },
+    {
+      "current": "0.1.0",
+      "dependent": "simple-plist",
+      "latest": "0.4.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "bplist-creator",
+      "wanted": "0.1.0"
+    },
+    {
+      "current": "0.3.2",
+      "dependent": "native-run",
+      "latest": "0.6.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "bplist-parser",
+      "wanted": "0.3.2"
+    },
+    {
+      "current": "0.3.1",
+      "dependent": "simple-plist",
+      "latest": "0.6.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "bplist-parser",
+      "wanted": "0.3.1"
+    },
+    {
+      "current": "1.1.22",
+      "dependent": "minimatch",
+      "latest": "5.0.13",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "brace-expansion",
+      "wanted": "1.1.22"
+    },
+    {
+      "current": "1.1.22",
+      "dependent": "minimatch",
+      "latest": "5.0.13",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "brace-expansion",
+      "wanted": "1.1.22"
+    },
+    {
+      "current": "2.1.8",
+      "dependent": "minimatch",
+      "latest": "5.0.13",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "brace-expansion",
+      "wanted": "2.1.8"
+    },
+    {
+      "current": "1.1.22",
+      "dependent": "minimatch",
+      "latest": "5.0.13",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "brace-expansion",
+      "wanted": "1.1.22"
+    },
+    {
+      "current": "0.2.13",
+      "dependent": "yauzl",
+      "latest": "1.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "buffer-crc32",
+      "wanted": "0.2.13"
+    },
+    {
+      "current": "2.0.1",
+      "dependent": "pkijs",
+      "latest": "3.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "bytestreamjs",
+      "wanted": "2.0.1"
+    },
+    {
+      "current": "5.0.4",
+      "dependent": "got",
+      "latest": "7.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "cacheable-lookup",
+      "wanted": "5.0.4"
+    },
+    {
+      "current": "7.0.4",
+      "dependent": "got",
+      "latest": "13.0.19",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "cacheable-request",
+      "wanted": "7.0.4"
+    },
+    {
+      "current": "4.1.2",
+      "dependent": "@electron/fuses",
+      "latest": "6.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "chalk",
+      "wanted": "4.1.2"
+    },
+    {
+      "current": "4.1.2",
+      "dependent": "builder-util",
+      "latest": "6.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "chalk",
+      "wanted": "4.1.2"
+    },
+    {
+      "current": "4.1.2",
+      "dependent": "electron-builder",
+      "latest": "6.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "chalk",
+      "wanted": "4.1.2"
+    },
+    {
+      "current": "4.1.2",
+      "dependent": "electron-publish",
+      "latest": "6.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "chalk",
+      "wanted": "4.1.2"
+    },
+    {
+      "current": "5.0.0",
+      "dependent": "sass",
+      "latest": "6.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "chokidar",
+      "wanted": "5.0.0"
+    },
+    {
+      "current": "4.3.1",
+      "dependent": "app-builder-lib",
+      "latest": "4.5.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "ci-info",
+      "wanted": "4.3.1"
+    },
+    {
+      "current": "8.0.1",
+      "dependent": "yargs",
+      "latest": "9.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "cliui",
+      "wanted": "8.0.1"
+    },
+    {
+      "current": "1.0.3",
+      "dependent": "cacheable-request",
+      "latest": "2.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "clone-response",
+      "wanted": "1.0.3"
+    },
+    {
+      "current": "2.0.1",
+      "dependent": "ansi-styles",
+      "latest": "3.1.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "color-convert",
+      "wanted": "2.0.1"
+    },
+    {
+      "current": "1.1.4",
+      "dependent": "color-convert",
+      "latest": "2.1.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "color-name",
+      "wanted": "1.1.4"
+    },
+    {
+      "current": "12.1.0",
+      "dependent": "@capacitor/cli",
+      "latest": "15.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "commander",
+      "wanted": "12.1.0"
+    },
+    {
+      "current": "5.1.0",
+      "dependent": "@electron/asar",
+      "latest": "15.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "commander",
+      "wanted": "5.1.0"
+    },
+    {
+      "current": "9.5.0",
+      "dependent": "postject",
+      "latest": "15.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "commander",
+      "wanted": "9.5.0"
+    },
+    {
+      "current": "0.0.1",
+      "dependent": "brace-expansion",
+      "latest": "0.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "concat-map",
+      "wanted": "0.0.1"
+    },
+    {
+      "current": "0.0.1",
+      "dependent": "brace-expansion",
+      "latest": "0.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "concat-map",
+      "wanted": "0.0.1"
+    },
+    {
+      "current": "0.0.1",
+      "dependent": "brace-expansion",
+      "latest": "0.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "concat-map",
+      "wanted": "0.0.1"
+    },
+    {
+      "current": "0.1.8",
+      "dependent": "pkg-types",
+      "latest": "0.3.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "confbox",
+      "wanted": "0.1.8"
+    },
+    {
+      "current": "6.0.0",
+      "dependent": "got",
+      "latest": "10.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "decompress-response",
+      "wanted": "6.0.0"
+    },
+    {
+      "current": "2.0.0",
+      "dependent": "open",
+      "latest": "3.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "define-lazy-prop",
+      "wanted": "2.0.0"
+    },
+    {
+      "current": "4.2.0",
+      "dependent": "@electron/universal",
+      "latest": "5.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "dir-compare",
+      "wanted": "4.2.0"
+    },
+    {
+      "current": "16.6.1",
+      "dependent": "app-builder-lib",
+      "latest": "18.0.10",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "dotenv",
+      "wanted": "16.6.1"
+    },
+    {
+      "current": "16.6.1",
+      "dependent": "dotenv-expand",
+      "latest": "18.0.10",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "dotenv",
+      "wanted": "16.6.1"
+    },
+    {
+      "current": "11.0.7",
+      "dependent": "app-builder-lib",
+      "latest": "1000.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "dotenv-expand",
+      "wanted": "11.0.7"
+    },
+    {
+      "current": "3.1.10",
+      "dependent": "app-builder-lib",
+      "latest": "7.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "ejs",
+      "wanted": "3.1.10"
+    },
+    {
+      "current": "5.4.0",
+      "dependent": "electron-builder-squirrel-windows",
+      "latest": "5.4.4",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "electron-winstaller",
+      "wanted": "5.4.0"
+    },
+    {
+      "current": "8.0.0",
+      "dependent": "string-width",
+      "latest": "11.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "emoji-regex",
+      "wanted": "8.0.0"
+    },
+    {
+      "current": "7.0.1",
+      "dependent": "@vue/compiler-core",
+      "latest": "9.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "entities",
+      "wanted": "7.0.1"
+    },
+    {
+      "current": "2.2.1",
+      "dependent": "@capacitor/cli",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "env-paths",
+      "wanted": "2.2.1"
+    },
+    {
+      "current": "3.0.0",
+      "dependent": "@electron/get",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "env-paths",
+      "wanted": "3.0.0"
+    },
+    {
+      "current": "2.2.1",
+      "dependent": "@electron/get",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "env-paths",
+      "wanted": "2.2.1"
+    },
+    {
+      "current": "2.2.1",
+      "dependent": "node-gyp",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "env-paths",
+      "wanted": "2.2.1"
+    },
+    {
+      "current": "2.0.3",
+      "dependent": "promise-retry",
+      "latest": "3.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "err-code",
+      "wanted": "2.0.3"
+    },
+    {
+      "current": "4.0.0",
+      "dependent": "matcher",
+      "latest": "5.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "escape-string-regexp",
+      "wanted": "4.0.0"
+    },
+    {
+      "current": "2.0.2",
+      "dependent": "@vue/compiler-core",
+      "latest": "3.0.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "estree-walker",
+      "wanted": "2.0.2"
+    },
+    {
+      "current": "2.0.2",
+      "dependent": "@vue/compiler-sfc",
+      "latest": "3.0.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "estree-walker",
+      "wanted": "2.0.2"
+    },
+    {
+      "current": "3.0.7",
+      "dependent": "@modelcontextprotocol/client",
+      "latest": "5.1.5",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "eventsource",
+      "wanted": "3.0.7"
+    },
+    {
+      "current": "3.1.1",
+      "dependent": "@modelcontextprotocol/client",
+      "latest": "4.1.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "eventsource-parser",
+      "wanted": "3.1.1"
+    },
+    {
+      "current": "3.1.1",
+      "dependent": "eventsource",
+      "latest": "4.1.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "eventsource-parser",
+      "wanted": "3.1.1"
+    },
+    {
+      "current": "3.1.9",
+      "dependent": "ajv",
+      "latest": "4.2.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fast-uri",
+      "wanted": "3.1.9"
+    },
+    {
+      "current": "1.0.6",
+      "dependent": "jake",
+      "latest": "2.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "filelist",
+      "wanted": "1.0.6"
+    },
+    {
+      "current": "9.1.0",
+      "dependent": "@electron/fuses",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "9.1.0"
+    },
+    {
+      "current": "8.1.0",
+      "dependent": "@electron/get",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "8.1.0"
+    },
+    {
+      "current": "9.1.0",
+      "dependent": "@electron/notarize",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "9.1.0"
+    },
+    {
+      "current": "10.1.0",
+      "dependent": "@electron/osx-sign",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "10.1.0"
+    },
+    {
+      "current": "9.1.0",
+      "dependent": "@ionic/utils-fs",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "9.1.0"
+    },
+    {
+      "current": "9.1.0",
+      "dependent": "@malept/flatpak-bundler",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "9.1.0"
+    },
+    {
+      "current": "10.1.0",
+      "dependent": "app-builder-lib",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "10.1.0"
+    },
+    {
+      "current": "10.1.0",
+      "dependent": "builder-util",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "10.1.0"
+    },
+    {
+      "current": "10.1.0",
+      "dependent": "dmg-builder",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "10.1.0"
+    },
+    {
+      "current": "10.1.0",
+      "dependent": "electron-builder",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "10.1.0"
+    },
+    {
+      "current": "10.1.0",
+      "dependent": "electron-publish",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "10.1.0"
+    },
+    {
+      "current": "7.0.1",
+      "dependent": "electron-winstaller",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "7.0.1"
+    },
+    {
+      "current": "10.1.0",
+      "dependent": "temp-file",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "10.1.0"
+    },
+    {
+      "current": "11.3.1",
+      "dependent": "unzipper",
+      "latest": "11.4.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "fs-extra",
+      "wanted": "11.3.1"
+    },
+    {
+      "current": "5.2.0",
+      "dependent": "cacheable-request",
+      "latest": "9.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "get-stream",
+      "wanted": "5.2.0"
+    },
+    {
+      "current": "7.2.3",
+      "dependent": "@electron/asar",
+      "latest": "14.0.6",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "glob",
+      "wanted": "7.2.3"
+    },
+    {
+      "current": "7.2.3",
+      "dependent": "rimraf",
+      "latest": "14.0.6",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "glob",
+      "wanted": "7.2.3"
+    },
+    {
+      "current": "3.0.0",
+      "dependent": "@electron/get",
+      "latest": "4.1.7",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "global-agent",
+      "wanted": "3.0.0"
+    },
+    {
+      "current": "11.8.6",
+      "dependent": "@electron/get",
+      "latest": "16.2.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "got",
+      "wanted": "11.8.6"
+    },
+    {
+      "current": "4.0.0",
+      "dependent": "supports-color",
+      "latest": "5.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "has-flag",
+      "wanted": "4.0.0"
+    },
+    {
+      "current": "4.0.0",
+      "dependent": "supports-color",
+      "latest": "5.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "has-flag",
+      "wanted": "4.0.0"
+    },
+    {
+      "current": "5.5.3",
+      "dependent": "@vue/devtools-kit",
+      "latest": "6.1.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "hookable",
+      "wanted": "5.5.3"
+    },
+    {
+      "current": "4.1.0",
+      "dependent": "app-builder-lib",
+      "latest": "10.1.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "hosted-git-info",
+      "wanted": "4.1.0"
+    },
+    {
+      "current": "7.0.2",
+      "dependent": "builder-util",
+      "latest": "9.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "http-proxy-agent",
+      "wanted": "7.0.2"
+    },
+    {
+      "current": "1.0.3",
+      "dependent": "got",
+      "latest": "2.2.4",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "http2-wrapper",
+      "wanted": "1.0.3"
+    },
+    {
+      "current": "7.0.6",
+      "dependent": "builder-util",
+      "latest": "9.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "https-proxy-agent",
+      "wanted": "7.0.6"
+    },
+    {
+      "current": "4.1.3",
+      "dependent": "native-run",
+      "latest": "7.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "ini",
+      "wanted": "4.1.3"
+    },
+    {
+      "current": "2.2.1",
+      "dependent": "is-wsl",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "is-docker",
+      "wanted": "2.2.1"
+    },
+    {
+      "current": "2.2.1",
+      "dependent": "open",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "is-docker",
+      "wanted": "2.2.1"
+    },
+    {
+      "current": "3.0.0",
+      "dependent": "slice-ansi",
+      "latest": "5.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "is-fullwidth-code-point",
+      "wanted": "3.0.0"
+    },
+    {
+      "current": "3.0.0",
+      "dependent": "string-width",
+      "latest": "5.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "is-fullwidth-code-point",
+      "wanted": "3.0.0"
+    },
+    {
+      "current": "2.2.0",
+      "dependent": "open",
+      "latest": "3.1.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "is-wsl",
+      "wanted": "2.2.0"
+    },
+    {
+      "current": "1.0.0",
+      "dependent": "readable-stream",
+      "latest": "2.0.5",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "isarray",
+      "wanted": "1.0.0"
+    },
+    {
+      "current": "4.0.10",
+      "dependent": "@electron/osx-sign",
+      "latest": "6.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "isbinaryfile",
+      "wanted": "4.0.10"
+    },
+    {
+      "current": "5.0.7",
+      "dependent": "app-builder-lib",
+      "latest": "6.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "isbinaryfile",
+      "wanted": "5.0.7"
+    },
+    {
+      "current": "2.0.0",
+      "dependent": "which",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "isexe",
+      "wanted": "2.0.0"
+    },
+    {
+      "current": "3.1.5",
+      "dependent": "which",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "isexe",
+      "wanted": "3.1.5"
+    },
+    {
+      "current": "10.9.4",
+      "dependent": "ejs",
+      "latest": "13.0.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "jake",
+      "wanted": "10.9.4"
+    },
+    {
+      "current": "4.3.2",
+      "dependent": "app-builder-lib",
+      "latest": "5.5.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "js-yaml",
+      "wanted": "4.3.2"
+    },
+    {
+      "current": "4.3.2",
+      "dependent": "builder-util",
+      "latest": "5.5.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "js-yaml",
+      "wanted": "4.3.2"
+    },
+    {
+      "current": "4.3.2",
+      "dependent": "dmg-builder",
+      "latest": "5.5.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "js-yaml",
+      "wanted": "4.3.2"
+    },
+    {
+      "current": "4.0.0",
+      "dependent": "fs-extra",
+      "latest": "6.2.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "jsonfile",
+      "wanted": "4.0.0"
+    },
+    {
+      "current": "4.0.0",
+      "dependent": "fs-extra",
+      "latest": "6.2.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "jsonfile",
+      "wanted": "4.0.0"
+    },
+    {
+      "current": "4.5.4",
+      "dependent": "cacheable-request",
+      "latest": "6.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "keyv",
+      "wanted": "4.5.4"
+    },
+    {
+      "current": "3.0.3",
+      "dependent": "prompts",
+      "latest": "4.1.5",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "kleur",
+      "wanted": "3.0.3"
+    },
+    {
+      "current": "1.2.1",
+      "dependent": "@vue-macros/common",
+      "latest": "2.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "local-pkg",
+      "wanted": "1.2.1"
+    },
+    {
+      "current": "2.0.0",
+      "dependent": "cacheable-request",
+      "latest": "4.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "lowercase-keys",
+      "wanted": "2.0.0"
+    },
+    {
+      "current": "2.0.0",
+      "dependent": "got",
+      "latest": "4.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "lowercase-keys",
+      "wanted": "2.0.0"
+    },
+    {
+      "current": "2.0.0",
+      "dependent": "responselike",
+      "latest": "4.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "lowercase-keys",
+      "wanted": "2.0.0"
+    },
+    {
+      "current": "6.0.0",
+      "dependent": "hosted-git-info",
+      "latest": "11.5.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "lru-cache",
+      "wanted": "6.0.0"
+    },
+    {
+      "current": "0.30.21",
+      "dependent": "@vue/compiler-sfc",
+      "latest": "1.4.5",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "magic-string",
+      "wanted": "0.30.21"
+    },
+    {
+      "current": "0.30.21",
+      "dependent": "magic-string-ast",
+      "latest": "1.4.5",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "magic-string",
+      "wanted": "0.30.21"
+    },
+    {
+      "current": "1.0.3",
+      "dependent": "@vue-macros/common",
+      "latest": "2.1.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "magic-string-ast",
+      "wanted": "1.0.3"
+    },
+    {
+      "current": "3.0.0",
+      "dependent": "global-agent",
+      "latest": "7.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "matcher",
+      "wanted": "3.0.0"
+    },
+    {
+      "current": "2.27.1",
+      "dependent": "css-tree",
+      "latest": "2.38.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "mdn-data",
+      "wanted": "2.27.1"
+    },
+    {
+      "current": "2.6.0",
+      "dependent": "electron-publish",
+      "latest": "4.1.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "mime",
+      "wanted": "2.6.0"
+    },
+    {
+      "current": "1.52.0",
+      "dependent": "mime-types",
+      "latest": "1.54.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "mime-db",
+      "wanted": "1.52.0"
+    },
+    {
+      "current": "2.1.35",
+      "dependent": "form-data",
+      "latest": "3.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "mime-types",
+      "wanted": "2.1.35"
+    },
+    {
+      "current": "1.0.1",
+      "dependent": "clone-response",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "mimic-response",
+      "wanted": "1.0.1"
+    },
+    {
+      "current": "3.1.0",
+      "dependent": "decompress-response",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "mimic-response",
+      "wanted": "3.1.0"
+    },
+    {
+      "current": "3.1.5",
+      "dependent": "@electron/asar",
+      "latest": "11.0.9",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "minimatch",
+      "wanted": "3.1.5"
+    },
+    {
+      "current": "3.1.5",
+      "dependent": "dir-compare",
+      "latest": "11.0.9",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "minimatch",
+      "wanted": "3.1.5"
+    },
+    {
+      "current": "5.1.9",
+      "dependent": "filelist",
+      "latest": "11.0.9",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "minimatch",
+      "wanted": "5.1.9"
+    },
+    {
+      "current": "3.1.5",
+      "dependent": "glob",
+      "latest": "11.0.9",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "minimatch",
+      "wanted": "3.1.5"
+    },
+    {
+      "current": "0.5.6",
+      "dependent": "temp",
+      "latest": "3.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "mkdirp",
+      "wanted": "0.5.6"
+    },
+    {
+      "current": "0.4.1",
+      "dependent": "vue-router",
+      "latest": "1.0.5",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "muggle-string",
+      "wanted": "0.4.1"
+    },
+    {
+      "current": "3.3.20",
+      "dependent": "postcss",
+      "latest": "6.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "nanoid",
+      "wanted": "3.3.20"
+    },
+    {
+      "current": "7.1.1",
+      "dependent": "@parcel/watcher",
+      "latest": "8.9.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "node-addon-api",
+      "wanted": "7.1.1"
+    },
+    {
+      "current": "12.4.0",
+      "dependent": "@electron/rebuild",
+      "latest": "13.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "node-gyp",
+      "wanted": "12.4.0"
+    },
+    {
+      "current": "9.0.0",
+      "dependent": "node-gyp",
+      "latest": "10.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "nopt",
+      "wanted": "9.0.0"
+    },
+    {
+      "current": "6.1.0",
+      "dependent": "cacheable-request",
+      "latest": "10.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "normalize-url",
+      "wanted": "6.1.0"
+    },
+    {
+      "current": "8.4.2",
+      "dependent": "@capacitor/cli",
+      "latest": "11.0.4",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "open",
+      "wanted": "8.4.2"
+    },
+    {
+      "current": "2.1.1",
+      "dependent": "got",
+      "latest": "5.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "p-cancelable",
+      "wanted": "2.1.1"
+    },
+    {
+      "current": "3.1.0",
+      "dependent": "dir-compare",
+      "latest": "7.3.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "p-limit",
+      "wanted": "3.1.0"
+    },
+    {
+      "current": "3.1.1",
+      "dependent": "cross-spawn",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "path-key",
+      "wanted": "3.1.1"
+    },
+    {
+      "current": "0.4.1",
+      "dependent": "resedit",
+      "latest": "2.0.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "pe-library",
+      "wanted": "0.4.1"
+    },
+    {
+      "current": "5.0.2",
+      "dependent": "@modelcontextprotocol/client",
+      "latest": "6.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "pkce-challenge",
+      "wanted": "5.0.2"
+    },
+    {
+      "current": "1.3.1",
+      "dependent": "mlly",
+      "latest": "2.4.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "pkg-types",
+      "wanted": "1.3.1"
+    },
+    {
+      "current": "3.4.3",
+      "dependent": "app-builder-lib",
+      "latest": "4.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "pkijs",
+      "wanted": "3.4.3"
+    },
+    {
+      "current": "3.1.1",
+      "dependent": "@capacitor/cli",
+      "latest": "5.1.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "plist",
+      "wanted": "3.1.1"
+    },
+    {
+      "current": "3.1.1",
+      "dependent": "@electron/osx-sign",
+      "latest": "5.1.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "plist",
+      "wanted": "3.1.1"
+    },
+    {
+      "current": "3.1.1",
+      "dependent": "@electron/universal",
+      "latest": "5.1.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "plist",
+      "wanted": "3.1.1"
+    },
+    {
+      "current": "3.1.0",
+      "dependent": "app-builder-lib",
+      "latest": "5.1.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "plist",
+      "wanted": "3.1.0"
+    },
+    {
+      "current": "3.1.1",
+      "dependent": "native-run",
+      "latest": "5.1.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "plist",
+      "wanted": "3.1.1"
+    },
+    {
+      "current": "3.1.1",
+      "dependent": "simple-plist",
+      "latest": "5.1.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "plist",
+      "wanted": "3.1.1"
+    },
+    {
+      "current": "6.1.0",
+      "dependent": "node-gyp",
+      "latest": "7.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "proc-log",
+      "wanted": "6.1.0"
+    },
+    {
+      "current": "1.2.0",
+      "dependent": "asn1js",
+      "latest": "2.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "pvutils",
+      "wanted": "1.2.0"
+    },
+    {
+      "current": "1.2.0",
+      "dependent": "pkijs",
+      "latest": "2.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "pvutils",
+      "wanted": "1.2.0"
+    },
+    {
+      "current": "0.2.11",
+      "dependent": "local-pkg",
+      "latest": "1.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "quansync",
+      "wanted": "0.2.11"
+    },
+    {
+      "current": "5.1.1",
+      "dependent": "http2-wrapper",
+      "latest": "8.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "quick-lru",
+      "wanted": "5.1.1"
+    },
+    {
+      "current": "2.3.8",
+      "dependent": "duplexer2",
+      "latest": "4.8.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "readable-stream",
+      "wanted": "2.3.8"
+    },
+    {
+      "current": "3.6.2",
+      "dependent": "through2",
+      "latest": "4.8.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "readable-stream",
+      "wanted": "3.6.2"
+    },
+    {
+      "current": "1.7.2",
+      "dependent": "app-builder-lib",
+      "latest": "3.1.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "resedit",
+      "wanted": "1.7.2"
+    },
+    {
+      "current": "2.0.1",
+      "dependent": "cacheable-request",
+      "latest": "4.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "responselike",
+      "wanted": "2.0.1"
+    },
+    {
+      "current": "2.0.1",
+      "dependent": "got",
+      "latest": "4.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "responselike",
+      "wanted": "2.0.1"
+    },
+    {
+      "current": "0.12.0",
+      "dependent": "promise-retry",
+      "latest": "0.13.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "retry",
+      "wanted": "0.12.0"
+    },
+    {
+      "current": "0.12.0",
+      "dependent": "proper-lockfile",
+      "latest": "0.13.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "retry",
+      "wanted": "0.12.0"
+    },
+    {
+      "current": "2.6.3",
+      "dependent": "temp",
+      "latest": "6.1.4",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "rimraf",
+      "wanted": "2.6.3"
+    },
+    {
+      "current": "2.15.4",
+      "dependent": "global-agent",
+      "latest": "7.21.7",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "roarr",
+      "wanted": "2.15.4"
+    },
+    {
+      "current": "1.2.19",
+      "dependent": "unplugin",
+      "latest": "1.3.3",
+      "next_step": "Wait for Vite to accept the newer Rolldown line; no peer override.",
+      "package": "rolldown",
+      "wanted": "1.3.3"
+    },
+    {
+      "current": "1.2.19",
+      "dependent": "vite",
+      "latest": "1.3.3",
+      "next_step": "Wait for Vite to accept the newer Rolldown line; no peer override.",
+      "package": "rolldown",
+      "wanted": "1.2.19"
+    },
+    {
+      "current": "5.1.2",
+      "dependent": "readable-stream",
+      "latest": "5.2.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "safe-buffer",
+      "wanted": "5.1.2"
+    },
+    {
+      "current": "5.1.2",
+      "dependent": "string_decoder",
+      "latest": "5.2.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "safe-buffer",
+      "wanted": "5.1.2"
+    },
+    {
+      "current": "1.1.4",
+      "dependent": "elementtree",
+      "latest": "1.6.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "sax",
+      "wanted": "1.1.4"
+    },
+    {
+      "current": "6.3.2",
+      "dependent": "@electron/get",
+      "latest": "7.8.6",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "semver",
+      "wanted": "6.3.2"
+    },
+    {
+      "current": "7.7.4",
+      "dependent": "app-builder-lib",
+      "latest": "7.8.6",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "semver",
+      "wanted": "7.7.4"
+    },
+    {
+      "current": "5.7.3",
+      "dependent": "tiny-async-pool",
+      "latest": "7.8.6",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "semver",
+      "wanted": "5.7.3"
+    },
+    {
+      "current": "7.0.1",
+      "dependent": "global-agent",
+      "latest": "13.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "serialize-error",
+      "wanted": "7.0.1"
+    },
+    {
+      "current": "3.0.0",
+      "dependent": "shebang-command",
+      "latest": "4.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "shebang-regex",
+      "wanted": "3.0.0"
+    },
+    {
+      "current": "3.0.7",
+      "dependent": "@ionic/utils-process",
+      "latest": "4.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "signal-exit",
+      "wanted": "3.0.7"
+    },
+    {
+      "current": "3.0.7",
+      "dependent": "@ionic/utils-terminal",
+      "latest": "4.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "signal-exit",
+      "wanted": "3.0.7"
+    },
+    {
+      "current": "3.0.7",
+      "dependent": "proper-lockfile",
+      "latest": "4.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "signal-exit",
+      "wanted": "3.0.7"
+    },
+    {
+      "current": "1.0.5",
+      "dependent": "prompts",
+      "latest": "2.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "sisteransi",
+      "wanted": "1.0.5"
+    },
+    {
+      "current": "4.0.0",
+      "dependent": "@ionic/utils-terminal",
+      "latest": "10.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "slice-ansi",
+      "wanted": "4.0.0"
+    },
+    {
+      "current": "0.6.1",
+      "dependent": "source-map-support",
+      "latest": "0.8.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "source-map",
+      "wanted": "0.6.1"
+    },
+    {
+      "current": "2.2.0",
+      "dependent": "bplist-creator",
+      "latest": "3.0.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "stream-buffers",
+      "wanted": "2.2.0"
+    },
+    {
+      "current": "1.1.1",
+      "dependent": "readable-stream",
+      "latest": "1.3.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "string_decoder",
+      "wanted": "1.1.1"
+    },
+    {
+      "current": "4.2.3",
+      "dependent": "@ionic/utils-terminal",
+      "latest": "9.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "string-width",
+      "wanted": "4.2.3"
+    },
+    {
+      "current": "4.2.3",
+      "dependent": "cliui",
+      "latest": "9.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "string-width",
+      "wanted": "4.2.3"
+    },
+    {
+      "current": "4.2.3",
+      "dependent": "wrap-ansi",
+      "latest": "9.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "string-width",
+      "wanted": "4.2.3"
+    },
+    {
+      "current": "4.2.3",
+      "dependent": "yargs",
+      "latest": "9.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "string-width",
+      "wanted": "4.2.3"
+    },
+    {
+      "current": "6.0.1",
+      "dependent": "@ionic/utils-terminal",
+      "latest": "7.2.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "strip-ansi",
+      "wanted": "6.0.1"
+    },
+    {
+      "current": "6.0.1",
+      "dependent": "cliui",
+      "latest": "7.2.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "strip-ansi",
+      "wanted": "6.0.1"
+    },
+    {
+      "current": "6.0.1",
+      "dependent": "string-width",
+      "latest": "7.2.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "strip-ansi",
+      "wanted": "6.0.1"
+    },
+    {
+      "current": "6.0.1",
+      "dependent": "wrap-ansi",
+      "latest": "7.2.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "strip-ansi",
+      "wanted": "6.0.1"
+    },
+    {
+      "current": "7.2.0",
+      "dependent": "chalk",
+      "latest": "11.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "supports-color",
+      "wanted": "7.2.0"
+    },
+    {
+      "current": "8.1.1",
+      "dependent": "sass-embedded",
+      "latest": "11.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "supports-color",
+      "wanted": "8.1.1"
+    },
+    {
+      "current": "4.0.2",
+      "dependent": "native-run",
+      "latest": "5.0.12",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "through2",
+      "wanted": "4.0.2"
+    },
+    {
+      "current": "1.3.0",
+      "dependent": "app-builder-lib",
+      "latest": "2.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "tiny-async-pool",
+      "wanted": "1.3.0"
+    },
+    {
+      "current": "1.3.0",
+      "dependent": "builder-util",
+      "latest": "2.1.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "tiny-async-pool",
+      "wanted": "1.3.0"
+    },
+    {
+      "current": "0.13.1",
+      "dependent": "serialize-error",
+      "latest": "6.0.3",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "type-fest",
+      "wanted": "0.13.1"
+    },
+    {
+      "current": "7.30.2",
+      "dependent": "@electron/get",
+      "latest": "8.13.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "undici",
+      "wanted": "7.30.2"
+    },
+    {
+      "current": "6.29.1",
+      "dependent": "node-gyp",
+      "latest": "8.13.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "undici",
+      "wanted": "6.29.1"
+    },
+    {
+      "current": "8.9.0",
+      "dependent": "@types/node",
+      "latest": "8.13.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "undici-types",
+      "wanted": "8.9.0"
+    },
+    {
+      "current": "7.24.6",
+      "dependent": "@types/node",
+      "latest": "8.13.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "undici-types",
+      "wanted": "7.24.6"
+    },
+    {
+      "current": "0.1.2",
+      "dependent": "fs-extra",
+      "latest": "2.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "universalify",
+      "wanted": "0.1.2"
+    },
+    {
+      "current": "0.1.2",
+      "dependent": "fs-extra",
+      "latest": "2.0.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "universalify",
+      "wanted": "0.1.2"
+    },
+    {
+      "current": "4.0.0",
+      "dependent": "@ionic/utils-terminal",
+      "latest": "6.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "untildify",
+      "wanted": "4.0.0"
+    },
+    {
+      "current": "1.9.2",
+      "dependent": "@peculiar/webcrypto",
+      "latest": "2.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "webcrypto-core",
+      "wanted": "1.9.2"
+    },
+    {
+      "current": "5.0.0",
+      "dependent": "app-builder-lib",
+      "latest": "7.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "which",
+      "wanted": "5.0.0"
+    },
+    {
+      "current": "2.0.2",
+      "dependent": "cross-spawn",
+      "latest": "7.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "which",
+      "wanted": "2.0.2"
+    },
+    {
+      "current": "6.0.1",
+      "dependent": "node-gyp",
+      "latest": "7.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "which",
+      "wanted": "6.0.1"
+    },
+    {
+      "current": "7.0.0",
+      "dependent": "@ionic/utils-terminal",
+      "latest": "10.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "wrap-ansi",
+      "wanted": "7.0.0"
+    },
+    {
+      "current": "7.0.0",
+      "dependent": "cliui",
+      "latest": "10.0.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "wrap-ansi",
+      "wanted": "7.0.0"
+    },
+    {
+      "current": "11.0.1",
+      "dependent": "xml2js",
+      "latest": "15.1.1",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "xmlbuilder",
+      "wanted": "11.0.1"
+    },
+    {
+      "current": "4.0.0",
+      "dependent": "lru-cache",
+      "latest": "5.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "yallist",
+      "wanted": "4.0.0"
+    },
+    {
+      "current": "17.7.3",
+      "dependent": "electron-builder",
+      "latest": "18.2.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "yargs",
+      "wanted": "17.7.3"
+    },
+    {
+      "current": "21.1.1",
+      "dependent": "yargs",
+      "latest": "22.0.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "yargs-parser",
+      "wanted": "21.1.1"
+    },
+    {
+      "current": "2.10.0",
+      "dependent": "native-run",
+      "latest": "3.4.0",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "yauzl",
+      "wanted": "2.10.0"
+    },
+    {
+      "current": "0.1.0",
+      "dependent": "p-limit",
+      "latest": "1.2.2",
+      "next_step": "Upgrade the named parent when it accepts the newer version; rerun affected web/native tests.",
+      "package": "yocto-queue",
+      "wanted": "0.1.0"
+    }
+  ],
+  "python": {
+    "annotated-doc": {
+      "current": "0.0.6",
+      "latest": "0.0.7",
+      "url": "https://pypi.org/pypi/annotated-doc/json"
+    },
+    "annotated-types": {
+      "current": "0.8.0",
+      "latest": "0.8.0",
+      "url": "https://pypi.org/pypi/annotated-types/json"
+    },
+    "anyio": {
+      "current": "4.16.0",
+      "latest": "4.16.0",
+      "url": "https://pypi.org/pypi/anyio/json"
+    },
+    "argon2-cffi": {
+      "current": "25.1.0",
+      "latest": "25.1.0",
+      "url": "https://pypi.org/pypi/argon2-cffi/json"
+    },
+    "argon2-cffi-bindings": {
+      "current": "26.2.0",
+      "latest": "26.2.0",
+      "url": "https://pypi.org/pypi/argon2-cffi-bindings/json"
+    },
+    "asgiref": {
+      "current": "3.13.0",
+      "latest": "3.13.0",
+      "url": "https://pypi.org/pypi/asgiref/json"
+    },
+    "attrs": {
+      "current": "26.1.0",
+      "latest": "26.1.0",
+      "url": "https://pypi.org/pypi/attrs/json"
+    },
+    "boto3": {
+      "current": "1.44.3",
+      "latest": "1.44.9",
+      "url": "https://pypi.org/pypi/boto3/json"
+    },
+    "botocore": {
+      "current": "1.44.3",
+      "latest": "1.44.9",
+      "url": "https://pypi.org/pypi/botocore/json"
+    },
+    "certifi": {
+      "current": "2026.10.23",
+      "latest": "2026.11.20",
+      "url": "https://pypi.org/pypi/certifi/json"
+    },
+    "cffi": {
+      "current": "2.1.1",
+      "latest": "2.1.1",
+      "url": "https://pypi.org/pypi/cffi/json"
+    },
+    "charset-normalizer": {
+      "current": "3.5.2",
+      "latest": "3.5.3",
+      "url": "https://pypi.org/pypi/charset-normalizer/json"
+    },
+    "click": {
+      "current": "8.5.1",
+      "latest": "8.5.1",
+      "url": "https://pypi.org/pypi/click/json"
+    },
+    "colorama": {
+      "current": "0.4.6",
+      "latest": "0.4.6",
+      "url": "https://pypi.org/pypi/colorama/json"
+    },
+    "cryptography": {
+      "current": "50.0.2",
+      "latest": "50.0.2",
+      "url": "https://pypi.org/pypi/cryptography/json"
+    },
+    "docker": {
+      "current": "7.2.0",
+      "latest": "7.2.0",
+      "url": "https://pypi.org/pypi/docker/json"
+    },
+    "fastapi": {
+      "current": "0.163.1",
+      "latest": "0.165.0",
+      "url": "https://pypi.org/pypi/fastapi/json"
+    },
+    "fastembed": {
+      "current": "0.9.1",
+      "latest": "0.9.1",
+      "url": "https://pypi.org/pypi/fastembed/json"
+    },
+    "filelock": {
+      "current": "4.2.10",
+      "latest": "4.3.0",
+      "url": "https://pypi.org/pypi/filelock/json"
+    },
+    "flatbuffers": {
+      "current": "25.12.19",
+      "latest": "25.12.19",
+      "url": "https://pypi.org/pypi/flatbuffers/json"
+    },
+    "fsspec": {
+      "current": "2026.9.0",
+      "latest": "2026.9.0",
+      "url": "https://pypi.org/pypi/fsspec/json"
+    },
+    "googleapis-common-protos": {
+      "current": "1.76.0",
+      "latest": "1.76.0",
+      "url": "https://pypi.org/pypi/googleapis-common-protos/json"
+    },
+    "h11": {
+      "current": "0.16.0",
+      "latest": "0.16.0",
+      "url": "https://pypi.org/pypi/h11/json"
+    },
+    "hf-xet": {
+      "current": "1.8.0",
+      "latest": "1.8.0",
+      "url": "https://pypi.org/pypi/hf-xet/json"
+    },
+    "httpcore": {
+      "current": "1.0.9",
+      "latest": "1.0.9",
+      "url": "https://pypi.org/pypi/httpcore/json"
+    },
+    "httpcore2": {
+      "current": "2.16.0",
+      "latest": "2.16.2",
+      "url": "https://pypi.org/pypi/httpcore2/json"
+    },
+    "httptools": {
+      "current": "0.9.0",
+      "latest": "0.9.0",
+      "url": "https://pypi.org/pypi/httptools/json"
+    },
+    "httpx": {
+      "current": "0.28.1",
+      "latest": "0.28.1",
+      "url": "https://pypi.org/pypi/httpx/json"
+    },
+    "httpx2": {
+      "current": "2.16.0",
+      "latest": "2.16.2",
+      "url": "https://pypi.org/pypi/httpx2/json"
+    },
+    "httpx2-jsfetch": {
+      "current": "1.0",
+      "latest": "1.0",
+      "url": "https://pypi.org/pypi/httpx2-jsfetch/json"
+    },
+    "huggingface-hub": {
+      "current": "1.33.0",
+      "latest": "2.4.0",
+      "url": "https://pypi.org/pypi/huggingface-hub/json"
+    },
+    "idna": {
+      "current": "3.20",
+      "latest": "3.20",
+      "url": "https://pypi.org/pypi/idna/json"
+    },
+    "iniconfig": {
+      "current": "2.3.1",
+      "latest": "2.3.1",
+      "url": "https://pypi.org/pypi/iniconfig/json"
+    },
+    "jmespath": {
+      "current": "1.1.0",
+      "latest": "1.1.0",
+      "url": "https://pypi.org/pypi/jmespath/json"
+    },
+    "jsonschema": {
+      "current": "4.26.0",
+      "latest": "4.26.0",
+      "url": "https://pypi.org/pypi/jsonschema/json"
+    },
+    "jsonschema-specifications": {
+      "current": "2025.9.1",
+      "latest": "2025.9.1",
+      "url": "https://pypi.org/pypi/jsonschema-specifications/json"
+    },
+    "loguru": {
+      "current": "0.7.3",
+      "latest": "0.8.0",
+      "url": "https://pypi.org/pypi/loguru/json"
+    },
+    "mcp": {
+      "current": "2.3.0",
+      "latest": "2.3.0",
+      "url": "https://pypi.org/pypi/mcp/json"
+    },
+    "mcp-types": {
+      "current": "2.3.0",
+      "latest": "2.3.0",
+      "url": "https://pypi.org/pypi/mcp-types/json"
+    },
+    "mmh3": {
+      "current": "5.3.1",
+      "latest": "5.3.1",
+      "url": "https://pypi.org/pypi/mmh3/json"
+    },
+    "nexus-rpc": {
+      "current": "1.5.0",
+      "latest": "1.5.0",
+      "url": "https://pypi.org/pypi/nexus-rpc/json"
+    },
+    "numpy": {
+      "current": "2.5.5",
+      "latest": "2.5.5",
+      "url": "https://pypi.org/pypi/numpy/json"
+    },
+    "onnxruntime": {
+      "current": "1.32.0",
+      "latest": "1.32.0",
+      "url": "https://pypi.org/pypi/onnxruntime/json"
+    },
+    "opentelemetry-api": {
+      "current": "1.45.2",
+      "latest": "1.45.2",
+      "url": "https://pypi.org/pypi/opentelemetry-api/json"
+    },
+    "opentelemetry-exporter-http-transport": {
+      "current": "0.66b2",
+      "latest": "0.66b2",
+      "url": "https://pypi.org/pypi/opentelemetry-exporter-http-transport/json"
+    },
+    "opentelemetry-exporter-otlp-common": {
+      "current": "0.66b2",
+      "latest": "0.66b2",
+      "url": "https://pypi.org/pypi/opentelemetry-exporter-otlp-common/json"
+    },
+    "opentelemetry-exporter-otlp-proto-common": {
+      "current": "1.45.2",
+      "latest": "1.45.2",
+      "url": "https://pypi.org/pypi/opentelemetry-exporter-otlp-proto-common/json"
+    },
+    "opentelemetry-exporter-otlp-proto-http": {
+      "current": "1.45.2",
+      "latest": "1.45.2",
+      "url": "https://pypi.org/pypi/opentelemetry-exporter-otlp-proto-http/json"
+    },
+    "opentelemetry-instrumentation": {
+      "current": "0.66b2",
+      "latest": "0.66b2",
+      "url": "https://pypi.org/pypi/opentelemetry-instrumentation/json"
+    },
+    "opentelemetry-instrumentation-asgi": {
+      "current": "0.66b2",
+      "latest": "0.66b2",
+      "url": "https://pypi.org/pypi/opentelemetry-instrumentation-asgi/json"
+    },
+    "opentelemetry-instrumentation-fastapi": {
+      "current": "0.66b2",
+      "latest": "0.66b2",
+      "url": "https://pypi.org/pypi/opentelemetry-instrumentation-fastapi/json"
+    },
+    "opentelemetry-instrumentation-httpx": {
+      "current": "0.66b2",
+      "latest": "0.66b2",
+      "url": "https://pypi.org/pypi/opentelemetry-instrumentation-httpx/json"
+    },
+    "opentelemetry-proto": {
+      "current": "1.45.2",
+      "latest": "1.45.2",
+      "url": "https://pypi.org/pypi/opentelemetry-proto/json"
+    },
+    "opentelemetry-sdk": {
+      "current": "1.45.2",
+      "latest": "1.45.2",
+      "url": "https://pypi.org/pypi/opentelemetry-sdk/json"
+    },
+    "opentelemetry-semantic-conventions": {
+      "current": "0.66b2",
+      "latest": "0.66b2",
+      "url": "https://pypi.org/pypi/opentelemetry-semantic-conventions/json"
+    },
+    "opentelemetry-util-http": {
+      "current": "0.66b2",
+      "latest": "0.66b2",
+      "url": "https://pypi.org/pypi/opentelemetry-util-http/json"
+    },
+    "packaging": {
+      "current": "26.3",
+      "latest": "26.3",
+      "url": "https://pypi.org/pypi/packaging/json"
+    },
+    "pillow": {
+      "current": "13.0.0",
+      "latest": "13.0.0",
+      "url": "https://pypi.org/pypi/pillow/json"
+    },
+    "pluggy": {
+      "current": "1.7.0",
+      "latest": "1.7.0",
+      "url": "https://pypi.org/pypi/pluggy/json"
+    },
+    "protobuf": {
+      "current": "7.36.2",
+      "latest": "7.36.2",
+      "url": "https://pypi.org/pypi/protobuf/json"
+    },
+    "py-rust-stemmers": {
+      "current": "0.1.8",
+      "latest": "0.1.8",
+      "url": "https://pypi.org/pypi/py-rust-stemmers/json"
+    },
+    "pycparser": {
+      "current": "3.12",
+      "latest": "3.12",
+      "url": "https://pypi.org/pypi/pycparser/json"
+    },
+    "pydantic": {
+      "current": "2.14.3",
+      "latest": "2.14.4",
+      "url": "https://pypi.org/pypi/pydantic/json"
+    },
+    "pydantic-core": {
+      "current": "2.50.4",
+      "latest": "2.50.5",
+      "url": "https://pypi.org/pypi/pydantic-core/json"
+    },
+    "pygments": {
+      "current": "2.21.0",
+      "latest": "2.21.0",
+      "url": "https://pypi.org/pypi/pygments/json"
+    },
+    "pyjwt": {
+      "current": "2.15.1",
+      "latest": "2.15.1",
+      "url": "https://pypi.org/pypi/pyjwt/json"
+    },
+    "pytest": {
+      "current": "9.2.0",
+      "latest": "9.2.0",
+      "url": "https://pypi.org/pypi/pytest/json"
+    },
+    "pytest-asyncio": {
+      "current": "1.5.0",
+      "latest": "1.5.0",
+      "url": "https://pypi.org/pypi/pytest-asyncio/json"
+    },
+    "python-dateutil": {
+      "current": "2.9.0.post0",
+      "latest": "4.0.0",
+      "url": "https://pypi.org/pypi/python-dateutil/json"
+    },
+    "python-dotenv": {
+      "current": "1.2.4",
+      "latest": "1.2.4",
+      "url": "https://pypi.org/pypi/python-dotenv/json"
+    },
+    "python-multipart": {
+      "current": "0.0.33",
+      "latest": "0.0.34",
+      "url": "https://pypi.org/pypi/python-multipart/json"
+    },
+    "pywin32": {
+      "current": "312",
+      "latest": "312",
+      "url": "https://pypi.org/pypi/pywin32/json"
+    },
+    "pyyaml": {
+      "current": "6.0.3",
+      "latest": "6.0.4",
+      "url": "https://pypi.org/pypi/pyyaml/json"
+    },
+    "referencing": {
+      "current": "0.37.0",
+      "latest": "0.37.0",
+      "url": "https://pypi.org/pypi/referencing/json"
+    },
+    "requests": {
+      "current": "2.34.2",
+      "latest": "2.34.2",
+      "url": "https://pypi.org/pypi/requests/json"
+    },
+    "rpds-py": {
+      "current": "2026.9.1",
+      "latest": "2026.9.1",
+      "url": "https://pypi.org/pypi/rpds-py/json"
+    },
+    "ruff": {
+      "current": "0.17.5",
+      "latest": "0.17.6",
+      "url": "https://pypi.org/pypi/ruff/json"
+    },
+    "s3transfer": {
+      "current": "0.19.3",
+      "latest": "0.19.3",
+      "url": "https://pypi.org/pypi/s3transfer/json"
+    },
+    "six": {
+      "current": "1.17.0",
+      "latest": "1.17.0",
+      "url": "https://pypi.org/pypi/six/json"
+    },
+    "sqlite-vec": {
+      "current": "0.1.9",
+      "latest": "0.1.9",
+      "url": "https://pypi.org/pypi/sqlite-vec/json"
+    },
+    "sse-starlette": {
+      "current": "3.7.0",
+      "latest": "3.7.1",
+      "url": "https://pypi.org/pypi/sse-starlette/json"
+    },
+    "starlette": {
+      "current": "1.10.0",
+      "latest": "1.10.0",
+      "url": "https://pypi.org/pypi/starlette/json"
+    },
+    "temporalio": {
+      "current": "1.36.1",
+      "latest": "1.36.1",
+      "url": "https://pypi.org/pypi/temporalio/json"
+    },
+    "tokenizers": {
+      "current": "0.23.3",
+      "latest": "0.23.3",
+      "url": "https://pypi.org/pypi/tokenizers/json"
+    },
+    "tqdm": {
+      "current": "4.70.1",
+      "latest": "4.70.1",
+      "url": "https://pypi.org/pypi/tqdm/json"
+    },
+    "truststore": {
+      "current": "0.10.5",
+      "latest": "0.10.5",
+      "url": "https://pypi.org/pypi/truststore/json"
+    },
+    "types-protobuf": {
+      "current": "7.35.1.20260906",
+      "latest": "7.35.1.20261122",
+      "url": "https://pypi.org/pypi/types-protobuf/json"
+    },
+    "typing-extensions": {
+      "current": "4.16.0",
+      "latest": "4.16.0",
+      "url": "https://pypi.org/pypi/typing-extensions/json"
+    },
+    "typing-inspection": {
+      "current": "0.4.5",
+      "latest": "0.4.5",
+      "url": "https://pypi.org/pypi/typing-inspection/json"
+    },
+    "urllib3": {
+      "current": "2.8.0",
+      "latest": "2.8.0",
+      "url": "https://pypi.org/pypi/urllib3/json"
+    },
+    "uvicorn": {
+      "current": "0.54.0",
+      "latest": "0.54.0",
+      "url": "https://pypi.org/pypi/uvicorn/json"
+    },
+    "uvloop": {
+      "current": "0.23.0",
+      "latest": "0.23.0",
+      "url": "https://pypi.org/pypi/uvloop/json"
+    },
+    "watchfiles": {
+      "current": "1.3.0",
+      "latest": "1.3.0",
+      "url": "https://pypi.org/pypi/watchfiles/json"
+    },
+    "websockets": {
+      "current": "17.4",
+      "latest": "17.4",
+      "url": "https://pypi.org/pypi/websockets/json"
+    },
+    "win32-setctime": {
+      "current": "1.2.1",
+      "latest": "1.2.1",
+      "url": "https://pypi.org/pypi/win32-setctime/json"
+    },
+    "wrapt": {
+      "current": "2.5.2",
+      "latest": "2.5.2",
+      "url": "https://pypi.org/pypi/wrapt/json"
+    }
+  },
+  "resolved_lock_changes": {
+    "npm": {
+      "node_modules/@babel/helper-string-parser": [
+        "7.29.14",
+        "7.29.15"
+      ],
+      "node_modules/@babel/parser": [
+        "7.29.14",
+        "7.29.15"
+      ],
+      "node_modules/@babel/types": [
+        "7.29.14",
+        "7.29.15"
+      ],
+      "node_modules/@napi-rs/canvas": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-android-arm64": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-darwin-arm64": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-darwin-x64": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-linux-arm-gnueabihf": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-linux-arm64-gnu": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-linux-arm64-musl": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-linux-riscv64-gnu": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-linux-x64-gnu": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-linux-x64-musl": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-win32-arm64-msvc": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@napi-rs/canvas-win32-x64-msvc": [
+        "1.1.1",
+        "1.2.0"
+      ],
+      "node_modules/@tybys/wasm-util": [
+        "0.10.4",
+        "0.10.5"
+      ],
+      "node_modules/@vue/compiler-core": [
+        "3.5.45",
+        "3.5.46"
+      ],
+      "node_modules/@vue/compiler-dom": [
+        "3.5.45",
+        "3.5.46"
+      ],
+      "node_modules/@vue/compiler-sfc": [
+        "3.5.45",
+        "3.5.46"
+      ],
+      "node_modules/@vue/compiler-ssr": [
+        "3.5.45",
+        "3.5.46"
+      ],
+      "node_modules/@vue/reactivity": [
+        "3.5.45",
+        "3.5.46"
+      ],
+      "node_modules/@vue/runtime-core": [
+        "3.5.45",
+        "3.5.46"
+      ],
+      "node_modules/@vue/runtime-dom": [
+        "3.5.45",
+        "3.5.46"
+      ],
+      "node_modules/@vue/server-renderer": [
+        "3.5.45",
+        "3.5.46"
+      ],
+      "node_modules/@vue/shared": [
+        "3.5.45",
+        "3.5.46"
+      ],
+      "node_modules/ast-walker-scope/node_modules/@babel/helper-string-parser": [
+        "8.1.2",
+        "8.1.3"
+      ],
+      "node_modules/ast-walker-scope/node_modules/@babel/parser": [
+        "8.1.2",
+        "8.1.3"
+      ],
+      "node_modules/ast-walker-scope/node_modules/@babel/types": [
+        "8.1.2",
+        "8.1.3"
+      ],
+      "node_modules/csstype": [
+        "3.2.3",
+        "3.2.4"
+      ],
+      "node_modules/dompurify": [
+        "3.4.18",
+        "3.5.0"
+      ],
+      "node_modules/electron": [
+        "45.3.2",
+        "45.4.1"
+      ],
+      "node_modules/jose": [
+        "6.2.17",
+        "6.2.18"
+      ],
+      "node_modules/marked": [
+        "18.2.0",
+        "18.2.1"
+      ],
+      "node_modules/minimatch": [
+        "11.0.8",
+        "11.0.9"
+      ],
+      "node_modules/node-abi": [
+        "4.40.0",
+        "4.43.0"
+      ],
+      "node_modules/nostics": [
+        "1.3.0",
+        "1.4.0"
+      ],
+      "node_modules/pkce-challenge": [
+        "5.0.1",
+        "5.0.2"
+      ],
+      "node_modules/quasar": [
+        "2.35.4",
+        "2.35.6"
+      ],
+      "node_modules/source-map-js": [
+        "1.2.2",
+        "1.2.4"
+      ],
+      "node_modules/vue": [
+        "3.5.45",
+        "3.5.46"
+      ]
+    },
+    "python": {
+      "annotated-doc": [
+        "0.0.6",
+        "0.0.7"
+      ],
+      "boto3": [
+        "1.44.3",
+        "1.44.9"
+      ],
+      "botocore": [
+        "1.44.3",
+        "1.44.9"
+      ],
+      "certifi": [
+        "2026.10.23",
+        "2026.11.20"
+      ],
+      "charset-normalizer": [
+        "3.5.2",
+        "3.5.3"
+      ],
+      "fastapi": [
+        "0.163.1",
+        "0.165.0"
+      ],
+      "filelock": [
+        "4.2.10",
+        "4.3.0"
+      ],
+      "httpcore2": [
+        "2.16.0",
+        "2.16.2"
+      ],
+      "httpx2": [
+        "2.16.0",
+        "2.16.2"
+      ],
+      "pydantic": [
+        "2.14.3",
+        "2.14.4"
+      ],
+      "pydantic-core": [
+        "2.50.4",
+        "2.50.5"
+      ],
+      "python-multipart": [
+        "0.0.33",
+        "0.0.34"
+      ],
+      "pyyaml": [
+        "6.0.3",
+        "6.0.4"
+      ],
+      "ruff": [
+        "0.17.5",
+        "0.17.6"
+      ],
+      "sse-starlette": [
+        "3.7.0",
+        "3.7.1"
+      ],
+      "types-protobuf": [
+        "7.35.1.20260906",
+        "7.35.1.20261122"
+      ]
+    },
+    "rust": {
+      "cc": [
+        "1.11.2",
+        "1.11.3"
+      ],
+      "form_urlencoded": [
+        "1.2.2",
+        "1.2.3"
+      ],
+      "pin-project": [
+        "1.1.13",
+        "1.2.0"
+      ],
+      "pin-project-internal": [
+        "1.1.13",
+        "1.2.0"
+      ],
+      "pin-project-lite": [
+        "0.2.17",
+        "0.2.18"
+      ],
+      "url": [
+        "2.5.8",
+        "2.5.9"
+      ],
+      "zerocopy": [
+        "0.8.63",
+        "0.8.64"
+      ],
+      "zerocopy-derive": [
+        "0.8.63",
+        "0.8.64"
+      ]
+    },
+    "speech": {
+      "annotated-doc": [
+        "0.0.6",
+        "0.0.7"
+      ],
+      "certifi": [
+        "2026.10.23",
+        "2026.11.20"
+      ],
+      "charset-normalizer": [
+        "3.5.2",
+        "3.5.3"
+      ],
+      "fastapi": [
+        "0.163.1",
+        "0.165.0"
+      ],
+      "filelock": [
+        "4.2.10",
+        "4.3.0"
+      ],
+      "platformdirs": [
+        "4.14.5",
+        "4.14.8"
+      ],
+      "pydantic": [
+        "2.14.3",
+        "2.14.4"
+      ],
+      "pydantic-core": [
+        "2.50.4",
+        "2.50.5"
+      ]
+    }
+  },
+  "runtime": {
+    "androidx-webkit": {
+      "aar_sha1": "8ca7a33fc2476fdfbced4672f5dd7962e4232899",
+      "current": "1.14.0",
+      "latest": "1.17.1",
+      "min_agp": "7.2.0",
+      "min_compile_sdk": 33,
+      "min_sdk": 24,
+      "url": "https://dl.google.com/dl/android/maven2/androidx/webkit/webkit/maven-metadata.xml"
+    },
+    "busybox": {
+      "current": null,
+      "digest": "sha256:80e38f9a1b39188b8bdb28879178edb322a4402b081a9aedda1924609decd6f6",
+      "latest": "1.38.0-musl",
+      "proposed_1_38_1_http": 404,
+      "tag_last_pushed": "2026-10-30T10:57:53.677701Z",
+      "url": "https://hub.docker.com/v2/repositories/library/busybox/tags/1.38.0-musl"
+    },
+    "collector_165_1": {
+      "current": null,
+      "error": "HTTP Error 404: Not Found",
+      "url": "https://hub.docker.com/v2/repositories/otel/opentelemetry-collector-contrib/tags/0.165.1"
+    },
+    "docker-cli": {
+      "current_ci": "29.9.3",
+      "next_tag_http": 404,
+      "url": "https://hub.docker.com/v2/repositories/library/docker/tags/29.9.3-cli"
+    },
+    "go": {
+      "current": "1.27.4",
+      "latest": [
+        "go1.27.4",
+        "go1.26.11"
+      ],
+      "url": "https://go.dev/dl/?mode=json"
+    },
+    "moby-user": {
+      "current": "v0.5.0",
+      "latest": "v0.5.0",
+      "url": "https://proxy.golang.org/github.com/moby/sys/user/@latest"
+    },
+    "moonshine": {
+      "current": "0.1.6",
+      "latest": "0.1.6",
+      "url": "https://pypi.org/pypi/moonshine-voice/json"
+    },
+    "nginx": {
+      "digest": "sha256:fb4658584bd9a916ffb6f6e365f97c25cfdb2923801f551ea08356e695f14ff7",
+      "tag": "1.31.9-alpine",
+      "url": "https://hub.docker.com/v2/repositories/library/nginx/tags/1.31.9-alpine"
+    },
+    "node": {
+      "current": null,
+      "latest": "v26.13.1",
+      "latest_lts": "v26.13.1",
+      "line24": "v24.22.3",
+      "prerelease": "v27.0.0-alpha.0.1.1",
+      "url": "https://nodejs.org/dist/index.json"
+    },
+    "npm11": {
+      "current": "11.21.2",
+      "latest": {
+        "latest": "12.2.3",
+        "next-11": "11.21.3"
+      },
+      "line11": "11.21.3",
+      "url": "https://registry.npmjs.org/npm"
+    },
+    "postgres": {
+      "current": null,
+      "digest": "sha256:f9cf3e1f0066f0eb0c48707d864f0ac5941e9ff454a072077d97a4d278d07d73",
+      "latest": "17-alpine",
+      "line17": "17.12",
+      "major_18_available": true,
+      "tag_last_pushed": "2026-11-21T22:07:43.947835Z",
+      "url": "https://hub.docker.com/v2/repositories/library/postgres/tags/17-alpine"
+    },
+    "python": {
+      "latest": "3.15.2",
+      "line313": "3.13.18",
+      "newer_31319_http": 404,
+      "url": "https://www.python.org/downloads/release/python-31318/"
+    },
+    "rust": {
+      "current": "1.91.1",
+      "digest": "sha256:ade39a710ef85f3506cffcfec3e8a24ba090badef1dff2fb798f71d878833fea",
+      "latest": "1.100.0",
+      "url": "https://hub.docker.com/v2/repositories/library/rust/tags/1.100.0-bookworm"
+    },
+    "search_model": {
+      "current": "aa8f8b060edb00e03bfdd08813a2949946c8ba55",
+      "latest": "aa8f8b060edb00e03bfdd08813a2949946c8ba55",
+      "url": "https://huggingface.co/api/models/Qdrant/bge-small-en-v1.5-onnx-Q"
+    },
+    "sqlite": {
+      "current": null,
+      "latest": "3.53.6",
+      "url": "https://www.sqlite.org/chronology.html"
+    },
+    "uv": {
+      "digest": "sha256:d3b601f0c7b118bc1753febf7c41cc80981df678445e0254284eecf84db79a7d",
+      "tag": "0.13.9",
+      "url": "https://github.com/astral-sh/uv/releases/tag/0.13.9"
+    },
+    "x-sys": {
+      "current": "v0.50.0",
+      "latest": "v0.50.0",
+      "url": "https://proxy.golang.org/golang.org/x/sys/@latest"
+    }
+  },
+  "rust": {
+    "adler2": {
+      "current": "2.0.1",
+      "latest": "2.0.1",
+      "url": "https://crates.io/api/v1/crates/adler2"
+    },
+    "aho-corasick": {
+      "current": "1.1.5",
+      "latest": "1.1.5",
+      "url": "https://crates.io/api/v1/crates/aho-corasick"
+    },
+    "anyhow": {
+      "current": "1.0.104",
+      "latest": "1.0.104",
+      "url": "https://crates.io/api/v1/crates/anyhow"
+    },
+    "asn1-rs": {
+      "current": "0.7.2",
+      "latest": "0.7.2",
+      "url": "https://crates.io/api/v1/crates/asn1-rs"
+    },
+    "asn1-rs-derive": {
+      "current": "0.6.0",
+      "latest": "0.7.0",
+      "url": "https://crates.io/api/v1/crates/asn1-rs-derive"
+    },
+    "asn1-rs-impl": {
+      "current": "0.2.0",
+      "latest": "0.3.0",
+      "url": "https://crates.io/api/v1/crates/asn1-rs-impl"
+    },
+    "async-trait": {
+      "current": "0.1.92",
+      "latest": "0.1.92",
+      "url": "https://crates.io/api/v1/crates/async-trait"
+    },
+    "atomic-waker": {
+      "current": "1.1.2",
+      "latest": "1.1.2",
+      "url": "https://crates.io/api/v1/crates/atomic-waker"
+    },
+    "autocfg": {
+      "current": "1.5.1",
+      "latest": "1.5.1",
+      "url": "https://crates.io/api/v1/crates/autocfg"
+    },
+    "axum": {
+      "current": "0.8.9",
+      "latest": "0.8.9",
+      "url": "https://crates.io/api/v1/crates/axum"
+    },
+    "axum-core": {
+      "current": "0.5.6",
+      "latest": "0.5.6",
+      "url": "https://crates.io/api/v1/crates/axum-core"
+    },
+    "base64": {
+      "current": "0.23.1",
+      "latest": "0.23.1",
+      "url": "https://crates.io/api/v1/crates/base64"
+    },
+    "bit-vec": {
+      "current": "0.9.1",
+      "latest": "0.10.2",
+      "url": "https://crates.io/api/v1/crates/bit-vec"
+    },
+    "bitflags": {
+      "current": "2.13.2",
+      "latest": "2.13.2",
+      "url": "https://crates.io/api/v1/crates/bitflags"
+    },
+    "block-buffer": {
+      "current": "0.10.4",
+      "latest": "0.12.1",
+      "url": "https://crates.io/api/v1/crates/block-buffer"
+    },
+    "bumpalo": {
+      "current": "3.20.4",
+      "latest": "3.20.4",
+      "url": "https://crates.io/api/v1/crates/bumpalo"
+    },
+    "bytes": {
+      "current": "1.12.2",
+      "latest": "1.12.2",
+      "url": "https://crates.io/api/v1/crates/bytes"
+    },
+    "cc": {
+      "current": "1.11.2",
+      "latest": "1.11.3",
+      "url": "https://crates.io/api/v1/crates/cc"
+    },
+    "cfg-if": {
+      "current": "1.0.5",
+      "latest": "1.0.5",
+      "url": "https://crates.io/api/v1/crates/cfg-if"
+    },
+    "cfg_aliases": {
+      "current": "0.2.2",
+      "latest": "0.2.2",
+      "url": "https://crates.io/api/v1/crates/cfg_aliases"
+    },
+    "chacha20": {
+      "current": "0.10.2",
+      "latest": "0.10.2",
+      "url": "https://crates.io/api/v1/crates/chacha20"
+    },
+    "chrono": {
+      "current": "0.4.45",
+      "latest": "0.4.45",
+      "url": "https://crates.io/api/v1/crates/chrono"
+    },
+    "cpufeatures": {
+      "current": "0.3.1",
+      "latest": "0.3.1",
+      "url": "https://crates.io/api/v1/crates/cpufeatures"
+    },
+    "crc32fast": {
+      "current": "1.5.5",
+      "latest": "1.5.5",
+      "url": "https://crates.io/api/v1/crates/crc32fast"
+    },
+    "crypto-common": {
+      "current": "0.1.7",
+      "latest": "0.2.2",
+      "url": "https://crates.io/api/v1/crates/crypto-common"
+    },
+    "data-encoding": {
+      "current": "2.11.1",
+      "latest": "2.11.1",
+      "url": "https://crates.io/api/v1/crates/data-encoding"
+    },
+    "der-parser": {
+      "current": "10.0.0",
+      "latest": "10.0.0",
+      "url": "https://crates.io/api/v1/crates/der-parser"
+    },
+    "deranged": {
+      "current": "0.5.9",
+      "latest": "0.5.9",
+      "url": "https://crates.io/api/v1/crates/deranged"
+    },
+    "digest": {
+      "current": "0.10.7",
+      "latest": "0.11.3",
+      "url": "https://crates.io/api/v1/crates/digest"
+    },
+    "displaydoc": {
+      "current": "0.2.7",
+      "latest": "0.2.7",
+      "url": "https://crates.io/api/v1/crates/displaydoc"
+    },
+    "either": {
+      "current": "1.19.0",
+      "latest": "1.19.0",
+      "url": "https://crates.io/api/v1/crates/either"
+    },
+    "errno": {
+      "current": "0.3.15",
+      "latest": "0.3.15",
+      "url": "https://crates.io/api/v1/crates/errno"
+    },
+    "fastrand": {
+      "current": "2.5.0",
+      "latest": "2.5.0",
+      "url": "https://crates.io/api/v1/crates/fastrand"
+    },
+    "filetime": {
+      "current": "0.2.30",
+      "latest": "0.2.30",
+      "url": "https://crates.io/api/v1/crates/filetime"
+    },
+    "find-msvc-tools": {
+      "current": "0.1.15",
+      "latest": "0.1.15",
+      "url": "https://crates.io/api/v1/crates/find-msvc-tools"
+    },
+    "flate2": {
+      "current": "1.1.11",
+      "latest": "1.1.11",
+      "url": "https://crates.io/api/v1/crates/flate2"
+    },
+    "form_urlencoded": {
+      "current": "1.2.2",
+      "latest": "1.2.3",
+      "url": "https://crates.io/api/v1/crates/form_urlencoded"
+    },
+    "futures-channel": {
+      "current": "0.3.34",
+      "latest": "0.3.34",
+      "url": "https://crates.io/api/v1/crates/futures-channel"
+    },
+    "futures-core": {
+      "current": "0.3.34",
+      "latest": "0.3.34",
+      "url": "https://crates.io/api/v1/crates/futures-core"
+    },
+    "futures-executor": {
+      "current": "0.3.34",
+      "latest": "0.3.34",
+      "url": "https://crates.io/api/v1/crates/futures-executor"
+    },
+    "futures-io": {
+      "current": "0.3.34",
+      "latest": "0.3.34",
+      "url": "https://crates.io/api/v1/crates/futures-io"
+    },
+    "futures-macro": {
+      "current": "0.3.34",
+      "latest": "0.3.34",
+      "url": "https://crates.io/api/v1/crates/futures-macro"
+    },
+    "futures-sink": {
+      "current": "0.3.34",
+      "latest": "0.3.34",
+      "url": "https://crates.io/api/v1/crates/futures-sink"
+    },
+    "futures-task": {
+      "current": "0.3.34",
+      "latest": "0.3.34",
+      "url": "https://crates.io/api/v1/crates/futures-task"
+    },
+    "futures-util": {
+      "current": "0.3.34",
+      "latest": "0.3.34",
+      "url": "https://crates.io/api/v1/crates/futures-util"
+    },
+    "generic-array": {
+      "current": "0.14.7",
+      "latest": "1.4.5",
+      "url": "https://crates.io/api/v1/crates/generic-array"
+    },
+    "getrandom": {
+      "current": "0.4.3",
+      "latest": "0.4.3",
+      "url": "https://crates.io/api/v1/crates/getrandom"
+    },
+    "http": {
+      "current": "1.5.0",
+      "latest": "1.5.0",
+      "url": "https://crates.io/api/v1/crates/http"
+    },
+    "http-body": {
+      "current": "1.1.0",
+      "latest": "1.1.0",
+      "url": "https://crates.io/api/v1/crates/http-body"
+    },
+    "http-body-util": {
+      "current": "0.1.5",
+      "latest": "0.1.5",
+      "url": "https://crates.io/api/v1/crates/http-body-util"
+    },
+    "httparse": {
+      "current": "1.10.1",
+      "latest": "1.10.1",
+      "url": "https://crates.io/api/v1/crates/httparse"
+    },
+    "httpdate": {
+      "current": "1.0.3",
+      "latest": "1.0.3",
+      "url": "https://crates.io/api/v1/crates/httpdate"
+    },
+    "hyper": {
+      "current": "1.12.0",
+      "latest": "1.12.0",
+      "url": "https://crates.io/api/v1/crates/hyper"
+    },
+    "hyper-rustls": {
+      "current": "0.27.10",
+      "latest": "0.27.10",
+      "url": "https://crates.io/api/v1/crates/hyper-rustls"
+    },
+    "hyper-util": {
+      "current": "0.1.21",
+      "latest": "0.1.21",
+      "url": "https://crates.io/api/v1/crates/hyper-util"
+    },
+    "icu_collections": {
+      "current": "2.4.0",
+      "latest": "2.4.0",
+      "url": "https://crates.io/api/v1/crates/icu_collections"
+    },
+    "icu_locale_core": {
+      "current": "2.4.0",
+      "latest": "2.4.0",
+      "url": "https://crates.io/api/v1/crates/icu_locale_core"
+    },
+    "icu_normalizer": {
+      "current": "2.4.0",
+      "latest": "2.4.0",
+      "url": "https://crates.io/api/v1/crates/icu_normalizer"
+    },
+    "icu_normalizer_data": {
+      "current": "2.4.0",
+      "latest": "2.4.0",
+      "url": "https://crates.io/api/v1/crates/icu_normalizer_data"
+    },
+    "icu_properties": {
+      "current": "2.4.0",
+      "latest": "2.4.0",
+      "url": "https://crates.io/api/v1/crates/icu_properties"
+    },
+    "icu_properties_data": {
+      "current": "2.4.0",
+      "latest": "2.4.0",
+      "url": "https://crates.io/api/v1/crates/icu_properties_data"
+    },
+    "icu_provider": {
+      "current": "2.4.0",
+      "latest": "2.4.0",
+      "url": "https://crates.io/api/v1/crates/icu_provider"
+    },
+    "idna": {
+      "current": "1.1.0",
+      "latest": "1.1.0",
+      "url": "https://crates.io/api/v1/crates/idna"
+    },
+    "idna_adapter": {
+      "current": "1.2.2",
+      "latest": "1.2.2",
+      "url": "https://crates.io/api/v1/crates/idna_adapter"
+    },
+    "ipnet": {
+      "current": "2.12.2",
+      "latest": "2.12.2",
+      "url": "https://crates.io/api/v1/crates/ipnet"
+    },
+    "itertools": {
+      "current": "0.15.0",
+      "latest": "0.15.0",
+      "url": "https://crates.io/api/v1/crates/itertools"
+    },
+    "itoa": {
+      "current": "1.0.19",
+      "latest": "1.0.19",
+      "url": "https://crates.io/api/v1/crates/itoa"
+    },
+    "js-sys": {
+      "current": "0.3.107",
+      "latest": "0.3.107",
+      "url": "https://crates.io/api/v1/crates/js-sys"
+    },
+    "lazy_static": {
+      "current": "1.5.1",
+      "latest": "1.5.1",
+      "url": "https://crates.io/api/v1/crates/lazy_static"
+    },
+    "libc": {
+      "current": "0.2.191",
+      "latest": "0.2.191",
+      "url": "https://crates.io/api/v1/crates/libc"
+    },
+    "linux-raw-sys": {
+      "current": "0.12.1",
+      "latest": "0.12.1",
+      "url": "https://crates.io/api/v1/crates/linux-raw-sys"
+    },
+    "litemap": {
+      "current": "0.8.3",
+      "latest": "0.8.3",
+      "url": "https://crates.io/api/v1/crates/litemap"
+    },
+    "log": {
+      "current": "0.4.35",
+      "latest": "0.4.35",
+      "url": "https://crates.io/api/v1/crates/log"
+    },
+    "lru-slab": {
+      "current": "0.1.3",
+      "latest": "0.1.3",
+      "url": "https://crates.io/api/v1/crates/lru-slab"
+    },
+    "matchit": {
+      "current": "0.8.4",
+      "latest": "0.9.2",
+      "url": "https://crates.io/api/v1/crates/matchit"
+    },
+    "memchr": {
+      "current": "2.8.3",
+      "latest": "2.8.3",
+      "url": "https://crates.io/api/v1/crates/memchr"
+    },
+    "mime": {
+      "current": "0.3.18",
+      "latest": "0.3.18",
+      "url": "https://crates.io/api/v1/crates/mime"
+    },
+    "minimal-lexical": {
+      "current": "0.2.1",
+      "latest": "0.2.1",
+      "url": "https://crates.io/api/v1/crates/minimal-lexical"
+    },
+    "miniz_oxide": {
+      "current": "0.9.1",
+      "latest": "0.9.1",
+      "url": "https://crates.io/api/v1/crates/miniz_oxide"
+    },
+    "mio": {
+      "current": "1.2.5",
+      "latest": "1.2.5",
+      "url": "https://crates.io/api/v1/crates/mio"
+    },
+    "nom": {
+      "current": "7.1.3",
+      "latest": "8.0.0",
+      "url": "https://crates.io/api/v1/crates/nom"
+    },
+    "num-bigint": {
+      "current": "0.4.8",
+      "latest": "0.5.1",
+      "url": "https://crates.io/api/v1/crates/num-bigint"
+    },
+    "num-conv": {
+      "current": "0.2.2",
+      "latest": "0.2.2",
+      "url": "https://crates.io/api/v1/crates/num-conv"
+    },
+    "num-integer": {
+      "current": "0.1.47",
+      "latest": "0.1.47",
+      "url": "https://crates.io/api/v1/crates/num-integer"
+    },
+    "num-traits": {
+      "current": "0.2.19",
+      "latest": "0.2.19",
+      "url": "https://crates.io/api/v1/crates/num-traits"
+    },
+    "oid-registry": {
+      "current": "0.8.1",
+      "latest": "0.8.1",
+      "url": "https://crates.io/api/v1/crates/oid-registry"
+    },
+    "once_cell": {
+      "current": "1.21.4",
+      "latest": "1.21.4",
+      "url": "https://crates.io/api/v1/crates/once_cell"
+    },
+    "opentelemetry": {
+      "current": "0.31.0",
+      "latest": "0.33.1",
+      "url": "https://crates.io/api/v1/crates/opentelemetry"
+    },
+    "opentelemetry-http": {
+      "current": "0.31.0",
+      "latest": "0.33.1",
+      "url": "https://crates.io/api/v1/crates/opentelemetry-http"
+    },
+    "opentelemetry-otlp": {
+      "current": "0.31.1",
+      "latest": "0.33.1",
+      "url": "https://crates.io/api/v1/crates/opentelemetry-otlp"
+    },
+    "opentelemetry-proto": {
+      "current": "0.31.0",
+      "latest": "0.33.1",
+      "url": "https://crates.io/api/v1/crates/opentelemetry-proto"
+    },
+    "opentelemetry_sdk": {
+      "current": "0.31.0",
+      "latest": "0.33.1",
+      "url": "https://crates.io/api/v1/crates/opentelemetry_sdk"
+    },
+    "pem": {
+      "current": "4.0.0",
+      "latest": "4.0.0",
+      "url": "https://crates.io/api/v1/crates/pem"
+    },
+    "percent-encoding": {
+      "current": "2.3.2",
+      "latest": "2.3.2",
+      "url": "https://crates.io/api/v1/crates/percent-encoding"
+    },
+    "pin-project": {
+      "current": "1.1.13",
+      "latest": "1.2.0",
+      "url": "https://crates.io/api/v1/crates/pin-project"
+    },
+    "pin-project-internal": {
+      "current": "1.1.13",
+      "latest": "1.2.0",
+      "url": "https://crates.io/api/v1/crates/pin-project-internal"
+    },
+    "pin-project-lite": {
+      "current": "0.2.17",
+      "latest": "0.2.18",
+      "url": "https://crates.io/api/v1/crates/pin-project-lite"
+    },
+    "potential_utf": {
+      "current": "0.1.6",
+      "latest": "0.1.6",
+      "url": "https://crates.io/api/v1/crates/potential_utf"
+    },
+    "powerfmt": {
+      "current": "0.2.1",
+      "latest": "0.2.1",
+      "url": "https://crates.io/api/v1/crates/powerfmt"
+    },
+    "ppv-lite86": {
+      "current": "0.2.21",
+      "latest": "0.2.21",
+      "url": "https://crates.io/api/v1/crates/ppv-lite86"
+    },
+    "proc-macro2": {
+      "current": "1.0.107",
+      "latest": "1.0.107",
+      "url": "https://crates.io/api/v1/crates/proc-macro2"
+    },
+    "prost": {
+      "current": "0.14.6",
+      "latest": "0.14.6",
+      "url": "https://crates.io/api/v1/crates/prost"
+    },
+    "prost-derive": {
+      "current": "0.14.6",
+      "latest": "0.14.6",
+      "url": "https://crates.io/api/v1/crates/prost-derive"
+    },
+    "quinn": {
+      "current": "0.11.12",
+      "latest": "0.11.12",
+      "url": "https://crates.io/api/v1/crates/quinn"
+    },
+    "quinn-proto": {
+      "current": "0.11.19",
+      "latest": "0.11.19",
+      "url": "https://crates.io/api/v1/crates/quinn-proto"
+    },
+    "quinn-udp": {
+      "current": "0.5.16",
+      "latest": "0.6.3",
+      "url": "https://crates.io/api/v1/crates/quinn-udp"
+    },
+    "quote": {
+      "current": "1.0.47",
+      "latest": "1.0.47",
+      "url": "https://crates.io/api/v1/crates/quote"
+    },
+    "r-efi": {
+      "current": "6.0.0",
+      "latest": "7.2.0",
+      "url": "https://crates.io/api/v1/crates/r-efi"
+    },
+    "rand": {
+      "current": "0.10.4",
+      "latest": "0.10.4",
+      "url": "https://crates.io/api/v1/crates/rand"
+    },
+    "rand_chacha": {
+      "current": "0.9.0",
+      "latest": "0.10.0",
+      "url": "https://crates.io/api/v1/crates/rand_chacha"
+    },
+    "rand_core": {
+      "current": "0.10.1",
+      "latest": "0.10.1",
+      "url": "https://crates.io/api/v1/crates/rand_core"
+    },
+    "rand_pcg": {
+      "current": "0.10.3",
+      "latest": "0.10.3",
+      "url": "https://crates.io/api/v1/crates/rand_pcg"
+    },
+    "rcgen": {
+      "current": "0.14.10",
+      "latest": "0.14.10",
+      "url": "https://crates.io/api/v1/crates/rcgen"
+    },
+    "regex": {
+      "current": "1.13.2",
+      "latest": "1.13.2",
+      "url": "https://crates.io/api/v1/crates/regex"
+    },
+    "regex-automata": {
+      "current": "0.4.19",
+      "latest": "0.4.19",
+      "url": "https://crates.io/api/v1/crates/regex-automata"
+    },
+    "regex-syntax": {
+      "current": "0.8.12",
+      "latest": "0.8.12",
+      "url": "https://crates.io/api/v1/crates/regex-syntax"
+    },
+    "reqwest": {
+      "current": "0.12.28",
+      "latest": "0.13.5",
+      "url": "https://crates.io/api/v1/crates/reqwest"
+    },
+    "ring": {
+      "current": "0.17.14",
+      "latest": "0.17.14",
+      "url": "https://crates.io/api/v1/crates/ring"
+    },
+    "rustc-hash": {
+      "current": "2.1.3",
+      "latest": "2.1.3",
+      "url": "https://crates.io/api/v1/crates/rustc-hash"
+    },
+    "rusticata-macros": {
+      "current": "4.1.0",
+      "latest": "5.0.0",
+      "url": "https://crates.io/api/v1/crates/rusticata-macros"
+    },
+    "rustix": {
+      "current": "1.1.6",
+      "latest": "1.1.6",
+      "url": "https://crates.io/api/v1/crates/rustix"
+    },
+    "rustls": {
+      "current": "0.23.46",
+      "latest": "0.23.46",
+      "url": "https://crates.io/api/v1/crates/rustls"
+    },
+    "rustls-pki-types": {
+      "current": "1.16.0",
+      "latest": "1.16.0",
+      "url": "https://crates.io/api/v1/crates/rustls-pki-types"
+    },
+    "rustls-webpki": {
+      "current": "0.103.17",
+      "latest": "0.103.17",
+      "url": "https://crates.io/api/v1/crates/rustls-webpki"
+    },
+    "rustversion": {
+      "current": "1.0.23",
+      "latest": "1.0.23",
+      "url": "https://crates.io/api/v1/crates/rustversion"
+    },
+    "ryu": {
+      "current": "1.0.23",
+      "latest": "1.0.23",
+      "url": "https://crates.io/api/v1/crates/ryu"
+    },
+    "serde": {
+      "current": "1.0.229",
+      "latest": "1.0.229",
+      "url": "https://crates.io/api/v1/crates/serde"
+    },
+    "serde_core": {
+      "current": "1.0.229",
+      "latest": "1.0.229",
+      "url": "https://crates.io/api/v1/crates/serde_core"
+    },
+    "serde_derive": {
+      "current": "1.0.229",
+      "latest": "1.0.229",
+      "url": "https://crates.io/api/v1/crates/serde_derive"
+    },
+    "serde_json": {
+      "current": "1.0.154",
+      "latest": "1.0.154",
+      "url": "https://crates.io/api/v1/crates/serde_json"
+    },
+    "serde_path_to_error": {
+      "current": "0.1.20",
+      "latest": "0.1.20",
+      "url": "https://crates.io/api/v1/crates/serde_path_to_error"
+    },
+    "serde_urlencoded": {
+      "current": "0.7.1",
+      "latest": "0.7.1",
+      "url": "https://crates.io/api/v1/crates/serde_urlencoded"
+    },
+    "sha2": {
+      "current": "0.10.9",
+      "latest": "0.11.1",
+      "url": "https://crates.io/api/v1/crates/sha2"
+    },
+    "shlex": {
+      "current": "2.0.1",
+      "latest": "2.0.1",
+      "url": "https://crates.io/api/v1/crates/shlex"
+    },
+    "signal-hook-registry": {
+      "current": "1.4.8",
+      "latest": "1.4.8",
+      "url": "https://crates.io/api/v1/crates/signal-hook-registry"
+    },
+    "simd-adler32": {
+      "current": "0.3.10",
+      "latest": "0.3.10",
+      "url": "https://crates.io/api/v1/crates/simd-adler32"
+    },
+    "slab": {
+      "current": "0.4.12",
+      "latest": "0.4.12",
+      "url": "https://crates.io/api/v1/crates/slab"
+    },
+    "smallvec": {
+      "current": "1.16.6",
+      "latest": "1.16.6",
+      "url": "https://crates.io/api/v1/crates/smallvec"
+    },
+    "socket2": {
+      "current": "0.6.5",
+      "latest": "0.6.5",
+      "url": "https://crates.io/api/v1/crates/socket2"
+    },
+    "stable_deref_trait": {
+      "current": "1.2.1",
+      "latest": "1.2.1",
+      "url": "https://crates.io/api/v1/crates/stable_deref_trait"
+    },
+    "subtle": {
+      "current": "2.6.1",
+      "latest": "2.6.1",
+      "url": "https://crates.io/api/v1/crates/subtle"
+    },
+    "syn": {
+      "current": "3.0.10",
+      "latest": "3.0.10",
+      "url": "https://crates.io/api/v1/crates/syn"
+    },
+    "sync_wrapper": {
+      "current": "1.0.2",
+      "latest": "1.0.2",
+      "url": "https://crates.io/api/v1/crates/sync_wrapper"
+    },
+    "synstructure": {
+      "current": "0.14.0",
+      "latest": "0.14.0",
+      "url": "https://crates.io/api/v1/crates/synstructure"
+    },
+    "tar": {
+      "current": "0.4.46",
+      "latest": "0.4.46",
+      "url": "https://crates.io/api/v1/crates/tar"
+    },
+    "tempfile": {
+      "current": "3.27.0",
+      "latest": "3.27.0",
+      "url": "https://crates.io/api/v1/crates/tempfile"
+    },
+    "thiserror": {
+      "current": "2.0.21",
+      "latest": "2.0.21",
+      "url": "https://crates.io/api/v1/crates/thiserror"
+    },
+    "thiserror-impl": {
+      "current": "2.0.21",
+      "latest": "2.0.21",
+      "url": "https://crates.io/api/v1/crates/thiserror-impl"
+    },
+    "time": {
+      "current": "0.3.55",
+      "latest": "0.3.55",
+      "url": "https://crates.io/api/v1/crates/time"
+    },
+    "time-core": {
+      "current": "0.1.9",
+      "latest": "0.1.9",
+      "url": "https://crates.io/api/v1/crates/time-core"
+    },
+    "time-macros": {
+      "current": "0.2.32",
+      "latest": "0.2.32",
+      "url": "https://crates.io/api/v1/crates/time-macros"
+    },
+    "tinystr": {
+      "current": "0.8.5",
+      "latest": "0.8.5",
+      "url": "https://crates.io/api/v1/crates/tinystr"
+    },
+    "tinyvec": {
+      "current": "1.13.3",
+      "latest": "1.13.3",
+      "url": "https://crates.io/api/v1/crates/tinyvec"
+    },
+    "tokio": {
+      "current": "1.54.1",
+      "latest": "1.54.1",
+      "url": "https://crates.io/api/v1/crates/tokio"
+    },
+    "tokio-macros": {
+      "current": "2.7.2",
+      "latest": "2.7.2",
+      "url": "https://crates.io/api/v1/crates/tokio-macros"
+    },
+    "tokio-rustls": {
+      "current": "0.26.6",
+      "latest": "0.26.6",
+      "url": "https://crates.io/api/v1/crates/tokio-rustls"
+    },
+    "tokio-stream": {
+      "current": "0.1.19",
+      "latest": "0.1.19",
+      "url": "https://crates.io/api/v1/crates/tokio-stream"
+    },
+    "tokio-util": {
+      "current": "0.7.20",
+      "latest": "0.7.20",
+      "url": "https://crates.io/api/v1/crates/tokio-util"
+    },
+    "tonic": {
+      "current": "0.14.9",
+      "latest": "0.14.9",
+      "url": "https://crates.io/api/v1/crates/tonic"
+    },
+    "tonic-prost": {
+      "current": "0.14.9",
+      "latest": "0.14.9",
+      "url": "https://crates.io/api/v1/crates/tonic-prost"
+    },
+    "tower": {
+      "current": "0.5.3",
+      "latest": "0.5.3",
+      "url": "https://crates.io/api/v1/crates/tower"
+    },
+    "tower-http": {
+      "current": "0.6.11",
+      "latest": "0.7.1",
+      "url": "https://crates.io/api/v1/crates/tower-http"
+    },
+    "tower-layer": {
+      "current": "0.3.3",
+      "latest": "0.3.3",
+      "url": "https://crates.io/api/v1/crates/tower-layer"
+    },
+    "tower-service": {
+      "current": "0.3.3",
+      "latest": "0.3.3",
+      "url": "https://crates.io/api/v1/crates/tower-service"
+    },
+    "tracing": {
+      "current": "0.1.44",
+      "latest": "0.1.44",
+      "url": "https://crates.io/api/v1/crates/tracing"
+    },
+    "tracing-attributes": {
+      "current": "0.1.31",
+      "latest": "0.1.31",
+      "url": "https://crates.io/api/v1/crates/tracing-attributes"
+    },
+    "tracing-core": {
+      "current": "0.1.36",
+      "latest": "0.1.36",
+      "url": "https://crates.io/api/v1/crates/tracing-core"
+    },
+    "try-lock": {
+      "current": "0.2.5",
+      "latest": "0.2.5",
+      "url": "https://crates.io/api/v1/crates/try-lock"
+    },
+    "typenum": {
+      "current": "1.20.1",
+      "latest": "1.20.1",
+      "url": "https://crates.io/api/v1/crates/typenum"
+    },
+    "unicode-ident": {
+      "current": "1.0.27",
+      "latest": "1.0.27",
+      "url": "https://crates.io/api/v1/crates/unicode-ident"
+    },
+    "untrusted": {
+      "current": "0.9.0",
+      "latest": "0.9.0",
+      "url": "https://crates.io/api/v1/crates/untrusted"
+    },
+    "url": {
+      "current": "2.5.8",
+      "latest": "2.5.9",
+      "url": "https://crates.io/api/v1/crates/url"
+    },
+    "utf8_iter": {
+      "current": "1.1.0",
+      "latest": "1.1.0",
+      "url": "https://crates.io/api/v1/crates/utf8_iter"
+    },
+    "utf_types": {
+      "current": "1.0.0",
+      "latest": "1.0.0",
+      "url": "https://crates.io/api/v1/crates/utf_types"
+    },
+    "version_check": {
+      "current": "0.9.5",
+      "latest": "0.9.5",
+      "url": "https://crates.io/api/v1/crates/version_check"
+    },
+    "want": {
+      "current": "0.3.2",
+      "latest": "0.3.2",
+      "url": "https://crates.io/api/v1/crates/want"
+    },
+    "wasi": {
+      "current": "0.11.1+wasi-snapshot-preview1",
+      "latest": "0.14.7+wasi-0.2.4",
+      "url": "https://crates.io/api/v1/crates/wasi"
+    },
+    "wasip2": {
+      "current": "1.0.4+wasi-0.2.12",
+      "latest": "2.0.1+wasi-0.2.12",
+      "url": "https://crates.io/api/v1/crates/wasip2"
+    },
+    "wasm-bindgen": {
+      "current": "0.2.130",
+      "latest": "0.2.130",
+      "url": "https://crates.io/api/v1/crates/wasm-bindgen"
+    },
+    "wasm-bindgen-futures": {
+      "current": "0.4.80",
+      "latest": "0.4.80",
+      "url": "https://crates.io/api/v1/crates/wasm-bindgen-futures"
+    },
+    "wasm-bindgen-macro": {
+      "current": "0.2.130",
+      "latest": "0.2.130",
+      "url": "https://crates.io/api/v1/crates/wasm-bindgen-macro"
+    },
+    "wasm-bindgen-macro-support": {
+      "current": "0.2.130",
+      "latest": "0.2.130",
+      "url": "https://crates.io/api/v1/crates/wasm-bindgen-macro-support"
+    },
+    "wasm-bindgen-shared": {
+      "current": "0.2.130",
+      "latest": "0.2.130",
+      "url": "https://crates.io/api/v1/crates/wasm-bindgen-shared"
+    },
+    "wasm-streams": {
+      "current": "0.4.2",
+      "latest": "0.7.1",
+      "url": "https://crates.io/api/v1/crates/wasm-streams"
+    },
+    "web-sys": {
+      "current": "0.3.107",
+      "latest": "0.3.107",
+      "url": "https://crates.io/api/v1/crates/web-sys"
+    },
+    "web-time": {
+      "current": "1.1.0",
+      "latest": "1.1.0",
+      "url": "https://crates.io/api/v1/crates/web-time"
+    },
+    "webpki-roots": {
+      "current": "1.0.12",
+      "latest": "1.0.12",
+      "url": "https://crates.io/api/v1/crates/webpki-roots"
+    },
+    "windows-link": {
+      "current": "0.2.1",
+      "latest": "0.100.0",
+      "url": "https://crates.io/api/v1/crates/windows-link"
+    },
+    "windows-sys": {
+      "current": "0.61.2",
+      "latest": "0.61.2",
+      "url": "https://crates.io/api/v1/crates/windows-sys"
+    },
+    "windows-targets": {
+      "current": "0.52.6",
+      "latest": "0.53.5",
+      "url": "https://crates.io/api/v1/crates/windows-targets"
+    },
+    "windows_aarch64_gnullvm": {
+      "current": "0.52.6",
+      "latest": "0.53.1",
+      "url": "https://crates.io/api/v1/crates/windows_aarch64_gnullvm"
+    },
+    "windows_aarch64_msvc": {
+      "current": "0.52.6",
+      "latest": "0.53.1",
+      "url": "https://crates.io/api/v1/crates/windows_aarch64_msvc"
+    },
+    "windows_i686_gnu": {
+      "current": "0.52.6",
+      "latest": "0.53.1",
+      "url": "https://crates.io/api/v1/crates/windows_i686_gnu"
+    },
+    "windows_i686_gnullvm": {
+      "current": "0.52.6",
+      "latest": "0.53.1",
+      "url": "https://crates.io/api/v1/crates/windows_i686_gnullvm"
+    },
+    "windows_i686_msvc": {
+      "current": "0.52.6",
+      "latest": "0.53.1",
+      "url": "https://crates.io/api/v1/crates/windows_i686_msvc"
+    },
+    "windows_x86_64_gnu": {
+      "current": "0.52.6",
+      "latest": "0.53.1",
+      "url": "https://crates.io/api/v1/crates/windows_x86_64_gnu"
+    },
+    "windows_x86_64_gnullvm": {
+      "current": "0.52.6",
+      "latest": "0.53.1",
+      "url": "https://crates.io/api/v1/crates/windows_x86_64_gnullvm"
+    },
+    "windows_x86_64_msvc": {
+      "current": "0.52.6",
+      "latest": "0.53.1",
+      "url": "https://crates.io/api/v1/crates/windows_x86_64_msvc"
+    },
+    "wit-bindgen": {
+      "current": "0.57.1",
+      "latest": "0.63.0",
+      "url": "https://crates.io/api/v1/crates/wit-bindgen"
+    },
+    "writeable": {
+      "current": "0.6.4",
+      "latest": "0.6.4",
+      "url": "https://crates.io/api/v1/crates/writeable"
+    },
+    "x509-parser": {
+      "current": "0.18.1",
+      "latest": "0.18.1",
+      "url": "https://crates.io/api/v1/crates/x509-parser"
+    },
+    "yasna": {
+      "current": "0.6.0",
+      "latest": "0.6.0",
+      "url": "https://crates.io/api/v1/crates/yasna"
+    },
+    "yoke": {
+      "current": "0.8.4",
+      "latest": "0.8.4",
+      "url": "https://crates.io/api/v1/crates/yoke"
+    },
+    "yoke-derive": {
+      "current": "0.8.4",
+      "latest": "0.8.4",
+      "url": "https://crates.io/api/v1/crates/yoke-derive"
+    },
+    "zerocopy": {
+      "current": "0.8.63",
+      "latest": "0.8.64",
+      "url": "https://crates.io/api/v1/crates/zerocopy"
+    },
+    "zerocopy-derive": {
+      "current": "0.8.63",
+      "latest": "0.8.64",
+      "url": "https://crates.io/api/v1/crates/zerocopy-derive"
+    },
+    "zerofrom": {
+      "current": "0.1.8",
+      "latest": "0.1.8",
+      "url": "https://crates.io/api/v1/crates/zerofrom"
+    },
+    "zerofrom-derive": {
+      "current": "0.1.8",
+      "latest": "0.1.8",
+      "url": "https://crates.io/api/v1/crates/zerofrom-derive"
+    },
+    "zeroize": {
+      "current": "1.9.2",
+      "latest": "1.9.2",
+      "url": "https://crates.io/api/v1/crates/zeroize"
+    },
+    "zerotrie": {
+      "current": "0.2.5",
+      "latest": "0.2.5",
+      "url": "https://crates.io/api/v1/crates/zerotrie"
+    },
+    "zerovec": {
+      "current": "0.11.9",
+      "latest": "0.11.9",
+      "url": "https://crates.io/api/v1/crates/zerovec"
+    },
+    "zerovec-derive": {
+      "current": "0.11.7",
+      "latest": "0.11.7",
+      "url": "https://crates.io/api/v1/crates/zerovec-derive"
+    },
+    "zlib-rs": {
+      "current": "0.6.8",
+      "latest": "0.6.8",
+      "url": "https://crates.io/api/v1/crates/zlib-rs"
+    },
+    "zmij": {
+      "current": "1.0.23",
+      "latest": "1.0.23",
+      "url": "https://crates.io/api/v1/crates/zmij"
+    }
+  }
+}

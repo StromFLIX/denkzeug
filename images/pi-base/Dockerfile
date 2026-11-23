@@ -3,9 +3,9 @@ FROM node:24-bookworm-slim
 
 # Tooling shared by every agent set. Keep Python and browser installations outside
 # /root: the broker runs project agents as an unprivileged user with HOME=/workspace.
-COPY --from=ghcr.io/astral-sh/uv:0.13.8 /uv /uvx /usr/local/bin/
+COPY --from=ghcr.io/astral-sh/uv:0.13.9 /uv /uvx /usr/local/bin/
 # Node's bundled npm lags behind security fixes in the supported npm 11 line.
-RUN npm install -g --ignore-scripts npm@11.21.2 && npm cache clean --force
+RUN npm install -g --ignore-scripts npm@11.21.3 && npm cache clean --force
 ENV UV_PYTHON_INSTALL_DIR=/opt/python \
     UV_PYTHON_BIN_DIR=/usr/local/bin \
     PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers

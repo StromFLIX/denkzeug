@@ -10,7 +10,7 @@ if (config.appId !== 'dev.nautionette.app') throw new Error('Update the native J
 // Our app-owned main-frame vault plugin needs its own compile dependency too.
 const gradlePath = new URL('android/app/build.gradle', root)
 let gradle = await readFile(gradlePath, 'utf8')
-const webkitDependency = "implementation 'androidx.webkit:webkit:1.14.0'"
+const webkitDependency = "implementation 'androidx.webkit:webkit:1.17.1'"
 if (!gradle.includes(webkitDependency)) {
   if (!gradle.includes('dependencies {')) throw new Error('Android app dependency block is missing.')
   gradle = gradle.replace('dependencies {', `dependencies {\n    ${webkitDependency}`)
