@@ -4,7 +4,7 @@
   "reference_files": {
     "tests/broker/test_artcraft.py": "950cbc67dc0be115a02ca8622a7d637673d0553018feee8f762cf3f8d0ce135b",
     "tests/broker/test_artcraft_offline.py": "3ac7e20938a6d1e383cf50b53211cdc3bc13cfee469843c123a5b6259bf68978",
-    "tests/broker/test_broker.py": "c6a1d177f2e2719fa7173b7e2cadf29b19fafcf5450ead65d04a3b33366abb5c",
+    "tests/broker/test_broker.py": "f4b7572e117337ee6e3d283bb5da4999791d0ebe1c4926f4615cffdd5c10bd90",
     "tests/broker/test_chat_control.py": "67ddd67d522caf399a19dddccd89d4391a2bacc1fea333b36a850ae7ebcb5dc2",
     "tests/broker/test_chat_control_docker.py": "5707b1be9d3d80396d959fb68997a7f5593b6387a0a0a080b4dbe97b056ebcb2",
     "tests/broker/test_chat_recovery.py": "dda12f107166e7b657daa7dfa558d8e7d67e087538697ab29ff5a5be8d6797b8",
@@ -521,6 +521,13 @@
       "reference": "tests/broker/test_broker.py::test_source_fingerprints_preserve_existing_broker_tags",
       "rust": [
         "source_fingerprints_match_the_checked_in_python_lock"
+      ],
+      "shared": false
+    },
+    {
+      "reference": "tests/broker/test_broker.py::test_startup_spans_keep_request_parent_without_forwarding_private_job",
+      "rust": [
+        "otlp_exports_three_redacted_signals_and_parents_the_agent_to_the_broker"
       ],
       "shared": false
     },
