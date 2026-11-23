@@ -28,6 +28,7 @@ from .migrations import (
 from .output_ids import publication_request_id
 from .search_index import install as install_search_index
 from .search_index import load_extension as load_search_extension
+from .workflow_task_titles import repair_legacy_titles
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS mcp_cli_oauth (
@@ -489,6 +490,7 @@ class Database:
             remove_internet_approval(self._conn)
             add_agent_grouping(self._conn, settings.agent_model, settings.default_agent_set)
             add_delegated_chat_tree(self._conn)
+            repair_legacy_titles(self._conn)
             # Backfill only legacy rows, never overwrite live message timestamps on restart.
             self._conn.execute(
                 "UPDATE chats SET last_message_at = COALESCE("

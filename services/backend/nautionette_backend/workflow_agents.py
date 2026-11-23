@@ -78,7 +78,7 @@ async def start(
             raise HTTPException(410, "Task chat was deleted; refusing to replay an agent's side effects")
         try:
             chat = await new_chat(
-                {"agent_id": agent_id, "title": "Workflow agent task", "timeout_exempt": True},
+                {"agent_id": agent_id, "timeout_exempt": True},
                 chat_id=chat_id,
                 owner_user_id=owner_user_id,
             )

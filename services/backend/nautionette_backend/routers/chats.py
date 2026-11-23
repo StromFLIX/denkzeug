@@ -25,6 +25,7 @@ from .. import (
     project_changes,
     projects,
     provenance,
+    workflow_task_titles,
 )
 from ..agent import (
     agent_job,
@@ -483,14 +484,20 @@ async def submit_message(
         and chat["title"] in {"New chat", ""}
         and not has_history
     ):
-        preview = summarise_for_title(text or "File attachment")
+        workflow = origin.get("workflow") if origin and origin.get("kind") == "workflow" else None
+        title_source = text or "File attachment"
+        if workflow:
+            preview = workflow_task_titles.fallback_title(workflow)
+            title_source = workflow_task_titles.title_input(workflow, title_source)
+        else:
+            preview = summarise_for_title(title_source)
         changed = db.execute(
             "UPDATE chats SET title = ? WHERE id = ? AND title_revision = ? AND title_state = 'provisional'",
             (preview, chat_id, chat["title_revision"]),
         ).rowcount
         if changed:
             spawn(
-                rewrite_chat_title(chat_id, (text or "File attachment")[:12000], model_id, preview),
+                rewrite_chat_title(chat_id, title_source[:12000], model_id, preview),
                 name=f"chat-title-{chat_id}",
             )
 

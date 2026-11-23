@@ -1,5 +1,6 @@
 """Workflow profile tasks retain chat isolation, provenance and idempotent admission."""
 
+import asyncio
 import hashlib
 import json
 from unittest.mock import AsyncMock
@@ -7,6 +8,8 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi import HTTPException
 from nautionette_backend import provenance, workflow_agents
+from nautionette_backend.background import wait_for_chat_turns
+from nautionette_backend.db import Database
 
 SOURCE = {
     "workflow": "maintenance",
@@ -89,6 +92,88 @@ async def test_task_uses_normal_submit_and_preserves_profile_projects(client, pr
     chat_id, turn_id = workflow_agents.task_ids(KEY)
     submit.assert_awaited_once_with(chat_id, {"text": "Check", "message_id": turn_id}, origin=ORIGIN)
     assert db.get_chat(chat_id)["agent_id"] == profile["id"]
+
+
+@pytest.mark.parametrize("generation_fails", [False, True])
+async def test_workflow_tasks_generate_a_title_without_blocking_or_replaying(
+    profile, db, live, monkeypatch, generation_fails
+):
+    source = {**SOURCE, "workflow": "coolify_emergency_handler"}
+    db.execute(
+        "UPDATE runs SET workflow = ? WHERE workflow_id = ?", (source["workflow"], source["workflow_id"])
+    )
+    prompt = (
+        "Review incident under standing instructions.\n" + "policy " * 3000 + "\nDatabase deployment failed"
+    )
+    release_title = asyncio.Event()
+
+    async def generate(_model, _instructions, _text):
+        await release_title.wait()
+        if generation_fails:
+            raise RuntimeError("Title service unavailable")
+        return "Investigate database deployment failure"
+
+    generate_title = AsyncMock(side_effect=generate)
+    monkeypatch.setattr(live.gateway, "chat_title", generate_title)
+    first = await asyncio.wait_for(
+        workflow_agents.start(KEY, profile["id"], prompt, source=source), timeout=2
+    )
+    chat_id = first["chat_id"]
+    title_task = next(task for task in asyncio.all_tasks() if task.get_name() == f"chat-title-{chat_id}")
+    try:
+        await asyncio.wait_for(wait_for_chat_turns(), timeout=2)
+        assert workflow_agents.status(KEY)["ok"] is True
+        assert db.get_chat(chat_id)["title"] == "Coolify emergency handler"
+        assert not title_task.done()
+        assert (await workflow_agents.start(KEY, profile["id"], prompt, source=source))["chat_id"] == chat_id
+    finally:
+        release_title.set()
+        await asyncio.wait_for(title_task, timeout=2)
+    expected = "Coolify emergency handler" if generation_fails else "Investigate database deployment failure"
+    assert db.get_chat(chat_id)["title"] == expected
+    generate_title.assert_awaited_once()
+    model, _, text = generate_title.await_args.args
+    assert model == "test/saved"
+    assert "Coolify emergency handler" in text
+    assert "standing instructions" in text
+    assert "Database deployment failed" in text
+    assert len(text) <= 12000
+
+
+def test_legacy_workflow_titles_are_repaired_without_renaming_manual_chats(tmp_path):
+    path = str(tmp_path / "workflow-titles.db")
+    placeholder = "Workflow agent task"
+    database = Database(path)
+    try:
+        for chat_id in ("original", "manual", "unrelated", "pre-provenance", "unsubmitted"):
+            database.create_chat(placeholder, "default", chat_id=chat_id, agent_name="Maintainer")
+            database.update_chat(chat_id, {"title": placeholder})  # original fixed title at revision 1
+            if chat_id != "unsubmitted":
+                origin = None if chat_id == "pre-provenance" else ORIGIN
+                database.accept_chat_message(chat_id, "Check", f"turn-{chat_id}", [], origin=origin)
+            if chat_id != "unrelated":
+                database.execute(
+                    "INSERT INTO workflow_agent_tasks (key, chat_id, agent_id, prompt_hash) VALUES (?,?,?,?)",
+                    (chat_id, chat_id, "agent", "hash"),
+                )
+        database.update_chat("manual", {"title": placeholder})  # user explicitly kept the same text
+    finally:
+        database._conn.close()
+
+    for _ in range(2):
+        database = Database(path)
+        try:
+            for chat_id, expected in {
+                "original": ("Maintenance", "provisional", 2),
+                "manual": (placeholder, "manual", 2),
+                "unrelated": (placeholder, "manual", 1),
+                "pre-provenance": ("Workflow run · Maintainer", "provisional", 2),
+                "unsubmitted": ("New chat", "provisional", 2),
+            }.items():
+                chat = database.get_chat(chat_id)
+                assert (chat["title"], chat["title_state"], chat["title_revision"]) == expected
+        finally:
+            database._conn.close()
 
 
 @pytest.mark.parametrize("error,stopped", [("container failed", False), (None, True)])
