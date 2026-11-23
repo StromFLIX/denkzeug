@@ -37,6 +37,9 @@ _ALLOWED = {
     "network.protocol.version",
     "exception.type",
     "error.type",
+    "db.system.name",
+    "denkzeug.sqlite.lock_wait_ms",
+    "denkzeug.broker.implementation",
     "rpc.system",
     "rpc.service",
     "rpc.method",
@@ -189,6 +192,10 @@ def configure(service: str) -> bool:
     _providers.extend([provider, meter, logs])
     _initialized = True
     return True
+
+
+def enabled() -> bool:
+    return _initialized
 
 
 def instrument_app(app, service: str) -> None:

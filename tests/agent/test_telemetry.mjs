@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { createTelemetry } from "../../images/pi-base/telemetry.mjs";
+import { createTelemetry, recordPiStartupLine } from "../../images/pi-base/telemetry.mjs";
 
 const received = [];
 const server = createServer((req, res) => {
@@ -19,6 +19,12 @@ try {
   });
   const span = telemetry.start("tool.call", { "gen_ai.tool.name": "bash" });
   telemetry.end(span, true);
+  const pi = telemetry.start("agent.pi.startup");
+  const now = performance.timeOrigin + performance.now();
+  assert.equal(recordPiStartupLine(telemetry, `denkzeug-pi-startup mcp_connect ${now - 8} ${now - 2} 1`, now - 10, pi), true);
+  assert.equal(recordPiStartupLine(telemetry, `denkzeug-pi-startup mcp_list ${now - 20} ${now - 5} 0`, now - 10, pi), true);
+  assert.equal(recordPiStartupLine(telemetry, `denkzeug-pi-startup secret-prompt ${now - 8} ${now - 2} 0`, now - 10, pi), false);
+  telemetry.end(pi);
   telemetry.finish(false);
   await telemetry.flush();
   assert.equal(received.length, 1);
@@ -29,6 +35,11 @@ try {
   assert.equal(root.parentSpanId, parentId);
   assert.equal(tool.parentSpanId, root.spanId);
   assert.equal(tool.status.code, 2);
+  const discovery = spans.find(span => span.name === "agent.pi.mcp_connect");
+  assert.equal(discovery.parentSpanId, pi);
+  assert.equal(discovery.status.code, 2);
+  assert.equal(BigInt(discovery.endTimeUnixNano) - BigInt(discovery.startTimeUnixNano), 6_000_000n);
+  assert.ok(!spans.some(span => span.name === "agent.pi.mcp_list"));
   assert.ok(!JSON.stringify(received).includes("secret prompt"));
   assert.ok(JSON.stringify(received).includes("staging"));
   telemetry.finish(true);

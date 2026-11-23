@@ -13,7 +13,7 @@ import { preparePackages } from "./package-runtime.mjs";
 import { cpSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { prepareProjects, projectEnvironment } from "./project-git.mjs";
 import { contextUsage } from "./context-usage.mjs";
-import { createTelemetry } from "./telemetry.mjs";
+import { createTelemetry, recordPiStartupLine } from "./telemetry.mjs";
 import { createChatControl, listenForChatControl } from "./chat-control.mjs";
 import { createChatRecovery } from "./chat-recovery.mjs";
 import { prepareFiles, fileReferences } from "./chat-files.mjs";
@@ -173,6 +173,8 @@ async function main() {
     return ["read", "write", "edit", "bash", "grep", "find", "ls"].includes(name) ? "local" : "extension";
   };
 
+  const bootstrap = telemetry.start("agent.bootstrap");
+  const files = telemetry.start("agent.bootstrap.files", {}, undefined, bootstrap);
   mkdirSync(workspace, { recursive: true });
   if ((job.chat_id || job.project_ids?.length || job.member_mode) && existsSync("/root/.pi/agent")) {
     cpSync("/root/.pi/agent", `${workspace}/.pi-agent`, { recursive: true });
@@ -185,13 +187,21 @@ async function main() {
   const durable = Boolean(job.chat_id && job.turn_id);
   prepareFiles(job, workspace, durable ? "/chat-session/attachments" : undefined);
   writeFileSync(`${workspace}/JOB.json`, JSON.stringify({ ...job, history: undefined, images: undefined, project_credentials: undefined, package_runtime: undefined }, null, 2));
+  telemetry.end(files);
   if (job.project_ids?.length) {
     emit({ type: "status", state: "projects", message: "Preparing this chat's project worktrees" });
+    const worktrees = telemetry.start("agent.bootstrap.worktrees", {}, undefined, bootstrap);
     prepareProjects(job);
+    telemetry.end(worktrees);
   }
 
+  const packages = telemetry.start("agent.bootstrap.packages", {}, undefined, bootstrap);
   const packageEnvironment = preparePackages();
+  telemetry.end(packages);
+  const nativeSession = telemetry.start("agent.bootstrap.session", {}, undefined, bootstrap);
   const continuity = durable ? prepareSession(job, workspace) : null;
+  telemetry.end(nativeSession);
+  telemetry.end(bootstrap);
   if (continuity) emit({ type: "session_ready", id: continuity.id, context_message_ids: continuity.contextMessageIds });
   const historyFile = continuity?.file || seedHistory(job, workspace, model);
   const prompt = renderPrompt(job);
@@ -220,6 +230,8 @@ async function main() {
   if (!interactive) args.push("--", prompt);
 
   const initialOomKills = oomKills();
+  const piStarted = telemetry.enabled ? performance.timeOrigin + performance.now() : undefined;
+  const piSpan = telemetry.start("agent.pi.startup", {}, undefined, undefined, piStarted);
   const child = spawn("pi", args, {
     cwd: workspace,
     env: {
@@ -237,6 +249,7 @@ async function main() {
       NAUTIONETTE_MODEL_REASONING: JSON.stringify(job.model_reasoning || {}),
       NAUTIONETTE_REASONING_EFFORT: job.reasoning_effort ?? "",
       NAUTIONETTE_MODE: mode,
+      NAUTIONETTE_PI_STARTUP_TIMING: telemetry.enabled ? "1" : "0",
       NAUTIONETTE_MEMBER_MODE: job.member_mode ? "true" : "false",
       NAUTIONETTE_MCP_CATALOG_FILE: mcpCatalogFile,
       NAUTIONETTE_TURN_ID: job.turn_id || '',
@@ -292,9 +305,14 @@ async function main() {
   });
 
   child.stderr.setEncoding("utf8");
+  let stderrLine = "";
   child.stderr.on("data", (chunk) => {
     stderr += chunk;
     if (stderr.length > 8000) stderr = stderr.slice(-8000);
+    if (!telemetry.enabled) return;
+    const lines = (stderrLine + chunk).split("\n");
+    stderrLine = lines.pop().slice(-256);
+    for (const line of lines) recordPiStartupLine(telemetry, line.trim(), piStarted, piSpan);
   });
 
   function translate(event) {
@@ -324,6 +342,7 @@ async function main() {
           child.kill();
         }
         if (event.id === "commands" && event.success) {
+          telemetry.end(piSpan);
           const commands = event.data?.commands || [];
           initialIsExtension = commands.some(command => command.source === "extension" && `/${command.name}` === prompt.split(/\s/)[0]);
           emit({ type: "commands", commands });
@@ -348,15 +367,15 @@ async function main() {
         emit({ type: "session", id: event.id });
         break;
       case "turn_start":
+        // One-shot JSON agents have no commands RPC.
+        telemetry.end(piSpan);
+        telemetry.end(modelSpan, true);
+        modelSpan = telemetry.start("gen_ai.chat", { "gen_ai.request.model": model, "gen_ai.operation.name": "chat" });
         // This precedes the provider stream (and its first byte). Waiting for a
         // thinking/text block would charge prefill and hidden reasoning to Other.
         emit({ type: "phase", phase: "model" });
         break;
       case "message_start":
-        if (event.message?.role === "assistant") {
-          telemetry.end(modelSpan, true);
-          modelSpan = telemetry.start("gen_ai.chat", { "gen_ai.request.model": model, "gen_ai.operation.name": "chat" });
-        }
         // Also restore the phase after control.receive consumes a steered input
         // and the backend starts a fresh response timeline.
         if (["assistant", "user"].includes(event.message?.role)) {

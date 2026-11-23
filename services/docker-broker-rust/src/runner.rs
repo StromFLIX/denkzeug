@@ -12,6 +12,7 @@ use tokio::{
 
 use crate::{
     stream::{Exit, RunnerLogs, Terminal, exit_event},
+    telemetry::{StartupTrace, startup_stage},
     turns::{BeginError, Turn, TurnKey, TurnRegistry},
 };
 
@@ -45,6 +46,7 @@ pub struct RunOptions {
     pub memory: String,
     pub watchdog: Option<Duration>,
     pub operation_budget: Duration,
+    pub startup_trace: Option<StartupTrace>,
 }
 
 const MAX_EVENT_BYTES: usize = 32 * 1024 * 1024;
@@ -92,7 +94,7 @@ fn spawn(
                 return;
             }
         };
-        let image = tokio::select! { biased; _ = owner.wait_for_stop() => None, _ = send.closed() => None, result = driver.ready(&send) => Some(result) };
+        let image = tokio::select! { biased; _ = owner.wait_for_stop() => None, _ = send.closed() => None, result = startup_stage(options.startup_trace.as_ref(), "broker.startup.image_ready", driver.ready(&send)) => Some(result) };
         if !matches!(image, Some(Ok(()))) {
             driver.release().await;
             if let Some((registry, _)) = registration {
@@ -159,32 +161,54 @@ async fn drive(
         return None;
     }
     let budget = options.operation_budget;
-    match timeout(budget, driver.prepare()).await {
-        Ok(Ok(())) => (),
-        Ok(Err(message)) => return error(message),
-        Err(_) => return error("Agent storage preparation timed out"),
+    let trace = options.startup_trace.as_ref();
+    let prepared = startup_stage(trace, "broker.startup.prepare", async {
+        timeout(budget, driver.prepare())
+            .await
+            .map_err(|_| "Agent storage preparation timed out")?
+    })
+    .await;
+    if let Err(message) = prepared {
+        return error(message);
     }
     if !active() {
         return None;
     }
-    let Ok(id) = within(budget, driver.create()).await else {
+    let Ok(id) = startup_stage(
+        trace,
+        "broker.startup.create",
+        within(budget, driver.create()),
+    )
+    .await
+    else {
         return error("Could not create the agent container");
     };
     let id = container.insert(id);
     if !active() {
         return None;
     }
-    if within(budget, driver.stage(id)).await.is_err() {
+    if startup_stage(
+        trace,
+        "broker.startup.stage_job",
+        within(budget, driver.stage(id)),
+    )
+    .await
+    .is_err()
+    {
         return error("Could not deliver the agent job");
     }
-    {
-        let _permit = owner.start_permit().await?;
+    let started = startup_stage(trace, "broker.startup.start", async {
+        let Some(_permit) = owner.start_permit().await else {
+            return Err(());
+        };
         if !active() {
-            return None;
+            return Err(());
         }
-        if within(budget, driver.start(id)).await.is_err() {
-            return error("Could not start the agent container");
-        }
+        within(budget, driver.start(id)).await
+    })
+    .await;
+    if started.is_err() {
+        return error("Could not start the agent container");
     }
     let mut decoder = RunnerLogs::new(MAX_EVENT_BYTES);
     let (terminal, exit) = {

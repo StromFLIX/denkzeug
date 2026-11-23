@@ -449,6 +449,7 @@ async def _run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
                 turn_id, event, timeline.steps, status, timeline.timing.snapshot()
             )
             if first_text:
+                startup.mark("first_text_persisted")
                 startup.finish()
             # Refresh every client's sidebar, including chats that are not open.
             # Persist every event, but don't reload the list for every streamed token.

@@ -1066,6 +1066,21 @@ async fn otlp_exports_three_redacted_signals_and_parents_the_agent_to_the_broker
     let hex = |id: &[u8]| id.iter().map(|b| format!("{b:02x}")).collect::<String>();
     assert_eq!(hex(&launch.parent_span_id), "0123456789abcdef");
     assert_eq!(parent.split('-').nth(2).unwrap(), hex(&launch.span_id));
+    for name in [
+        "broker.startup.image_ready",
+        "broker.startup.prepare",
+        "broker.startup.create",
+    ] {
+        let stage = spans.iter().find(|span| span.name == name).unwrap();
+        assert_eq!(stage.parent_span_id, launch.span_id);
+        assert_eq!(stage.trace_id, launch.trace_id);
+        assert!(
+            stage
+                .attributes
+                .iter()
+                .any(|a| a.key == "denkzeug.broker.implementation")
+        );
+    }
     assert!(spans.iter().any(|span| span.name == "GET request"));
     let metrics =
         ExportMetricsServiceRequest::decode(received["metrics"].last().unwrap().clone()).unwrap();

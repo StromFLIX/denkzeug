@@ -15,6 +15,7 @@ from typing import Any
 from docker.errors import NotFound
 from nautionette.agent_limits import chat_timeout_exempt
 from nautionette.pi_packages import configuration, filters, revision_id
+from opentelemetry import propagate, trace
 
 from . import artcraft, chat_agents, chat_sessions, daemon, git_credentials, images, packages, projects
 from .config import (
@@ -47,6 +48,16 @@ _credential_locks: dict[tuple[str, str], threading.Lock] = {}
 # not yet registered when cleanup arrived. Bound retention to the call horizon.
 _retired: dict[tuple[str, str], float] = {}
 CLEANUP_TIMEOUT = 30
+_tracer = trace.get_tracer(__name__)
+
+
+def _startup(stage: str, job: dict[str, Any]):
+    return _tracer.start_as_current_span(
+        f"broker.startup.{stage}",
+        context=propagate.extract(job.get("_trace_context") or {}),
+        attributes={"denkzeug.broker.implementation": "python"},
+        record_exception=False,
+    )
 
 
 def chat_inventory(chat_id: str = "") -> list[dict[str, str]]:
@@ -283,12 +294,27 @@ def _run(
         yield _ndjson({"type": "error", "message": f"unknown agent set '{agent_set}'"})
         return
     tag = images.image_tag(agent_set)
-    if not images.has_image(tag) or images.snapshot()["status"] != "ready":
-        # Wait for both the image and all default artifact volumes. A present
-        # image alone is no longer sufficient to run creative tools offline.
-        yield from _await_image(tag, stopped)
+    # Do not keep a current span across a generator yield (it may resume on a
+    # different worker thread). Detached span uses the explicit request carrier.
+    image_span = _tracer.start_span(
+        "broker.startup.image_ready",
+        context=propagate.extract(job.get("_trace_context") or {}),
+        attributes={"denkzeug.broker.implementation": "python"},
+    )
+    try:
         if not images.has_image(tag) or images.snapshot()["status"] != "ready":
-            return  # _await_image already said why
+            # Wait for both the image and all default artifact volumes. A present
+            # image alone is no longer sufficient to run creative tools offline.
+            yield from _await_image(tag, stopped)
+            if not images.has_image(tag) or images.snapshot()["status"] != "ready":
+                if not stopped.is_set():
+                    image_span.set_status(trace.StatusCode.ERROR)
+                return  # _await_image already said why
+    except Exception:
+        image_span.set_status(trace.StatusCode.ERROR)
+        raise
+    finally:
+        image_span.end()
 
     timeout = min(int(job.get("timeout_seconds") or RUN_TIMEOUT), RUN_TIMEOUT)
     container = None
@@ -300,86 +326,90 @@ def _run(
     try:
         if stopped.is_set():
             return
-        project_ids = job.get("project_ids", [])
-        if project_ids and tuple(map(int, daemon.client().api._version.split("."))) < (1, 45):
-            raise RuntimeError("Project isolation requires Docker Engine 26+ with API 1.45+")
-        if project_ids:
-            from nautionette.chat_sessions import worktree_lock
+        with _startup("prepare", job):
+            project_ids = job.get("project_ids", [])
+            if project_ids and tuple(map(int, daemon.client().api._version.split("."))) < (1, 45):
+                raise RuntimeError("Project isolation requires Docker Engine 26+ with API 1.45+")
+            if project_ids:
+                from nautionette.chat_sessions import worktree_lock
 
-            session_claim.enter_context(worktree_lock(job["chat_id"], wait_seconds=30))
-        projects.claim(project_ids, job.get("chat_id", ""))
-        claimed_projects = project_ids
-        project_mounts = projects.mounts(project_ids, job.get("chat_id", ""))
-        package_runtime = job.get("package_runtime", [])
-        if not isinstance(package_runtime, list) or len(package_runtime) > 20:
-            raise ValueError("Invalid package runtime configuration")
-        for item in package_runtime:
-            revision_id(item["installation_id"])
-            configuration(item["configuration"])
-            filters(item["filters"])
-            root = item["root"]
-            if not isinstance(root, str) or not root or root.startswith("/") or ".." in root.split("/"):
-                raise ValueError("Invalid package artifact root")
-        session_mounts = session_claim.enter_context(chat_sessions.claim(job.get("chat_id", "")))
-        package_mounts = packages.mounts([item["installation_id"] for item in package_runtime])
-        app_mounts = artcraft.mounts(job.get("artcraft", []))
-        # Private configuration travels through a mode-0600 file, not Docker env,
-        # JOB.json, CLI arguments or the persisted turn. The runner unlinks it.
-        credentials = job.get("project_credentials", [])
-        output_publication = job.get("output_publication")
-        job = {
-            key: value
-            for key, value in job.items()
-            if key not in {"package_runtime", "project_credentials", "output_publication"}
-        }
-        environment = _environment(job)
-        container = daemon.client().containers.create(
-            tag,
-            detach=True,
-            environment=environment,
-            network=AGENT_NETWORK if job.get("chat_id") or job.get("member_mode") else TARGET_NETWORK,
-            volumes={}
-            if job.get("member_mode")
-            else {WORKFLOWS_VOLUME: {"bind": "/workflows", "mode": "ro"}},
-            mounts=[*project_mounts, *package_mounts, *app_mounts, *session_mounts],
-            tmpfs=(
-                {
-                    "/workspace": f"size={AGENT_WORKSPACE_SIZE},exec,uid=10001,gid=10001",
-                    "/projects": "size=1m,uid=10001,gid=10001",
-                }
-                if _uses_app_user(job)
-                else {"/workspace": f"size={AGENT_WORKSPACE_SIZE},exec"}
-            ),
-            user="10001:10001" if _uses_app_user(job) else None,
-            mem_limit=AGENT_MEMORY,
-            pids_limit=512,
-            security_opt=["no-new-privileges:true"],
-            cap_drop=["ALL"],
-            labels={
-                "nautionette.deployment": WORKFLOWS_VOLUME,
-                "nautionette.chat": job.get("chat_id", ""),
-                "nautionette.turn": job.get("turn_id", ""),
-                **projects.labels(project_ids, job.get("chat_id", "")),
-            },
-            tty=False,
-        )
-        if "AGENT_JOB_FILE" in environment:
-            _copy_job(container, job)
-        if package_runtime:
-            _copy_job(container, job, "nautionette-packages.json", package_runtime)
-        if output_publication:
-            _copy_job(container, job, "nautionette-outputs.json", output_publication)
-        if project_ids:
-            scope = set(job.get("project_remotes", {}).values())
-            git_credentials.prepare(container, credentials, scope)
+                session_claim.enter_context(worktree_lock(job["chat_id"], wait_seconds=30))
+            projects.claim(project_ids, job.get("chat_id", ""))
+            claimed_projects = project_ids
+            project_mounts = projects.mounts(project_ids, job.get("chat_id", ""))
+            package_runtime = job.get("package_runtime", [])
+            if not isinstance(package_runtime, list) or len(package_runtime) > 20:
+                raise ValueError("Invalid package runtime configuration")
+            for item in package_runtime:
+                revision_id(item["installation_id"])
+                configuration(item["configuration"])
+                filters(item["filters"])
+                root = item["root"]
+                if not isinstance(root, str) or not root or root.startswith("/") or ".." in root.split("/"):
+                    raise ValueError("Invalid package artifact root")
+            session_mounts = session_claim.enter_context(chat_sessions.claim(job.get("chat_id", "")))
+            package_mounts = packages.mounts([item["installation_id"] for item in package_runtime])
+            app_mounts = artcraft.mounts(job.get("artcraft", []))
+            # Private configuration travels through a mode-0600 file, not Docker env,
+            # JOB.json, CLI arguments or the persisted turn. The runner unlinks it.
+            credentials = job.get("project_credentials", [])
+            output_publication = job.get("output_publication")
+            job = {
+                key: value
+                for key, value in job.items()
+                if key not in {"package_runtime", "project_credentials", "output_publication"}
+            }
+            environment = _environment(job)
+        with _startup("create", job):
+            container = daemon.client().containers.create(
+                tag,
+                detach=True,
+                environment=environment,
+                network=AGENT_NETWORK if job.get("chat_id") or job.get("member_mode") else TARGET_NETWORK,
+                volumes={}
+                if job.get("member_mode")
+                else {WORKFLOWS_VOLUME: {"bind": "/workflows", "mode": "ro"}},
+                mounts=[*project_mounts, *package_mounts, *app_mounts, *session_mounts],
+                tmpfs=(
+                    {
+                        "/workspace": f"size={AGENT_WORKSPACE_SIZE},exec,uid=10001,gid=10001",
+                        "/projects": "size=1m,uid=10001,gid=10001",
+                    }
+                    if _uses_app_user(job)
+                    else {"/workspace": f"size={AGENT_WORKSPACE_SIZE},exec"}
+                ),
+                user="10001:10001" if _uses_app_user(job) else None,
+                mem_limit=AGENT_MEMORY,
+                pids_limit=512,
+                security_opt=["no-new-privileges:true"],
+                cap_drop=["ALL"],
+                labels={
+                    "nautionette.deployment": WORKFLOWS_VOLUME,
+                    "nautionette.chat": job.get("chat_id", ""),
+                    "nautionette.turn": job.get("turn_id", ""),
+                    **projects.labels(project_ids, job.get("chat_id", "")),
+                },
+                tty=False,
+            )
+        with _startup("stage_job", job):
+            if "AGENT_JOB_FILE" in environment:
+                _copy_job(container, job)
+            if package_runtime:
+                _copy_job(container, job, "nautionette-packages.json", package_runtime)
+            if output_publication:
+                _copy_job(container, job, "nautionette-outputs.json", output_publication)
+            if project_ids:
+                scope = set(job.get("project_remotes", {}).values())
+                git_credentials.prepare(container, credentials, scope)
+                with _controls_lock:
+                    key = (job.get("chat_id", ""), job.get("turn_id", ""))
+                    _credential_scopes[key] = scope
+                    _credential_locks[key] = threading.Lock()
+        with _startup("start", job):
             with _controls_lock:
-                key = (job.get("chat_id", ""), job.get("turn_id", ""))
-                _credential_scopes[key] = scope
-                _credential_locks[key] = threading.Lock()
-        with _controls_lock:
-            if stopped.is_set():
-                return
-            container.start()
+                if stopped.is_set():
+                    return
+                container.start()
 
         def expire() -> None:
             # Record the reason before killing: Docker closes even a silent log

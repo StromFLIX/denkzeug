@@ -3,9 +3,23 @@ import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const id = bytes => randomBytes(bytes).toString("hex");
-const now = () => (BigInt(Date.now()) * 1000000n).toString();
+const epochMs = () => performance.timeOrigin + performance.now();
+const timestamp = (ms) => String(BigInt(Math.round(ms * 1000)) * 1000n);
 const attribute = (key, value) => ({ key, value: typeof value === "number"
   ? { intValue: String(value) } : { stringValue: String(value).slice(0, 256) } });
+
+const PI_STAGE = /^denkzeug-pi-startup (model_api|mcp_connect|mcp_list|mcp_oauth_catalog) ([\d.]+) ([\d.]+) ([01])$/;
+
+export function recordPiStartupLine(telemetry, line, earliestMs, parent) {
+  const match = PI_STAGE.exec(line);
+  if (!match) return false;
+  const [, stage, from, to, failed] = match;
+  const start = Number(from), end = Number(to);
+  if (start >= earliestMs && end >= start && end <= epochMs() && end - start <= 120_000) {
+    telemetry.sample(`agent.pi.${stage}`, start, end, failed === "1", parent);
+  }
+  return true;
+}
 
 export function createTelemetry(job = {}, env = process.env) {
   const configured = Boolean(env.OTEL_EXPORTER_OTLP_ENDPOINT) && String(env.OTEL_SDK_DISABLED ?? "true").toLowerCase() !== "true";
@@ -19,19 +33,19 @@ export function createTelemetry(job = {}, env = process.env) {
   const queue = [];
   const active = new Map();
   let finished = false;
-  function start(name, attrs = {}, spanId = id(8), parentSpanId = rootId) {
+  function start(name, attrs = {}, spanId = id(8), parentSpanId = rootId, startMs = epochMs()) {
     if (!enabled) return null;
     const span = { traceId, spanId, parentSpanId, name, kind: name === "gen_ai.chat" ? 3 : 1,
       flags: parseInt(flags, 16),
-      startTimeUnixNano: now(), attributes: Object.entries(attrs).map(([k,v]) => attribute(k,v)) };
+      startTimeUnixNano: timestamp(startMs), attributes: Object.entries(attrs).map(([k,v]) => attribute(k,v)) };
     active.set(spanId, span);
     return spanId;
   }
-  function end(spanId, error = false, attrs = {}) {
+  function end(spanId, error = false, attrs = {}, endMs = epochMs()) {
     const span = active.get(spanId);
     if (!span) return;
     active.delete(spanId);
-    span.endTimeUnixNano = now();
+    span.endTimeUnixNano = timestamp(endMs);
     span.status = { code: error ? 2 : 1 };
     span.attributes.push(...Object.entries(attrs).map(([k,v]) => attribute(k,v)));
     queue.push(span);
@@ -64,7 +78,10 @@ export function createTelemetry(job = {}, env = process.env) {
   }
   const timer = enabled ? setInterval(() => void flush(), 5000) : null;
   timer?.unref();
-  return { start, end, traceparent: configured ? traceparent : "", flush,
+  return { start, end, enabled, traceparent: configured ? traceparent : "", flush,
+    sample(name, startMs, endMs, error = false, parentSpanId = rootId) {
+      if (enabled) end(start(name, {}, undefined, parentSpanId, startMs), error, {}, endMs);
+    },
     fetchImport: fileURLToPath(new URL("./trace-fetch.mjs", import.meta.url)),
     finish(error = false) {
       if (finished) return;

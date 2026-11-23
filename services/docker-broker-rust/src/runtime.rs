@@ -139,15 +139,17 @@ pub(super) async fn run(
         return ndjson_error("Invalid agent timeout");
     };
     let budget = PREPARE.max(broker.config.deadline);
+    let carrier = trace.map(|Extension(carrier)| carrier).unwrap_or_default();
     let options = RunOptions {
         agent_set: set,
         image: image.clone(),
         memory: settings.memory.clone(),
         watchdog,
         operation_budget: budget,
+        startup_trace: carrier.startup,
     };
     // Propagate the broker's own span across the detached NDJSON task.
-    let trace = trace.and_then(|Extension(carrier)| carrier.traceparent);
+    let trace = carrier.traceparent;
     let token = String::from_utf8_lossy(&broker.config.token).into_owned();
     let artcraft = job.get("artcraft").cloned().unwrap_or_else(|| json!([]));
     let member = job["member_mode"] == true;

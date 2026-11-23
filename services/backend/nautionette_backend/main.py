@@ -43,6 +43,7 @@ from .conversations import recover_chat_agents, recover_interrupted
 from .events import bus
 from .integrations import bootstrap
 from .routers import ROUTERS, system
+from .runtime_telemetry import ResponseStartTiming, observe_event_loop
 from .security import AccountBoundaryMiddleware
 
 install_access_logging()
@@ -74,6 +75,7 @@ async def lifespan(_: FastAPI):
     spawn(worktree_maintenance.run(), name="worktree-retention")
     spawn(mcp_oauth.maintenance(), name="mcp-oauth-maintenance")
     spawn(search.run(), name="conversation-search-indexer")
+    spawn(observe_event_loop(), name="event-loop-telemetry")
     # agentgateway may still be starting, so this retries in the background
     # rather than holding the port closed.
     spawn(bootstrap(), name="integration-bootstrap")
@@ -113,6 +115,7 @@ app.add_middleware(
 )
 
 app.add_middleware(AccountBoundaryMiddleware)
+app.add_middleware(ResponseStartTiming)
 
 
 @app.exception_handler(RequestValidationError)

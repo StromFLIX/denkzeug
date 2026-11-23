@@ -84,6 +84,58 @@ for client-observed POST-to-SSE timing. Verify with interleaved runs of the same
 model, reasoning effort, prompt, and tool/project selection; metric cohorts alone
 cannot control for workload changes. Neither metric measures browser paint.
 
+## Investigating slow startup and backend requests
+
+1. **Start with the symptom and an exact build.** Scope SigNoz to
+   `service.namespace=nautionette`, the deployment environment and `service.version`.
+   For slow chat responses use the `time_to_first_text` histogram, not the unfiltered
+   `chat.startup` span duration (no-text turns have different end semantics). For
+   API slowness use `denkzeug.backend.http.response_start` (ms) grouped by `http.route`
+   and method. It ends at response headers. Standard HTTP duration still includes
+   the open lifetime of SSE/NDJSON streams; exclude those routes when ranking full
+   request latencies. Response-start does not measure body downloads or client paint.
+2. **Open an individual trace.** Under `POST /agent/run`, compare `broker.startup.*`
+   spans: `image_ready`, `prepare` (claims and mount configuration), `create`,
+   `stage_job` (file transfers), and `start` (including the start lock). Both brokers
+   use the same names and the `denkzeug.broker.implementation` trace attribute.
+   After that, `agent.bootstrap.*` covers workspace files, project worktrees,
+   packages, and native session preparation. A gap between broker start and agent
+   bootstrap can still include Docker/process startup and stream delivery.
+3. **Separate Pi, discovery and model work.** `agent.pi.startup` runs from spawn
+   until commands are available (or the first model turn in one-shot mode).
+   Its `agent.pi.mcp_connect`, `agent.pi.mcp_list`, `agent.pi.mcp_oauth_catalog`, and
+   `agent.pi.model_api` children show known extension waits; other startup time
+   includes Pi initialization, other extensions, and command delivery. Empty MCP
+   selection should have no discovery spans. `gen_ai.chat` starts at Pi's model
+   turn, not the first assistant block; it measures the whole model turn. Use the
+   backend first-text milestone for startup latency. `chat.admission.model_catalog`
+   isolates model lookup before the turn is accepted.
+4. **Check storage and the event loop.** `denkzeug.sqlite.lock_wait` measures wait
+   for the backend process's shared Python lock. `denkzeug.sqlite.operation.duration`
+   measures time holding it (including read fetch, write commit, or transaction
+   callbacks as applicable). High lock wait suggests in-process contention; high
+   hold time can be SQLite work, disk I/O, external-process SQLite lock waits, or
+   Python in transactions. It is not a per-statement profiler. Metrics use fixed
+   `operation` and `outcome` labels. Traced operations over 25 ms or errors get
+   `sqlite.*` spans with wait time, never SQL, parameters, or rows. Compare with
+   `denkzeug.backend.event_loop.lag`; simultaneous spikes are a lead, not proof
+   SQLite caused the stall. `first_text_persist` measures text receipt through its
+   durable write separately from time to first text.
+
+Keep p50/p95 and sample counts together. For a broker A/B use the existing
+[TTFT probe](spikes/project-chat-ttft.md#repeatable-full-app-benchmark), identical
+host, agent image, model, inputs and project/tool selections, and compare warm
+serial turns and concurrent starts separately. Verify stage spans, tail latency,
+stop behavior and startup failures before any production switch. Parity tests do
+not constitute timing evidence.
+
+**Coverage gaps:** browser receipt/paint, queue wait, exact provider first byte,
+SQLite statement plans, and host disk/CPU contention are not measured by these
+spans. Check container/host saturation alongside traces, and add focused
+instrumentation only where the data points. Python tests disable inherited OTLP;
+export tests explicitly opt in to localhost so test traffic cannot skew release
+comparisons.
+
 ## Privacy and operational limits
 
 Python exports allowlisted attributes and exception **types**, removing exception

@@ -12,6 +12,7 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
+from opentelemetry import trace
 from starlette.concurrency import run_in_threadpool
 
 from .. import (
@@ -432,7 +433,10 @@ async def submit_message(
         tools = select_tools(tools)
     # Direct API clients must receive the same capability checks as the UI, even
     # after a backend restart before anyone has opened the model picker.
-    model_info = await catalog.model_info(model_id)
+    with trace.get_tracer(__name__).start_as_current_span(
+        "chat.admission.model_catalog", record_exception=False
+    ):
+        model_info = await catalog.model_info(model_id)
     if model_override is not None and not model_info:
         raise HTTPException(422, "Unknown model ID; choose a model from the configured catalog")
     effort = _effort(chat.get("reasoning_effort") if model_id == chat_model else None, model_info)

@@ -40,9 +40,22 @@ const rpc = transport.rpc;
 
 const renderToolResult = modelResult;
 
+// Private, fixed-name timing records consumed by the supervisor. No separate
+// collector connection from Pi, and no URLs, tool names or payloads in records.
+async function timed<T>(stage: string, operation: () => Promise<T>): Promise<T> {
+  if (process.env.NAUTIONETTE_PI_STARTUP_TIMING !== "1") return operation();
+  const start = performance.now();
+  let failed = false;
+  try { return await operation(); }
+  catch (error) { failed = true; throw error; }
+  finally {
+    console.error(`denkzeug-pi-startup ${stage} ${performance.timeOrigin + start} ${performance.timeOrigin + performance.now()} ${Number(failed)}`);
+  }
+}
+
 export default async function (pi: ExtensionAPI) {
   pi.on("session_shutdown", () => Promise.all([transport.close(), control.close()]));
-  const api = await modelApi(MODEL, GATEWAY);
+  const api = await timed("model_api", () => modelApi(MODEL, GATEWAY));
   const reasoning = reasoningConfig();
   console.error(`[nautionette] model ${MODEL} uses ${api} through agentgateway`);
   pi.registerProvider(PROVIDER, {
@@ -100,13 +113,13 @@ export default async function (pi: ExtensionAPI) {
   // Tools are discovered, not hard-coded: federate a new MCP server behind the
   // gateway and this agent set picks it up on its next run.
   try {
-    await transport.connect();
-    const listed = await rpc("tools/list");
+    await timed("mcp_connect", () => transport.connect());
+    const listed = await timed("mcp_list", () => rpc("tools/list"));
     const all: any[] = listed.tools ?? [];
     const authGates = all.some(tool => tool.name === "backend_mcp_oauth_gate");
     const oauthTools = new Set<string>();
     if (authGates) {
-      const saved = await authControl(control.rpc, "backend_mcp_oauth_tools", { targets: TARGETS === null ? null : [...TARGETS] });
+      const saved = await timed("mcp_oauth_catalog", () => authControl(control.rpc, "backend_mcp_oauth_tools", { targets: TARGETS === null ? null : [...TARGETS] }));
       for (const name of saved.oauth_tools || []) oauthTools.add(name);
       const names = new Set(all.map(tool => tool.name));
       for (const tool of saved.tools || []) {

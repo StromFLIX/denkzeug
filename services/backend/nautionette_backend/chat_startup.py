@@ -34,6 +34,7 @@ _SEGMENTS = (
     ("time_to_first_reasoning", "begin", "first_reasoning"),
     ("time_to_first_tool", "begin", "tool"),
     ("time_to_first_text", "begin", "first_text"),
+    ("first_text_persist", "first_text", "first_text_persisted"),
 )
 
 
@@ -76,7 +77,7 @@ class ChatStartup:
             if start is None or stop is None or stop < start:
                 continue
             _duration.record((stop - start) / 1_000_000, {**self._scope, "stage": stage}, context=parent)
-            if span.is_recording() and stage != "time_to_first_text":
+            if span.is_recording() and stage not in {"time_to_first_text", "first_text_persist"}:
                 child = _tracer.start_span(
                     f"chat.startup.{stage}", context=parent, start_time=self._wall + start
                 )

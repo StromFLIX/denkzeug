@@ -47,6 +47,7 @@ STARTUP_MARKS = (
     "first_reasoning",
     "tool",
     "first_text",
+    "first_text_persisted",
 )
 
 

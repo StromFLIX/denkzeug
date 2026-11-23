@@ -101,6 +101,7 @@ fn setup() -> (Arc<TurnRegistry>, TurnKey, RunOptions) {
             memory: "4g".into(),
             watchdog: Some(Duration::from_secs(12)),
             operation_budget: Duration::from_secs(2),
+            startup_trace: None,
         },
     )
 }

@@ -28,7 +28,11 @@ os.environ.update(
         "WORKFLOWS_DIR": str(_ROOT / "workflows"),
         "APP_TOKEN": APP_TOKEN,
         "INTERNAL_TOKEN": INTERNAL_TOKEN,
+        # Opt in only from the tests' own loopback OTLP fixtures, never an
+        # inherited production exporter when pytest runs in a live agent.
         "APP_VERSION": "test",
+        "OTEL_EXPORTER_OTLP_ENDPOINT": "",
+        "OTEL_EXPORTER_OTLP_HEADERS": "",
         "AGENT_MODEL": "openai/gpt-4o-mini",
         "DEFAULT_AGENT_SET": "default",
         "AGENTGATEWAY_URL": "http://agentgateway.test:4000",

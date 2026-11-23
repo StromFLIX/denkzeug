@@ -18,6 +18,7 @@ from typing import Any
 
 from .auth_store import install as install_auth_schema
 from .config import settings
+from .db_telemetry import observed_lock
 from .migrations import (
     add_agent_grouping,
     add_delegated_chat_tree,
@@ -566,13 +567,13 @@ class Database:
     # ------------------------------------------------------------------ basics
 
     def execute(self, sql: str, params: Iterable[Any] = ()) -> sqlite3.Cursor:
-        with self._lock:
+        with observed_lock(self._lock, "execute"):
             cur = self._conn.execute(sql, tuple(params))
             self._conn.commit()
             return cur
 
     def query(self, sql: str, params: Iterable[Any] = ()) -> list[dict[str, Any]]:
-        with self._lock:
+        with observed_lock(self._lock, "query"):
             rows = self._conn.execute(sql, tuple(params)).fetchall()
         return [dict(row) for row in rows]
 
@@ -583,7 +584,7 @@ class Database:
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Serialize a complete operation and commit or roll it back atomically."""
-        with self._lock, self._conn:
+        with observed_lock(self._lock, "transaction"), self._conn:
             # Acquire the SQLite write reservation BEFORE reading invariants.
             # A Python lock alone cannot serialize multiple backend processes;
             # bootstrap, one-time redemption and last-admin checks must do so.
@@ -593,7 +594,7 @@ class Database:
     @contextmanager
     def read_snapshot(self) -> Iterator[sqlite3.Connection]:
         """A consistent read across related projections without a write reservation."""
-        with self._lock:
+        with observed_lock(self._lock, "read_snapshot"):
             self._conn.execute("BEGIN")
             try:
                 yield self._conn
@@ -602,7 +603,7 @@ class Database:
 
     def compact(self) -> None:
         """Explicitly reclaim pages freed by legacy output migration/cleanup."""
-        with self._lock:
+        with observed_lock(self._lock, "compact"):
             self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
             self._conn.execute("VACUUM")
             self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
@@ -826,7 +827,7 @@ class Database:
         Manual changes advance a revision so in-flight acknowledgements cannot undo them.
         Read state never changes the chat's ordering timestamp.
         """
-        with self._lock, self._conn:
+        with observed_lock(self._lock, "chat_read_state"), self._conn:
             if unread is not None:
                 return bool(
                     self._conn.execute(
@@ -914,7 +915,7 @@ class Database:
         sender: dict[str, Any] | None = None,
         origin: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any], bool]:
-        with self._lock, self._conn:
+        with observed_lock(self._lock, "chat_accept"), self._conn:
             existing = self._conn.execute(
                 "SELECT m.* FROM chat_turns t JOIN messages m ON m.id = t.user_id WHERE t.id = ?",
                 (message_id,),
@@ -1028,7 +1029,7 @@ class Database:
         }
 
     def next_chat_turn(self, chat_id: str) -> dict[str, Any] | None:
-        with self._lock, self._conn:
+        with observed_lock(self._lock, "chat_dequeue"), self._conn:
             if self._conn.execute(
                 "SELECT 1 FROM chats WHERE id = ? AND queue_paused = 1 "
                 "UNION ALL SELECT 1 FROM chat_turns WHERE chat_id = ? AND state = 'running'",
@@ -1053,7 +1054,7 @@ class Database:
         self, turn_id: str, message_id: str, content: str = "", meta: dict[str, Any] | None = None
     ) -> bool:
         """Commit the preceding answer and its consumed input as one transcript boundary."""
-        with self._lock, self._conn:
+        with observed_lock(self._lock, "chat_consume"), self._conn:
             changed = self._conn.execute(
                 "UPDATE chat_turns SET state = 'steered' WHERE id = ? AND state = 'queued' "
                 "AND chat_id = (SELECT chat_id FROM chat_turns WHERE id = ? AND state = 'running')",
@@ -1077,7 +1078,7 @@ class Database:
             return bool(changed)
 
     def stop_chat_turn(self, chat_id: str, turn_id: str) -> bool:
-        with self._lock, self._conn:
+        with observed_lock(self._lock, "chat_stop"), self._conn:
             changed = self._conn.execute(
                 "UPDATE chat_turns SET stop_requested = 1 WHERE id = ? AND chat_id = ? AND state = 'running'",
                 (turn_id, chat_id),
@@ -1095,7 +1096,7 @@ class Database:
         timing: dict[str, Any] | None = None,
     ) -> bool:
         """Persist live activity for snapshots/filtering without advancing list order."""
-        with self._lock, self._conn:
+        with observed_lock(self._lock, "chat_progress"), self._conn:
             if event.get("type") in {"usage", "result"} and "context" in event:
                 self._conn.execute(
                     "UPDATE chat_turns SET context = ? WHERE id = ?",
@@ -1121,7 +1122,7 @@ class Database:
             )
 
     def finish_chat_turn(self, turn_id: str, content: str, meta: dict[str, Any]) -> None:
-        with self._lock, self._conn:
+        with observed_lock(self._lock, "chat_finish"), self._conn:
             turn = self._conn.execute(
                 "SELECT * FROM chat_turns WHERE id = ? AND state = 'running'", (turn_id,)
             ).fetchone()
@@ -1340,7 +1341,7 @@ class Database:
 
     def save_settings(self, values: dict[str, Any]) -> None:
         """Publish a validated settings edit atomically; null removes an override."""
-        with self._lock, self._conn:
+        with observed_lock(self._lock, "settings_save"), self._conn:
             for key, value in values.items():
                 if value is None:
                     self._conn.execute("DELETE FROM settings WHERE key = ?", (key,))
@@ -1353,7 +1354,7 @@ class Database:
 
     def delete_agent(self, agent_id: str) -> None:
         """Keep existing chat snapshots; fall back to global defaults for new chats."""
-        with self._lock, self._conn:
+        with observed_lock(self._lock, "agent_delete"), self._conn:
             self._conn.execute("DELETE FROM agent_profiles WHERE id = ?", (agent_id,))
             for row in self._conn.execute("SELECT id, allowed_subagents FROM agent_profiles").fetchall():
                 allowed = json.loads(row["allowed_subagents"])

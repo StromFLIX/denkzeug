@@ -728,6 +728,42 @@ def test_large_jobs_and_files_are_copied_before_start_not_put_in_environment(
     assert calls.index("put_archive") < calls.index("start")
 
 
+def test_startup_spans_keep_request_parent_without_forwarding_private_job(docker, running_agent, monkeypatch):
+    from nautionette.telemetry import SafeSpanExporter
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(SafeSpanExporter(exporter)))
+    monkeypatch.setattr(agent_run, "_tracer", provider.get_tracer("test"))
+    try:
+        list(
+            agent_run.run(
+                {
+                    "prompt": "private-do-not-export",
+                    "_trace_context": {
+                        "traceparent": ("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01")
+                    },
+                }
+            )
+        )
+        spans = exporter.get_finished_spans()
+        assert [span.name for span in spans] == [
+            "broker.startup.image_ready",
+            "broker.startup.prepare",
+            "broker.startup.create",
+            "broker.startup.stage_job",
+            "broker.startup.start",
+        ]
+        for span in spans:
+            assert span.parent.span_id == int("0123456789abcdef", 16)
+            assert span.attributes == {"denkzeug.broker.implementation": "python"}
+    finally:
+        provider.shutdown()
+
+
 @pytest.mark.parametrize("large", [False, True])
 def test_project_tokens_use_private_files_not_docker_environment_or_job_files(
     client, running_agent, docker, monkeypatch, large

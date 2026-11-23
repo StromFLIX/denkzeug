@@ -17,12 +17,14 @@ use axum::{
     response::Response,
 };
 use hyper::body::{Body as HttpBody, Frame, SizeHint};
+use std::future::Future;
+
 use opentelemetry::{
     Context, KeyValue,
     logs::{LogRecord, Logger as _, LoggerProvider, Severity},
     metrics::{Histogram, MeterProvider},
     propagation::{Extractor, Injector, TextMapPropagator},
-    trace::{SpanKind, Status, TraceContextExt, Tracer as _, TracerProvider},
+    trace::{Span as _, SpanKind, Status, TraceContextExt, Tracer as _, TracerProvider},
 };
 use opentelemetry_otlp::{WithExportConfig, WithHttpConfig};
 use opentelemetry_sdk::{
@@ -189,6 +191,34 @@ impl Extractor for Inbound<'_> {
 #[derive(Default, Clone)]
 pub(crate) struct TraceCarrier {
     pub(crate) traceparent: Option<String>,
+    pub(crate) startup: Option<StartupTrace>,
+}
+
+#[derive(Clone)]
+pub struct StartupTrace {
+    tracer: SdkTracer,
+    parent: Context,
+}
+
+pub(crate) async fn startup_stage<T, E>(
+    startup: Option<&StartupTrace>,
+    stage: &'static str,
+    operation: impl Future<Output = Result<T, E>>,
+) -> Result<T, E> {
+    let Some(startup) = startup else {
+        return operation.await;
+    };
+    let mut span = startup
+        .tracer
+        .span_builder(stage)
+        .with_attributes([KeyValue::new("denkzeug.broker.implementation", "rust")])
+        .start_with_context(&startup.tracer, &startup.parent);
+    let result = operation.await;
+    if result.is_err() {
+        span.set_status(Status::error(""));
+    }
+    span.end();
+    result
 }
 impl Injector for TraceCarrier {
     fn set(&mut self, key: &str, value: String) {
@@ -229,6 +259,10 @@ pub(crate) async fn instrument(otel: &Arc<Otlp>, mut request: Request, next: Nex
     let context = parent.with_span(span);
     let mut carrier = TraceCarrier::default();
     propagator.inject_context(&context, &mut carrier);
+    carrier.startup = Some(StartupTrace {
+        tracer: otel.tracer.clone(),
+        parent: context.clone(),
+    });
     request.extensions_mut().insert(carrier);
     let response = next.run(request).await;
     let (parts, body) = response.into_parts();
