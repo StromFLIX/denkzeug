@@ -169,7 +169,7 @@ services:
   docker-broker:
     build:
       context: .
-      dockerfile: services/docker-broker/Dockerfile
+      dockerfile: services/docker-broker-rust/Dockerfile.staging
     image: ${STACK_NAMESPACE:-nautionette}/docker-broker:dev
     restart: unless-stopped
     # Trust boundary. Only container with the Docker socket, so it exposes fixed

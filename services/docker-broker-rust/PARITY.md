@@ -90,13 +90,13 @@ Windows or a general-purpose Docker proxy.
 
 ## Deployment status
 
-Staging selects the generated `/docker-compose.rust-staging.yaml` file and
-requires Rust identity in the deployment health check. The production Compose
-file and Python broker remain unchanged. The staging image deliberately retains
-Python/sh for Coolify's trusted Temporal hooks; it does not use the shell-free
-scratch target. See the service README.
+Both release environments select the same Rust compatibility image and require
+Rust identity in authenticated deployment health. Staging still uses the mirror
+at `/docker-compose.rust-staging.yaml`. The compatibility image deliberately
+retains Python/sh for Coolify's trusted Temporal hooks; it does not use the
+shell-free scratch target. See the service README for rollback.
 `compose.local.yaml` and the explicit `candidate` Docker target remain opt-in for a
-disposable comparison stack. Nothing here authorizes production rollout.
+disposable comparison stack.
 
 Results and the exact scenario execution inventory are recorded alongside this
 file in `tests/evidence/`. Preserve the reference snapshot and rerun the gate if

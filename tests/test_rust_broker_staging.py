@@ -1,6 +1,5 @@
-"""Rust is required in staging, but is not used in production."""
+"""Both release environments use the same Rust broker compatibility image."""
 
-import copy
 from pathlib import Path
 
 import pytest
@@ -11,15 +10,11 @@ from scripts import coolify_release, sync_rust_broker_staging
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_staging_compose_changes_only_the_broker_build_recipe():
+def test_both_compose_paths_use_the_same_rust_compatibility_image():
     production = yaml.safe_load((ROOT / "docker-compose.yaml").read_text())
-    expected = copy.deepcopy(production)
-    expected["services"]["docker-broker"]["build"]["dockerfile"] = (
-        "services/docker-broker-rust/Dockerfile.staging"
-    )
-    assert yaml.safe_load((ROOT / "docker-compose.rust-staging.yaml").read_text()) == expected
+    assert yaml.safe_load((ROOT / "docker-compose.rust-staging.yaml").read_text()) == production
     assert production["services"]["docker-broker"]["build"]["dockerfile"] == (
-        "services/docker-broker/Dockerfile"
+        "services/docker-broker-rust/Dockerfile.staging"
     )
 
 
@@ -38,19 +33,12 @@ def test_generated_wiring_tracks_both_canonical_images_and_the_base_compose():
     assert "import docker" in hook and '"docker-broker"' in hook
 
 
-def test_automatic_deployment_requires_rust_only_in_staging():
+def test_release_deployment_requires_rust_in_both_environments():
     workflow = yaml.safe_load((ROOT / ".github/workflows/deploy.yml").read_text())
     deploy = next(
         s for s in workflow["jobs"]["deploy"]["steps"] if s.get("name") == "Pin, deploy, and verify"
     )
-    assert deploy["env"]["EXPECTED_BROKER_IMPLEMENTATION"] == (
-        "${{ github.event_name == 'workflow_run' && 'rust' || '' }}"
-    )
-    # Production keeps the Python implementation.
-    production = yaml.safe_load((ROOT / "docker-compose.yaml").read_text())
-    assert production["services"]["docker-broker"]["build"]["dockerfile"] == (
-        "services/docker-broker/Dockerfile"
-    )
+    assert deploy["env"]["EXPECTED_BROKER_IMPLEMENTATION"] == "rust"
     ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
     assert "rust-broker" in ci["jobs"]
     assert any(

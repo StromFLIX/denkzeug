@@ -44,7 +44,7 @@ jobs:
       - name: Canonical image fingerprints match repository source
         run: python3 services/docker-broker/nautionette_docker_broker/image_context.py --check-lock
 
-      - name: Staging Rust broker wiring is generated and production remains unchanged
+      - name: Both deployment stacks select the same Rust broker image
         run: |
           python3 scripts/sync_rust_broker_staging.py --check
           uv run pytest tests/test_rust_broker_staging.py

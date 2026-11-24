@@ -1,23 +1,21 @@
 # Rust Docker broker
 
-Local migration candidate for the authenticated Linux broker's fixed verbs.
-The Python implementation and production Compose file remain unchanged. CI now
-checks the Rust service and both Rust image targets. **No production rollout is
-part of this port.**
-
-**Staging uses the Rust compatibility image; production still uses the Python
-broker from `/docker-compose.yaml`.** Coolify selects the generated root file
-`docker-compose.rust-staging.yaml` in staging. Its only Compose difference is the
-broker's build recipe. `Dockerfile.staging` serves HTTP with Rust but retains the original
+Rust implementation of the authenticated Linux broker's fixed verbs.
+Both environments use the same compatibility image from `docker-compose.yaml`.
+Coolify's existing `docker-compose.rust-staging.yaml` path is a generated mirror.
+Despite its name, `Dockerfile.staging` is used by both environments. It serves
+HTTP with Rust but retains the original
 Python/sh maintenance runtime: Coolify wraps the Temporal deployment hooks in
 `sh -c` and those trusted hooks use Python's Docker SDK. The scratch image cannot
 run those existing hooks. Do not select the scratch target for a Coolify rollout
 until the hook boundary has been migrated. Regenerate/check the staging files
 with `python scripts/sync_rust_broker_staging.py [--check]` from the repo root.
-The automatic staging deployment checks `EXPECTED_BROKER_IMPLEMENTATION=rust`
-through authenticated backend health. For a rollback, restore Coolify's staging
-Compose path to `/docker-compose.yaml`, redeploy the pinned commit, and update the
-staging health expectation before resuming automatic deployments.
+Deployment requires `EXPECTED_BROKER_IMPLEMENTATION=rust` through authenticated
+backend health in both environments. The Python broker Dockerfile is retained
+for rollback. To roll back only the broker while keeping the application version,
+restore the Python build recipe and adjust the deployment health expectation in
+a forward rollback commit; stage and verify that exact commit before promotion.
+Do not revert Temporal or restore its data just to switch the HTTP broker.
 
 See [PARITY.md](PARITY.md) for the frozen reference scope, deliberate safety
 limits and verification boundaries. The full scenario mapping is
