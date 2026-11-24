@@ -158,9 +158,9 @@ async fn docker_pull_uses_configured_auth_against_an_actual_tls_registry_and_res
         "aarch64" => "arm64",
         _ => panic!("fixture architecture"),
     };
-    let config=Bytes::from(json!({"os":"linux","architecture":arch,"config":{},"rootfs":{"type":"layers","diff_ids":[digest(&raw)]},"history":[{"created_by":"broker fixture"}]}).to_string());
-    let config_id = digest(&config);
-    let manifest=Bytes::from(json!({"schemaVersion":2,"mediaType":MANIFEST,"config":{"mediaType":CONFIG,"size":config.len(),"digest":config_id},"layers":[{"mediaType":LAYER,"size":layer.len(),"digest":digest(&layer)}]}).to_string());
+    let diff_id = digest(&raw);
+    let config=Bytes::from(json!({"os":"linux","architecture":arch,"config":{},"rootfs":{"type":"layers","diff_ids":[diff_id]},"history":[{"created_by":"broker fixture"}]}).to_string());
+    let manifest=Bytes::from(json!({"schemaVersion":2,"mediaType":MANIFEST,"config":{"mediaType":CONFIG,"size":config.len(),"digest":digest(&config)},"layers":[{"mediaType":LAYER,"size":layer.len(),"digest":digest(&layer)}]}).to_string());
     let basic = STANDARD.encode("fixture-broker:fixture-private-token");
     let registry = Arc::new(Registry {
         allowed: format!("Basic {basic}"),
@@ -309,7 +309,11 @@ async fn docker_pull_uses_configured_auth_against_an_actual_tls_registry_and_res
         registry.authorized_manifests.load(Ordering::Relaxed) > 0,
         "Docker never obtained the authenticated manifest"
     );
-    for tag in [tag, alias] {
+    // Classic Docker uses the configuration digest as the image ID; newer
+    // containerd stores can use the manifest digest instead. Compare to the
+    // daemon's own ID for the authenticated source and verify its layer.
+    let mut pulled_id = None;
+    for tag in [format!("{addr}/{scope}/pi-base:{revision}"), tag, alias] {
         let output = Command::new("docker")
             .args([
                 "--host",
@@ -317,7 +321,7 @@ async fn docker_pull_uses_configured_auth_against_an_actual_tls_registry_and_res
                 "image",
                 "inspect",
                 "--format",
-                "{{.Id}}",
+                "{{json .}}",
                 &tag,
             ])
             .output()
@@ -326,7 +330,11 @@ async fn docker_pull_uses_configured_auth_against_an_actual_tls_registry_and_res
             output.status.success(),
             "missing source tag or alias: {tag}"
         );
-        assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), config_id);
+        let image: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(image["RootFS"]["Layers"], json!([diff_id]));
+        let id = image["Id"].as_str().expect("Docker image ID");
+        assert!(!id.is_empty());
+        assert_eq!(pulled_id.get_or_insert_with(|| id.to_owned()), id);
     }
     server.abort();
 }

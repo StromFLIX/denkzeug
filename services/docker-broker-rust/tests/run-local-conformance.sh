@@ -46,17 +46,22 @@ cargo test --locked --manifest-path "$crate" --lib real_gridcraft_archive -- --i
 # Compile as the current user. On an ephemeral CI host only, use sudo for
 # the test binaries that need access to daemon-owned volumes and trust files.
 # Keep the compiler/cache and the reference Python/Node suites unprivileged.
+docker_failed=0
 for suite in docker_registry docker_inventory docker_package; do
   if [[ ${BROKER_CONFORMANCE_SUDO:-0} == 1 ]]; then
     binary=$(cargo test --locked --manifest-path "$crate" --test "$suite" --no-run --message-format=json |
       python -c 'import json,sys; [print(r["executable"]) for line in sys.stdin if (r := json.loads(line)).get("executable") and r["target"]["name"] == sys.argv[1]]' "$suite")
     [[ -x $binary ]]
     sudo --preserve-env=BROKER_DOCKER_SOCKET,BROKER_FIXTURE_IMAGE,BROKER_NODE_FIXTURE_IMAGE,BROKER_PI_FIXTURE_IMAGE,BROKER_PI_STEER_FIXTURE_IMAGE,BROKER_ARTCRAFT_ARTIFACT_PATH,BROKER_ARTCRAFT_VERIFY_IMAGE,BROKER_PACKAGE_FIXTURE_IMAGE,NAUTIONETTE_PACKAGE_TEST_SOURCE \
-      -- "$binary" --ignored --nocapture --test-threads=1 2>&1 | tee "$evidence/$suite.log"
+      -- "$binary" --ignored --nocapture --test-threads=1 2>&1 | tee "$evidence/$suite.log" || docker_failed=1
   else
-    cargo test --locked --manifest-path "$crate" --test "$suite" -- --ignored --nocapture --test-threads=1 2>&1 | tee "$evidence/$suite.log"
+    cargo test --locked --manifest-path "$crate" --test "$suite" -- --ignored --nocapture --test-threads=1 2>&1 | tee "$evidence/$suite.log" || docker_failed=1
   fi
 done
+if (( docker_failed )); then
+  printf 'Docker conformance failed. Logs: %s\n' "$evidence" >&2
+  exit 1
+fi
 
 # Shared JS/helper/Compose invariants are not reimplemented in a different
 # language. The reference's nine opt-in Docker cases have Rust counterparts;
