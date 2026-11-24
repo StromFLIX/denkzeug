@@ -108,7 +108,9 @@ def command(files: dict, app: str, target: str, commit: str, shards: str, mode: 
     result = (
         MANAGED
         + f"DZ_TEMPORAL_PAYLOAD={shlex.quote(packed)}; "
-        + 'if [ "$(/broker maintenance-launcher-version 2>/dev/null)" = "1" ]; then '
+        + "if DZ_TEMPORAL_PROTOCOL=$(/broker maintenance-launcher-version 2>/dev/null); then "
+        + 'if [ "$DZ_TEMPORAL_PROTOCOL" != "1" ]; then '
+        + 'echo "Unsupported installed maintenance launcher protocol" >&2; exit 1; fi; '
         + 'exec /broker maintenance-launcher "$DZ_TEMPORAL_PAYLOAD"; else '
         + "exec python -c "
         + shlex.quote(source)

@@ -319,7 +319,7 @@ impl Launcher {
         }
         Ok(())
     }
-    async fn build_and_start(&self, name: &str) -> Result<String> {
+    async fn build_image(&self) -> Result<String> {
         let tag = format!(
             "nautionette/temporal-controller:{}-{}",
             self.payload.app, self.payload.commit
@@ -377,6 +377,9 @@ impl Launcher {
         {
             return Err(error("Built maintenance image ownership mismatch"));
         }
+        Ok(image_id.to_owned())
+    }
+    async fn create_and_start(&self, name: &str, image_id: &str) -> Result<String> {
         let mut nonce = [0u8; 4];
         std::fs::File::open("/dev/urandom")
             .and_then(|mut f| f.read_exact(&mut nonce))
@@ -479,6 +482,9 @@ impl Launcher {
                         "Unfinished Temporal migration; recover the existing controller first",
                     ));
                 }
+                // A failed build must not erase the live application's last
+                // completed receipt. Prepare the replacement before retiring it.
+                let image_id = self.build_image().await?;
                 if info["State"]["Status"] == "running" {
                     self.stop(&id).await?;
                 }
@@ -494,12 +500,13 @@ impl Launcher {
                 if status != StatusCode::NO_CONTENT {
                     return Err(error("Cannot retire previous maintenance controller"));
                 }
-                self.build_and_start(&name).await?
+                self.create_and_start(&name, &image_id).await?
             } else {
                 id
             }
         } else {
-            self.build_and_start(&name).await?
+            let image_id = self.build_image().await?;
+            self.create_and_start(&name, &image_id).await?
         };
         let deadline = tokio::time::Instant::now() + Duration::from_secs(105 * 60);
         loop {

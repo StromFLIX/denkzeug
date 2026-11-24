@@ -39,6 +39,25 @@ def retire(container, read_receipt):
         raise RuntimeError("Maintenance completion receipt disappeared")
 
 
+def build_controller(client, payload: dict):
+    context = io.BytesIO()
+    with tarfile.open(fileobj=context, mode="w") as archive:
+        for path, content in payload["files"].items():
+            item = tarfile.TarInfo(path)
+            data = content.encode()
+            item.size = len(data)
+            archive.addfile(item, io.BytesIO(data))
+    context.seek(0)
+    image, _ = client.images.build(
+        fileobj=context,
+        custom_context=True,
+        dockerfile="context/Dockerfile.controller",
+        rm=True,
+        labels={LABEL: payload["app"], "nautionette.temporal.commit": payload["commit"]},
+    )
+    return image
+
+
 def hook(payload: dict):
     # This hook initially runs in the *old* broker, which has not installed the
     # new reader yet. Use candidate-pinned standard-library source, not host code.
@@ -75,32 +94,23 @@ def hook(payload: dict):
         return
     if mode != "prepare":
         raise ValueError("Unknown Temporal hook operation")
+    image = None
     if controller is not None:
         previous = read_state(controller)
         if previous.get("commit") != commit or previous.get("safe_to_retry"):
             if previous.get("status") != "completed" and not previous.get("safe_to_retry"):
                 raise RuntimeError("Unfinished Temporal migration; recover the existing controller first")
+            # Keep completed receipt evidence until the replacement image is
+            # available, including the first pre-hook in a legacy broker.
+            image = build_controller(client, payload)
             controller.reload()
             if controller.status == "running":
                 controller.stop(timeout=5)
             controller.remove()
             controller = None
     if controller is None:
-        context = io.BytesIO()
-        with tarfile.open(fileobj=context, mode="w") as archive:
-            for path, content in payload["files"].items():
-                item = tarfile.TarInfo(path)
-                data = content.encode()
-                item.size = len(data)
-                archive.addfile(item, io.BytesIO(data))
-        context.seek(0)
-        image, _ = client.images.build(
-            fileobj=context,
-            custom_context=True,
-            dockerfile="context/Dockerfile.controller",
-            rm=True,
-            labels={LABEL: app, "nautionette.temporal.commit": commit},
-        )
+        if image is None:
+            image = build_controller(client, payload)
         run_id = commit[:12] + "-" + secrets.token_hex(4) + "-" + app
         controller = client.containers.run(
             image.id,

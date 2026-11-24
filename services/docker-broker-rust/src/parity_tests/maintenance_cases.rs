@@ -174,6 +174,21 @@ async fn maintenance_build_failure_keeps_existing_completed_evidence_until_expli
         crate::maintenance::launch(f.settings(), "broker", &packed(&payload("prepare"))).await;
     assert!(result.is_err());
     assert!(
+        f.daemon
+            .lock()
+            .unwrap()
+            .containers
+            .contains_key(&"2".repeat(64)),
+        "failed replacement build must retain the previous completed controller"
+    );
+    assert!(
+        f.daemon
+            .lock()
+            .unwrap()
+            .receipts
+            .contains_key(&"2".repeat(64))
+    );
+    assert!(
         !f.daemon
             .lock()
             .unwrap()

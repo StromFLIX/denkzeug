@@ -130,6 +130,49 @@ def test_native_hook_payload_is_single_line_bounded_and_candidate_pinned():
     assert files["temporal_deploy_hook.py"] == "pass"
 
 
+def test_unknown_installed_launcher_never_falls_back_to_python(tmp_path):
+    executable = tmp_path / "broker"
+    executable.write_text("#!/bin/sh\necho 2\n")
+    executable.chmod(0o755)
+    generated = transport.command(
+        {"temporal_deploy_hook.py": "pass", "temporal_state.py": "pass"},
+        "app",
+        "staging",
+        COMMIT,
+        "4",
+        "prepare",
+    ).replace("/broker", str(executable))
+    result = subprocess.run(["sh", "-c", generated], capture_output=True, text=True, check=False)  # noqa: S603,S607 - fixed fixture
+    assert result.returncode == 1
+    assert "Unsupported installed maintenance launcher protocol" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_legacy_build_failure_does_not_remove_completed_receipt_controller(monkeypatch):
+    from scripts import temporal_deploy_hook as launcher
+
+    controller = Mock(
+        labels={launcher.LABEL: "app", "nautionette.temporal.commit": "a" * 40}, status="exited"
+    )
+    own = Mock(labels={"com.docker.compose.project": "app", "com.docker.compose.service": "docker-broker"})
+    client = Mock()
+    client.containers.get.side_effect = [own, controller]
+    client.images.build.side_effect = RuntimeError("fixture build failure")
+    monkeypatch.setenv("HOSTNAME", "broker")
+    monkeypatch.setattr(launcher.docker, "from_env", lambda: client)
+    reader = (
+        "def controller_state(c): return {'status':'completed','commit':'"
+        + "a" * 40
+        + "'}\ndef completed_receipt(c): return controller_state(c)\n"
+    )
+    with pytest.raises(RuntimeError, match="fixture build failure"):
+        launcher.hook(
+            {"app": "app", "commit": COMMIT, "mode": "prepare", "files": {"temporal_state.py": reader}}
+        )
+    controller.remove.assert_not_called()
+    controller.stop.assert_not_called()
+
+
 def test_preflight_selects_private_data_network_not_coolifys_shared_network(monkeypatch):
     container = {"NetworkSettings": {"Networks": {"data": {}, "coolify": {}}}}
     monkeypatch.setattr(host, "docker", lambda *args: json.dumps([{"Internal": args[-1] == "data"}]))

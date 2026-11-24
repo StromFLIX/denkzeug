@@ -9,18 +9,14 @@ No live deployment API or infrastructure credentials are needed.
 from __future__ import annotations
 
 import asyncio
-import base64
-import gzip
-import json
 import os
-import shlex
 import subprocess
 
 import docker
 from temporalio.client import Client
 
 from scripts.check_temporal_upgrade import QUEUE, ROOT, Rehearsal, UpgradeProbe, checkpoint, resume
-from scripts.temporal_deploy import candidate_files
+from scripts.temporal_deploy import candidate_files, command
 from scripts.temporal_deploy_hook import hook, state
 
 # ruff: noqa: S603, S607 - fixed CI fixture commands, never caller input
@@ -223,11 +219,11 @@ time.sleep(36000)
             "Exercising real pre-deployment hook, restored snapshot and consecutive server minors", flush=True
         )
 
-        def native_hook(value):
-            packed = base64.b64encode(gzip.compress(json.dumps(value).encode())).decode()
-            result = services["docker-broker"].exec_run(
-                ["sh", "-c", "exec /broker maintenance-launcher " + shlex.quote(packed)]
+        def native_hook(value, container=None):
+            dispatch = command(
+                value["files"], value["app"], value["target"], value["commit"], value["shards"], value["mode"]
             )
+            result = (container or services["docker-broker"]).exec_run(["sh", "-c", dispatch])
             if result.exit_code:
                 raise RuntimeError(
                     "Rust maintenance launcher failed: " + result.output.decode(errors="replace")
@@ -275,7 +271,46 @@ time.sleep(36000)
             os.environ.pop("HOSTNAME", None)
         else:
             os.environ["HOSTNAME"] = own
-        print("PASS: native hooks, broker pause, restore, minor hops, resumption, duplicate delivery")
+        # Cross-image dispatch and rollback reuse the completed receipt; no
+        # schema/backup operations are repeated. Both paths use the production
+        # generator and Coolify's real sh -c command shape.
+        legacy_image = fixture.prefix + "/legacy-broker:fixture"
+        subprocess.run(
+            [
+                "docker",
+                "build",
+                "-t",
+                legacy_image,
+                "-f",
+                str(ROOT / "services/docker-broker/Dockerfile"),
+                str(ROOT),
+            ],
+            check=True,
+        )
+        legacy = client.containers.run(
+            legacy_image,
+            ["python", "-c", idle],
+            name=fixture.prefix + "-legacy-dispatch",
+            detach=True,
+            network="none",
+            labels={
+                "com.docker.compose.project": fixture.prefix,
+                "com.docker.compose.service": "docker-broker",
+            },
+            volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}},
+            healthcheck={"test": ["NONE"]},
+        )
+        fixture.containers.append(legacy.id)
+        native_hook(payload, legacy)
+        native_hook({**payload, "mode": "finish"})
+        native_hook(payload)
+        native_hook({**payload, "mode": "finish"}, legacy)
+        assert state(job)["status"] == "completed"
+        assert client.containers.get(controller).id == job.id
+        print(
+            "PASS: native hooks, broker pause, restore, minor hops, resumption, duplicate delivery, "
+            "compatibility/scratch dispatch and rollback"
+        )
     except Exception:
         try:
             job = client.containers.get(controller)
