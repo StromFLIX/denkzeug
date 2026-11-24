@@ -9,7 +9,11 @@ No live deployment API or infrastructure credentials are needed.
 from __future__ import annotations
 
 import asyncio
+import base64
+import gzip
+import json
 import os
+import shlex
 import subprocess
 
 import docker
@@ -55,6 +59,19 @@ async def run():
             check=True,
         )
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True, cwd=ROOT).strip()
+        broker_image = fixture.prefix + "/broker:fixture"
+        subprocess.run(
+            [
+                "docker",
+                "build",
+                "-t",
+                broker_image,
+                "-f",
+                str(ROOT / "services/docker-broker-rust/Dockerfile.staging"),
+                str(ROOT),
+            ],
+            check=True,
+        )
         volumes = {
             name: fixture.prefix + "-" + name
             for name in (
@@ -136,9 +153,14 @@ time.sleep(36000)
             "maxio",
         ):
             name = fixture.prefix + "-" + service
+            options = {}
+            if service == "docker-broker":
+                options = {"entrypoint": ["/bin/sh"], "healthcheck": {"test": ["NONE"]}}
             container = client.containers.run(
-                image,
-                [
+                broker_image if service == "docker-broker" else image,
+                ["-c", "exec /broker"]
+                if service == "docker-broker"
+                else [
                     "python",
                     "-c",
                     {
@@ -159,15 +181,22 @@ time.sleep(36000)
                         "mode": "ro" if destination == "/output-storage" else "rw",
                     }
                     for destination, dataset in mappings.get(service, {}).items()
-                },
+                }
+                | (
+                    {"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}}
+                    if service == "docker-broker"
+                    else {}
+                ),
                 environment={
                     "APP_ENVIRONMENT": "staging",
                     "INTERNAL_TOKEN": "fixture-only",
                     "APP_VERSION": commit,
                     "TARGET_NETWORK": internal,
                     "WORKFLOWS_VOLUME": volumes["workflows"],
+                    "BROKER_BIND_ADDR": "127.0.0.1",
                 },
                 restart_policy={"Name": "unless-stopped"},
+                **options,
             )
             fixture.containers.append(name)
             services[service] = container
@@ -193,7 +222,18 @@ time.sleep(36000)
         print(
             "Exercising real pre-deployment hook, restored snapshot and consecutive server minors", flush=True
         )
-        hook(payload)
+
+        def native_hook(value):
+            packed = base64.b64encode(gzip.compress(json.dumps(value).encode())).decode()
+            result = services["docker-broker"].exec_run(
+                ["sh", "-c", "exec /broker maintenance-launcher " + shlex.quote(packed)]
+            )
+            if result.exit_code:
+                raise RuntimeError(
+                    "Rust maintenance launcher failed: " + result.output.decode(errors="replace")
+                )
+
+        native_hook(payload)
         job = client.containers.get(controller)
         assert state(job)["status"] == "prepared"
         # The controller must let the hook's broker return, without restarting old Temporal.
@@ -215,18 +255,20 @@ time.sleep(36000)
         new, address = fixture.start(final_image, fence=(fixture.prefix, commit), public_network=internal)
         for container in services.values():
             container.start()
-        hook({**payload, "mode": "finish"})
+        native_hook({**payload, "mode": "finish"})
         assert state(job)["status"] == "completed"
         job.reload()
         assert job.status == "exited"
         assert job.attrs["HostConfig"]["RestartPolicy"]["Name"] == "no"
         # Completion is readable without executing or restarting the controller.
+        native_hook({**payload, "mode": "finish"})
+        # The retained legacy Python launcher can also read the Rust receipt.
         hook({**payload, "mode": "finish"})
         assert state(job)["status"] == "completed"
         sdk = await Client.connect(address)
         await resume(sdk, ["application-pending"])
         # Coolify may invoke a hook twice; no second snapshot or schema mutation.
-        hook(payload)
+        native_hook(payload)
         assert client.containers.get(controller).id == job.id
         assert state(job)["status"] == "completed"
         if own is None:

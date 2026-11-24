@@ -221,9 +221,8 @@ services:
       test:
         [
           "CMD",
-          "python",
-          "-c",
-          "import json,sys,urllib.request;sys.exit(json.load(urllib.request.urlopen('http://127.0.0.1:9100/healthz',timeout=4))['status'] != 'ok')",
+          "/broker",
+          "healthcheck",
         ]
       interval: 30s
       timeout: 5s

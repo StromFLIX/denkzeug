@@ -326,7 +326,7 @@ impl Drop for BuildOnDrop {
     }
 }
 
-fn image_messages_succeeded(body: &[u8]) -> bool {
+pub(crate) fn image_messages_succeeded(body: &[u8]) -> bool {
     body.split(|byte| *byte == b'\n')
         .filter(|line| !line.is_empty())
         .try_fold(false, |_, line| {

@@ -9,6 +9,7 @@ pub use engine::{DockerEndpoint, EndpointError};
 pub mod image_build;
 mod images;
 pub mod job;
+pub mod maintenance;
 pub mod packages;
 mod registry;
 mod retired;

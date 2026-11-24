@@ -1,18 +1,20 @@
 # Rust Docker broker
 
 Rust implementation of the authenticated Linux broker's fixed verbs.
-Both environments use the same compatibility image from `docker-compose.yaml`.
+Both environments use the same scratch-based image from `docker-compose.yaml`.
 Coolify's existing `docker-compose.rust-staging.yaml` path is a generated mirror.
-Despite its name, `Dockerfile.staging` is used by both environments. It serves
-HTTP with Rust but retains the original
-Python/sh maintenance runtime: Coolify wraps the Temporal deployment hooks in
-`sh -c` and those trusted hooks use Python's Docker SDK. The scratch image cannot
-run those existing hooks. Do not select the scratch target for a Coolify rollout
-until the hook boundary has been migrated. Regenerate/check the staging files
+Despite its name, `Dockerfile.staging` is used by both environments. The broker
+and trusted deployment launcher are Rust. Only a static BusyBox `/bin/sh` remains
+because Coolify wraps native hooks in `sh -c`; Python, uv and the Docker SDK are
+absent from this image. Python migration/restore code still runs only in the
+separate temporary maintenance controller. Regenerate/check the staging files
 with `python scripts/sync_rust_broker_staging.py [--check]` from the repo root.
 Deployment requires `EXPECTED_BROKER_IMPLEMENTATION=rust` through authenticated
 backend health in both environments. The Python broker Dockerfile is retained
-for rollback. To roll back only the broker while keeping the application version,
+for rollback. The generated dispatch uses the Rust launcher protocol when it is
+available, or the candidate-pinned Python launcher in older compatibility images.
+This supports the first compatibility-to-scratch deploy and explicit rollback;
+an unsupported protocol or unavailable launcher fails closed. To roll back only the broker while keeping the application version,
 restore the Python build recipe and adjust the deployment health expectation in
 a forward rollback commit; stage and verify that exact commit before promotion.
 Do not revert Temporal or restore its data just to switch the HTTP broker.

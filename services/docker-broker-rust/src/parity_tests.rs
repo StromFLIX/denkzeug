@@ -4,6 +4,7 @@ mod admission_cases;
 mod artifact_cases;
 mod credential_cases;
 mod image_cases;
+mod maintenance_cases;
 mod project_cases;
 mod retired_cases;
 mod temporal_cases;
@@ -182,6 +183,10 @@ async fn daemon(State(state): State<Arc<Mutex<Daemon>>>, request: Request<Body>)
         ("POST", "/build") => {
             d.builds += 1;
             d.images.insert(query["t"].clone());
+            if let Some(labels) = query.get("labels") {
+                d.image_labels
+                    .insert(query["t"].clone(), serde_json::from_str(labels).unwrap());
+            }
             return (StatusCode::OK, "{\"stream\":\"Built\"}\n").into_response();
         }
         ("GET", "/images/json") => {
@@ -199,7 +204,18 @@ async fn daemon(State(state): State<Arc<Mutex<Daemon>>>, request: Request<Body>)
         if method == "GET"
             && let Some(tag) = rest.strip_suffix("/json")
         {
-            return if d.images.contains(tag) {
+            let tag = form_urlencoded::parse(format!("tag={tag}").as_bytes())
+                .next()
+                .unwrap()
+                .1
+                .into_owned();
+            return if d.images.contains(&tag) {
+                if let Some(labels) = d.image_labels.get(&tag) {
+                    return reply(
+                        200,
+                        json!({"Id":format!("sha256:{}", "a".repeat(64)),"Config":{"Labels":labels}}),
+                    );
+                }
                 reply(200, json!({"Id":"sha256:fixture"}))
             } else {
                 empty(404)
@@ -323,6 +339,15 @@ async fn daemon(State(state): State<Arc<Mutex<Daemon>>>, request: Request<Body>)
         if method == "POST" && matches!(action, "start" | "unpause" | "restart") {
             d.containers.get_mut(&id).unwrap()["State"]["Status"] = json!("running");
             d.containers.get_mut(&id).unwrap()["State"]["Running"] = json!(true);
+            return empty(204);
+        }
+        if method == "POST" && action == "update" {
+            d.containers.get_mut(&id).unwrap()["HostConfig"]["RestartPolicy"] =
+                body["RestartPolicy"].clone();
+            return reply(200, json!({"Warnings":[]}));
+        }
+        if method == "POST" && action == "stop" {
+            d.containers.get_mut(&id).unwrap()["State"]["Status"] = json!("exited");
             return empty(204);
         }
         if method == "POST" && action == "kill" {

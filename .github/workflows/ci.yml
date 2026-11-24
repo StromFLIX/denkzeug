@@ -311,12 +311,14 @@ jobs:
           # Cache availability must not turn a successful image build red.
           cache-to: type=gha,mode=max,scope=${{ matrix.name }},ignore-error=true
 
-      - name: Rust staging image preserves the trusted maintenance-hook runtime
+      - name: Scratch broker supports Coolify dispatch without Python
         if: matrix.name == 'docker-broker-rust-staging'
         run: |
-          docker run --rm --entrypoint sh nautionette/audit-docker-broker-rust-staging:ci -c \
-            'python -c "import docker" && /broker fingerprints /agent-images /etc/nautionette/image-fingerprints.json'
-          test "$(docker image inspect --format '{{json .Config.Cmd}}' nautionette/audit-docker-broker-rust-staging:ci)" = '["/broker","--local-runtime"]'
+          docker run --rm --network none --entrypoint sh nautionette/audit-docker-broker-rust-staging:ci -c \
+            'test ! -e /usr/local/bin/python && test ! -e /app/.venv && test "$(/broker maintenance-launcher-version)" = 1'
+          test "$(docker image inspect --format '{{json .Config.Entrypoint}}' nautionette/audit-docker-broker-rust-staging:ci)" = '["/broker"]'
+          test "$(docker image inspect --format '{{json .Config.Cmd}}' nautionette/audit-docker-broker-rust-staging:ci)" = '["--local-runtime"]'
+          docker image inspect --format 'Scratch Coolify broker image bytes: {{.Size}}' nautionette/audit-docker-broker-rust-staging:ci
 
       - name: PostgreSQL 17 existing-volume and privilege-helper compatibility
         if: matrix.name == 'postgres'

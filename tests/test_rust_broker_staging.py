@@ -22,15 +22,18 @@ def test_generated_wiring_tracks_both_canonical_images_and_the_base_compose():
     for path, content in sync_rust_broker_staging.generated(ROOT).items():
         assert path.read_text() == content
     image = (ROOT / "services/docker-broker-rust/Dockerfile.staging").read_text()
-    assert 'CMD ["/broker", "--local-runtime"]' in image
-    assert 'CMD ["uvicorn"' not in image
-    assert "uv sync --locked --no-dev --package nautionette-docker-broker" in image
+    assert 'CMD ["--local-runtime"]' in image
+    assert 'ENTRYPOINT ["/broker"]' in image
+    assert "FROM candidate AS coolify" in image
+    assert "COPY --from=busybox:1.38.0-musl /bin/busybox /bin/sh" in image
+    assert "uv sync" not in image and 'CMD ["uvicorn"' not in image
     assert "BROKER_BIND_ADDR=0.0.0.0" in image
     assert "COPY --from=compile /broker /broker" in image
-    assert "HEALTHCHECK" in image and "urllib.request" in image
-    # The unmodified trusted hooks still need both Docker SDK and Python/sh.
-    hook = (ROOT / "scripts/temporal_deploy_hook.py").read_text()
-    assert "import docker" in hook and '"docker-broker"' in hook
+    production = yaml.safe_load((ROOT / "docker-compose.yaml").read_text())
+    assert production["services"]["docker-broker"]["healthcheck"]["test"] == ["CMD", "/broker", "healthcheck"]
+    # The migration/controller stays in Python in its own temporary container.
+    controller = (ROOT / "infra/temporal/Dockerfile.controller").read_text()
+    assert "FROM python:" in controller and "temporal_deploy_job.py" in controller
 
 
 def test_release_deployment_requires_rust_in_both_environments():

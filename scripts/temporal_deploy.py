@@ -63,6 +63,19 @@ def candidate_files(commit: str) -> dict[str, str]:
     return files
 
 
+def validate_launcher_contract(files: dict) -> None:
+    contract = files.get("context/launcher-contract.json")
+    if contract is not None:
+        contract = json.loads(contract)
+        if (
+            not isinstance(contract, dict)
+            or set(contract) != {"protocol"}
+            or type(contract["protocol"]) is not int
+            or contract["protocol"] != 1
+        ):
+            raise ValueError("Unsupported maintenance launcher protocol")
+
+
 def command(files: dict, app: str, target: str, commit: str, shards: str, mode: str) -> str:
     files = dict(files)
     if "temporal_state.py" not in files:
@@ -85,7 +98,22 @@ def command(files: dict, app: str, target: str, commit: str, shards: str, mode: 
         "exec(\"try:\\n n['hook'](p)\\nexcept Exception:\\n "
         "print('Temporal hook failed; inspect private controller state.',file=sys.stderr);sys.exit(1)\")"
     )
-    result = MANAGED + "python -c " + shlex.quote(source)
+    validate_launcher_contract(files)
+    # The old broker runs pre; the new broker runs post. On the first rollout
+    # the old compatibility image lacks the CLI, so use the original pinned
+    # Python launcher there only. Scratch uses Rust for both hooks, including
+    # when staging/promoting a pre-Rust candidate during an explicit rollback.
+    # Protocol 1 supports the legacy payload without a contract marker.
+    source = source.replace(f"base64.b64decode({packed!r})", "base64.b64decode(sys.argv[1])")
+    result = (
+        MANAGED
+        + f"DZ_TEMPORAL_PAYLOAD={shlex.quote(packed)}; "
+        + 'if [ "$(/broker maintenance-launcher-version 2>/dev/null)" = "1" ]; then '
+        + 'exec /broker maintenance-launcher "$DZ_TEMPORAL_PAYLOAD"; else '
+        + "exec python -c "
+        + shlex.quote(source)
+        + ' "$DZ_TEMPORAL_PAYLOAD"; fi'
+    )
     if len(result) > 100_000:
         raise ValueError("Maintenance hook exceeds safe command argument size")
     return result
@@ -95,6 +123,7 @@ class TemporalDeployment:
     def __init__(self, api, app: str, target: str, commit: str):
         self.api, self.app, self.target, self.commit = api, app, target, commit
         self.files = candidate_files(commit)
+        validate_launcher_contract(self.files)
 
     def prepare(self):
         path = f"/applications/{self.app}"

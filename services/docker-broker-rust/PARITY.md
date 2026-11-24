@@ -90,11 +90,13 @@ Windows or a general-purpose Docker proxy.
 
 ## Deployment status
 
-Both release environments select the same Rust compatibility image and require
+Both release environments select the same scratch-based Rust image and require
 Rust identity in authenticated deployment health. Staging still uses the mirror
-at `/docker-compose.rust-staging.yaml`. The compatibility image deliberately
-retains Python/sh for Coolify's trusted Temporal hooks; it does not use the
-shell-free scratch target. See the service README for rollback.
+at `/docker-compose.rust-staging.yaml`. The trusted launcher is now a local Rust
+CLI, not an HTTP administration route. The deployment variant retains only a
+static BusyBox shell for Coolify's mandatory `sh -c` dispatch. Migration/restore
+still runs in its own temporary Python controller. See the service README for
+protocol negotiation and rollback.
 `compose.local.yaml` and the explicit `candidate` Docker target remain opt-in for a
 disposable comparison stack.
 

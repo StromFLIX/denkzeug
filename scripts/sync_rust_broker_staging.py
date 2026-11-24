@@ -1,7 +1,7 @@
 """Generate the compatibility image and mirror Compose at staging's existing path.
 
-Coolify's trusted Temporal hooks invoke sh and Python in docker-broker. Both
-stacks retain that maintenance runtime, but only Rust serves HTTP.
+Coolify invokes every native hook through sh -c. Retain only a static BusyBox
+shell for dispatch to the Rust CLI; Python maintenance runs in its own controller.
 """
 
 from __future__ import annotations
@@ -17,23 +17,16 @@ def generated(root: Path = ROOT) -> dict[Path, str]:
     compose = (root / "docker-compose.yaml").read_text()
     staging = HEADER + compose
     rust = (root / "services/docker-broker-rust/Dockerfile.spike").read_text()
-    compile_stage, separator, _ = rust.partition("\nFROM scratch AS candidate")
-    if not separator:
-        raise ValueError("Cannot find the canonical Rust compiler stage")
-    python = (root / "services/docker-broker/Dockerfile").read_text()
-    command = 'CMD ["uvicorn", "nautionette_docker_broker.main:app", "--host", "0.0.0.0", "--port", "9100"]'
-    if python.count(command) != 1:
-        raise ValueError("Expected the canonical Python broker entrypoint")
-    python = python.replace(command, "")
+    if "\nFROM scratch AS candidate" not in rust:
+        raise ValueError("Cannot find the canonical Rust runtime stage")
     compatibility = (
         HEADER
-        + "# Rust HTTP runtime; Python/sh retained only for trusted Coolify maintenance hooks.\n"
-        + compile_stage.rstrip()
-        + "\n\n"
-        + python.rstrip()
-        + "\nCOPY --from=compile /broker /broker\n"
-        + "ENV BROKER_BIND_ADDR=0.0.0.0 BROKER_PORT=9100 BROKER_DOCKER_SOCKET=/var/run/docker.sock\n"
-        + 'CMD ["/broker", "--local-runtime"]\n'
+        + "# Scratch runtime plus the shell required by Coolify's fixed hook dispatch.\n"
+        + rust.rstrip()
+        + "\n\nFROM candidate AS coolify\n"
+        + "COPY --from=busybox:1.38.0-musl /bin/busybox /bin/sh\n"
+        + "ENV BROKER_BIND_ADDR=0.0.0.0\n"
+        + 'CMD ["--local-runtime"]\n'
     )
     return {
         root / "docker-compose.rust-staging.yaml": staging,

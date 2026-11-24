@@ -324,7 +324,7 @@ impl Broker {
     }
 }
 
-fn parse_receipt(bytes: &[u8]) -> Result<Value, ()> {
+pub(crate) fn parse_receipt(bytes: &[u8]) -> Result<Value, ()> {
     let mut tar = tar::Archive::new(bytes);
     let mut entries = tar.entries().map_err(|_| ())?;
     let entry = entries.next().ok_or(())?.map_err(|_| ())?;

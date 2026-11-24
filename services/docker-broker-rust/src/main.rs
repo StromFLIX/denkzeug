@@ -144,6 +144,23 @@ fn local_runtime(config: Config, token: &str) -> Result<Config, Box<dyn std::err
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args_os().skip(1).collect();
     let local=match args.as_slice() {
+        [command] if command == "maintenance-launcher-version" => {
+            println!("1");
+            return Ok(());
+        }
+        [command, packed] if command == "maintenance-launcher" => {
+            let packed = packed.to_str().ok_or("Invalid maintenance payload encoding")?;
+            let self_name = env::var("HOSTNAME")?;
+            // This is a trusted Coolify exec, never a network administration API.
+            // Only the local Unix socket is accepted for maintenance.
+            let socket = PathBuf::from(setting("BROKER_DOCKER_SOCKET", "/var/run/docker.sock"));
+            if !socket.is_absolute() { return Err("Maintenance requires an absolute local Docker socket path".into()); }
+            let config = Config::new(socket, &env::var("INTERNAL_TOKEN")?, "maintenance", Duration::from_secs(240))?
+                .with_api_negotiation();
+            let config = if let Some(path) = env::var_os("BROKER_DOCKER_CONFIG") { config.with_registry_config(path.into()) } else { config };
+            denkzeug_docker_broker_spike::maintenance::launch(config, &self_name, packed).await?;
+            return Ok(());
+        }
         [command, root] if command == "fingerprints" => {
             println!("{}",serde_json::to_string_pretty(&fingerprints(Path::new(root))?)?);
             return Ok(());

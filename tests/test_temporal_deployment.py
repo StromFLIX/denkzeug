@@ -84,8 +84,50 @@ def test_old_candidate_hook_receives_read_only_receipt_adapter(monkeypatch):
         lambda path: "def controller_state(container): return {'status':'completed'}\n",
     )
     command = transport.command(files, "app", "staging", COMMIT, "4", "prepare")
-    exec(compile(shlex.split(command)[-1], "legacy-hook-bootstrap", "exec"), {})  # noqa: S102 - generated bootstrap test
+    # Simulate the pre-hook in the old compatibility broker: /broker has no
+    # launcher command yet, so sh dispatches to the candidate-pinned Python.
+    result = subprocess.run(["sh", "-c", command], capture_output=True, text=True, check=False)  # noqa: S603,S607 - generated trusted fixture
+    assert result.returncode == 0, result.stderr
     assert "temporal_state.py" not in files
+
+
+@pytest.mark.parametrize("protocol", [0, 2, "1", True])
+def test_unknown_native_launcher_protocol_fails_closed(protocol):
+    with pytest.raises(ValueError, match="launcher protocol"):
+        transport.command(
+            {"context/launcher-contract.json": json.dumps({"protocol": protocol})},
+            "app",
+            "staging",
+            COMMIT,
+            "4",
+            "prepare",
+        )
+
+
+def test_native_hook_payload_is_single_line_bounded_and_candidate_pinned():
+    import base64
+    import gzip
+
+    files = {
+        "context/launcher-contract.json": '{"protocol":1}',
+        "temporal_deploy_hook.py": "pass",
+        "temporal_state.py": "pass",
+    }
+    command = transport.command(files, "app", "production", COMMIT, "4", "finish")
+    assert command.startswith(transport.MANAGED)
+    assert "maintenance-launcher-version" in command and "exec /broker maintenance-launcher" in command
+    assert "\n" not in command and len(command) < 100_000
+    payload = shlex.split(command.removeprefix(transport.MANAGED))[0].split("=", 1)[1].rstrip(";")
+    decoded = json.loads(gzip.decompress(base64.b64decode(payload)))
+    assert decoded == {
+        "app": "app",
+        "target": "production",
+        "commit": COMMIT,
+        "shards": "4",
+        "mode": "finish",
+        "files": files,
+    }
+    assert files["temporal_deploy_hook.py"] == "pass"
 
 
 def test_preflight_selects_private_data_network_not_coolifys_shared_network(monkeypatch):

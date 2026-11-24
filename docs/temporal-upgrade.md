@@ -48,7 +48,15 @@ Existing custom pre/post hooks are refused rather than silently overwritten.
 
 The broker already has the Docker socket. The trusted hook uses that existing
 control boundary to build/start one private maintenance controller for this
-application. It has no published port, no HTTP execution API and no SSH key. This
+application. The launcher is `/broker maintenance-launcher`, a local Rust CLI
+with bounded base64/gzip payload decoding, archive path validation, stack/revision
+ownership checks and receipt-first cleanup. It is not exposed through HTTP.
+Coolify always uses `sh -c`, so the scratch deployment image includes only a
+static BusyBox shell for dispatch. Python and the Docker SDK remain solely in
+the temporary controller. The generated hook probes launcher protocol 1 and uses
+the original candidate-pinned Python launcher only when running in a pre-port
+compatibility image; this preserves first-rollout and rollback behavior.
+Unknown protocol versions fail before any deployment mutation. It has no published port, no HTTP execution API and no SSH key. This
 is a temporary deployment-only Docker administrator, not an agent container or a
 new generic broker API. Its Docker socket and the two dedicated host maintenance
 directories are mounted explicitly; it does not mount the host root filesystem.
