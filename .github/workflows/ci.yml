@@ -452,6 +452,41 @@ jobs:
           docker build --target node-fixture -f services/docker-broker-rust/tests/Dockerfile.fixture -t nautionette/broker-node-fixture:ci .
           docker build --build-arg PI_BASE_IMAGE=nautionette/pi-base:dev -f services/docker-broker-rust/tests/Dockerfile.pi-fixture -t nautionette/broker-pi-fixture:ci .
 
+      - name: Install pinned Rust toolchain for Docker conformance
+        run: rustup toolchain install 1.100.0 --profile minimal --component clippy
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Run Rust broker Docker conformance on the disposable runner
+        env:
+          BROKER_EVIDENCE_DIR: ${{ runner.temp }}/rust-broker-conformance
+        run: |
+          docker build --target busybox-fixture -f services/docker-broker-rust/tests/Dockerfile.fixture -t nautionette/broker-busybox-fixture:ci .
+          # Install the same Pi CLI as the image for the offline reference JS tests.
+          npm install --prefix "$RUNNER_TEMP/broker-pi-cli" --ignore-scripts --no-audit --no-fund @earendil-works/pi-coding-agent@1.5.2
+          export PATH="$RUNNER_TEMP/broker-pi-cli/node_modules/.bin:$PATH"
+          export RUSTUP_TOOLCHAIN=1.100.0
+          export BROKER_DOCKER_SOCKET=/var/run/docker.sock
+          export BROKER_FIXTURE_IMAGE=nautionette/broker-busybox-fixture:ci
+          export BROKER_NODE_FIXTURE_IMAGE=nautionette/broker-node-fixture:ci
+          export BROKER_PI_FIXTURE_IMAGE=nautionette/pi-base:dev
+          export BROKER_PI_STEER_FIXTURE_IMAGE=nautionette/broker-pi-fixture:ci
+          export BROKER_ARTCRAFT_VERIFY_IMAGE=nautionette/pi-base:dev
+          export BROKER_ARTCRAFT_ARTIFACT_PATH="$RUNNER_TEMP/broker-gridcraft"
+          export NAUTIONETTE_PACKAGE_TEST_SOURCE=npm:@oscaner-skills/kairos@1.7.0
+          python3 services/docker-broker-rust/tests/prepare_gridcraft_fixture.py "$BROKER_ARTCRAFT_ARTIFACT_PATH"
+          # The Docker cases access root-owned local volumes and a temporary registry CA.
+          BROKER_CONFORMANCE_SUDO=1 services/docker-broker-rust/tests/run-local-conformance.sh --docker
+
+      - name: Upload Rust broker conformance evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rust-broker-conformance
+          path: ${{ runner.temp }}/rust-broker-conformance
+
       - name: Inventory broker Node fixture packages
         uses: anchore/sbom-action@v0.24.3
         with:

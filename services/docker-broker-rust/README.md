@@ -5,21 +5,19 @@ The Python implementation and production Compose file remain unchanged. CI now
 checks the Rust service and both Rust image targets. **No production rollout is
 part of this port.**
 
-**The Rust staging trial is paused. Both active stacks use the Python broker
-from `/docker-compose.yaml`.** Rust sources and CI checks are retained for later
-work, but no deployment workflow forces Rust readiness or opts into Rust.
-
-For an explicitly re-enabled trial, Coolify can select the generated root file
-`docker-compose.rust-staging.yaml`. Its only Compose difference is the broker's
-build recipe. `Dockerfile.staging` serves HTTP with Rust but retains the original
+**Staging uses the Rust compatibility image; production still uses the Python
+broker from `/docker-compose.yaml`.** Coolify selects the generated root file
+`docker-compose.rust-staging.yaml` in staging. Its only Compose difference is the
+broker's build recipe. `Dockerfile.staging` serves HTTP with Rust but retains the original
 Python/sh maintenance runtime: Coolify wraps the Temporal deployment hooks in
 `sh -c` and those trusted hooks use Python's Docker SDK. The scratch image cannot
 run those existing hooks. Do not select the scratch target for a Coolify rollout
 until the hook boundary has been migrated. Regenerate/check the staging files
 with `python scripts/sync_rust_broker_staging.py [--check]` from the repo root.
-An explicitly re-enabled trial should set `EXPECTED_BROKER_IMPLEMENTATION=rust`
-for its deployment health check. That expectation is intentionally not enabled
-in the automatic deployment workflow while Python is the active implementation.
+The automatic staging deployment checks `EXPECTED_BROKER_IMPLEMENTATION=rust`
+through authenticated backend health. For a rollback, restore Coolify's staging
+Compose path to `/docker-compose.yaml`, redeploy the pinned commit, and update the
+staging health expectation before resuming automatic deployments.
 
 See [PARITY.md](PARITY.md) for the frozen reference scope, deliberate safety
 limits and verification boundaries. The full scenario mapping is
@@ -37,7 +35,8 @@ python tests/check_parity.py
 ```
 
 The default test run leaves explicitly marked internet/Docker cases ignored.
-Ignoring them is **not** a parity pass. To require all mapped executions on a
+Ignoring them is **not** a parity pass. CI runs the full conformance gate on a
+disposable runner and uploads its evidence separately. To require all mapped executions on a
 prepared disposable Linux Docker host, see `tests/run-local-conformance.sh
 --docker`. Its environment checks fail if required fixture inputs are missing.
 The daemon must be local and its named-volume storage accessible to the test

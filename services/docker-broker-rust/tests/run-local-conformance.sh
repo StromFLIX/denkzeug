@@ -43,8 +43,19 @@ export BROKER_PACKAGE_FIXTURE_IMAGE=${BROKER_PACKAGE_FIXTURE_IMAGE:-$BROKER_PI_F
 export DOCKER_HOST="unix://$BROKER_DOCKER_SOCKET"
 docker version --format '{{.Server.Version}}'
 cargo test --locked --manifest-path "$crate" --lib real_gridcraft_archive -- --ignored 2>&1 | tee "$evidence/download.log"
+# Compile as the current user. On an ephemeral CI host only, use sudo for
+# the test binaries that need access to daemon-owned volumes and trust files.
+# Keep the compiler/cache and the reference Python/Node suites unprivileged.
 for suite in docker_registry docker_inventory docker_package; do
-  cargo test --locked --manifest-path "$crate" --test "$suite" -- --ignored --nocapture --test-threads=1 2>&1 | tee "$evidence/$suite.log"
+  if [[ ${BROKER_CONFORMANCE_SUDO:-0} == 1 ]]; then
+    binary=$(cargo test --locked --manifest-path "$crate" --test "$suite" --no-run --message-format=json |
+      python -c 'import json,sys; [print(r["executable"]) for line in sys.stdin if (r := json.loads(line)).get("executable") and r["target"]["name"] == sys.argv[1]]' "$suite")
+    [[ -x $binary ]]
+    sudo --preserve-env=BROKER_DOCKER_SOCKET,BROKER_FIXTURE_IMAGE,BROKER_NODE_FIXTURE_IMAGE,BROKER_PI_FIXTURE_IMAGE,BROKER_PI_STEER_FIXTURE_IMAGE,BROKER_ARTCRAFT_ARTIFACT_PATH,BROKER_ARTCRAFT_VERIFY_IMAGE,BROKER_PACKAGE_FIXTURE_IMAGE,NAUTIONETTE_PACKAGE_TEST_SOURCE \
+      -- "$binary" --ignored --nocapture --test-threads=1 2>&1 | tee "$evidence/$suite.log"
+  else
+    cargo test --locked --manifest-path "$crate" --test "$suite" -- --ignored --nocapture --test-threads=1 2>&1 | tee "$evidence/$suite.log"
+  fi
 done
 
 # Shared JS/helper/Compose invariants are not reimplemented in a different
