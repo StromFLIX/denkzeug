@@ -132,6 +132,12 @@ def gauge(name: str, unit: str, value: int | float) -> dict:
     }
 
 
+def otlp_payload(resource: dict, scope: dict, kind: str, values: list[dict]) -> dict:
+    # The trace RPC transports ResourceSpans, not ResourceTraces.
+    suffix = kind.capitalize()
+    return {"resource" + suffix: [{"resource": resource, "scope" + suffix: [{"scope": scope, kind: values}]}]}
+
+
 class NoRedirects(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *_args, **_kwargs):
         return None
@@ -168,10 +174,7 @@ def main() -> None:
     def send(signal: str, key: str, values: list[dict]) -> None:
         if not values:
             return
-        label = signal.capitalize()
-        payload = {
-            "resource" + label: [{"resource": resource, "scope" + label: [{"scope": scope, key: values}]}]
-        }
+        payload = otlp_payload(resource, scope, key, values)
         with contextlib.suppress(OSError):
             req = urllib.request.Request(  # noqa: S310 - operator-configured OTLP endpoint
                 endpoint + "/v1/" + signal,

@@ -1,9 +1,14 @@
 """Supervisor telemetry exports only fixed operation labels and trace correlation."""
 
+import base64
 import importlib.util
 import json
 import sys
 from pathlib import Path
+
+from google.protobuf.json_format import ParseDict
+from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import ExportMetricsServiceRequest
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import ExportTraceServiceRequest
 
 SOURCE = Path(__file__).resolve().parents[2] / "services/agentgateway"
 
@@ -34,6 +39,17 @@ def test_stdio_span_redacts_the_process_and_marks_timeout(monkeypatch):
     assert span["status"] == {"code": 2}
     assert "do-not-export" not in json.dumps(span)
     assert telemetry.startup_span({**event, "method": "do-not-export"}) is None
+    # Protobuf's generic JSON parser uses base64 for bytes; OTLP JSON explicitly
+    # uses hex for trace/span IDs. Verify both the envelope and ID format.
+    for key in ("traceId", "spanId", "parentSpanId"):
+        span[key] = base64.b64encode(bytes.fromhex(span[key])).decode()
+    trace_request = ParseDict(telemetry.otlp_payload({}, {}, "spans", [span]), ExportTraceServiceRequest())
+    assert trace_request.resource_spans[0].scope_spans[0].spans[0].status.code == 2
+    metric = telemetry.gauge("denkzeug.gateway.stdio.children", "{process}", 3)
+    metric_request = ParseDict(
+        telemetry.otlp_payload({}, {}, "metrics", [metric]), ExportMetricsServiceRequest()
+    )
+    assert metric_request.resource_metrics[0].scope_metrics[0].metrics[0].gauge.data_points[0].as_int == 3
 
 
 def test_gateway_gauge_counts_live_managed_group_leaders(tmp_path, monkeypatch):
