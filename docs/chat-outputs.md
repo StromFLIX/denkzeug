@@ -72,10 +72,11 @@ title remains in the accessible label and native tooltip. Thumbnail mode falls b
 to a file icon when a preview is missing or fails. Full-size previews, summaries,
 source-app metadata, revision history and file downloads remain in Workspace.
 
-Each publication is independently selectable via **Browse outputs** or the canvas.
-Drag canvas titles to arrange outputs (positions are saved on this browser); publishing a
-new output does not rearrange existing ones. Use the revision selector to inspect a
-saved snapshot and the file list to open or download individual files within it.
+Workspace opens to a gallery of the latest published outputs. It shows a preview
+when available and a compact file entry otherwise. Select an output to open its
+details in a side drawer (full-screen on mobile). Use the revision selector to
+inspect a saved snapshot and the file list to open or download individual files.
+Closing details returns you to the gallery without resetting your scroll position.
 Workspace can preview PDFs page by page, images, Markdown, plain text, and isolated
 HTML without scripts or network access. For presentations, publish ordered preview
 images (one per slide) or a PDF export alongside the original deck. Other formats

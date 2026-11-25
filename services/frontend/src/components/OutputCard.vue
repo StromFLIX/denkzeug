@@ -1,9 +1,9 @@
 <template>
-  <article class="output-card" :aria-label="output.title">
+  <article class="output-card" :class="{ 'output-card--embedded': embedded }" :aria-label="output.title">
     <header class="output-card__head">
       <span class="material-icons" aria-hidden="true">inventory_2</span>
       <div class="grow">
-        <h2 ref="heading" tabindex="-1">{{ output.title }}</h2>
+        <h2>{{ output.title }}</h2>
         <p class="caption dim">Ready · Revision {{ output.revision }}<template v-if="output.source_app"> · {{ output.source_app }}</template></p>
       </div>
     </header>
@@ -11,6 +11,8 @@
     <div v-if="previews.length" class="output-card__previews">
       <OutputImage v-for="file in previews" :key="file.id" :chat-id="chatId" :output-id="output.id" :revision="output.revision" :file="file" />
     </div>
+    <slot name="before-files" />
+    <h3 v-if="embedded" class="output-card__files-heading">Files</h3>
     <ul class="output-card__files" aria-label="Output files">
       <li v-for="file in output.files" :key="file.id" class="output-card__file">
         <button type="button" class="output-card__download" :disabled="Boolean(loadingFile)" :aria-label="`Download ${file.name}`" @click="download(file)">
@@ -39,7 +41,8 @@ import { saveDownload } from '../file-download'
 
 const props = defineProps({
   chatId: { type: String, required: true },
-  output: { type: Object, required: true }
+  output: { type: Object, required: true },
+  embedded: Boolean
 })
 const previews = computed(() => {
   const explicit = props.output.files.filter(file => file.role === 'preview' && file.previewable)
@@ -47,8 +50,6 @@ const previews = computed(() => {
   return files
 })
 const formatSize = size => size >= 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(1)} MiB` : `${Math.max(1, Math.ceil(size / 1024))} KiB`
-const heading = ref(null)
-defineExpose({ focusHeading: () => heading.value?.focus() })
 const openedFile = ref(''), presenting = ref(false)
 const activeFile = computed(() => props.output.files.find(file => file.id === openedFile.value))
 const viewerOpen = computed({ get: () => Boolean(activeFile.value), set: open => {
@@ -114,4 +115,10 @@ onUnmounted(cleanup)
 .output-card__download:active:not(:disabled) { background: var(--surface-hover); }
 @media (hover: hover) and (pointer: fine) { .output-card__download:hover:not(:disabled) { border-color: var(--border-strong); background: var(--surface-hover); } }
 @media (max-width: 560px) { .output-card { padding: 16px; } }
+.output-card--embedded { padding: 0; border: 0; border-radius: 0; }
+.output-card--embedded .output-card__head > .material-icons { display: none; }
+.output-card--embedded .output-card__head h2 { font-size: 1.2rem; line-height: 1.3; }
+.output-card--embedded .output-card__files { grid-template-columns: minmax(0, 1fr); }
+.output-card--embedded :deep(.output-image__open img) { max-height: min(17rem, 40dvh); }
+.output-card__files-heading { margin: 20px 0 0; font-size: 0.9rem; font-weight: 650; }
 </style>

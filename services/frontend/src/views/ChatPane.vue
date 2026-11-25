@@ -50,7 +50,7 @@
     </div>
 
     <ChatOutputs v-if="chatId && activeTab === 'outputs'" id="chat-outputs-panel" :key="chatId" role="tabpanel" aria-labelledby="chat-outputs-tab"
-      v-model:selected-id="selectedOutputId" v-model:selected-revision="selectedOutputRevision" :open-request="outputOpenRequest" :chat-id="chatId" :outputs="outputs" :working="streaming" />
+      v-model:selected-id="selectedOutputId" v-model:selected-revision="selectedOutputRevision" :chat-id="chatId" :outputs="outputs" />
 
     <div v-show="activeTab === 'chat'" id="chat-conversation-panel" ref="scroller" :role="chatId ? 'tabpanel' : undefined" :aria-labelledby="chatId ? 'chat-conversation-tab' : undefined" data-skin-part="conversation" class="thread__body scroll-y grow" @scroll.passive="acknowledgeRead">
       <div class="thread__inner">
@@ -193,10 +193,8 @@ const outputs = ref([])
 const activeTab = ref('chat')
 const selectedOutputId = ref('')
 const selectedOutputRevision = ref(null)
-const outputOpenRequest = ref(0)
 
 function openOutput (output) {
-  outputOpenRequest.value++
   selectedOutputId.value = output.id
   const current = outputs.value.find(item => item.id === output.id)
   selectedOutputRevision.value = current?.revision === output.revision ? null : output.revision
