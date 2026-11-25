@@ -173,9 +173,15 @@ const time = computed(() => shortTime(props.createdAt))
   color: var(--bubble-text);
 }
 
+.msg--assistant {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
 .msg--assistant .bubble {
-  width: 100%;
-  max-width: calc(100% - 60px);
+  min-width: 0;
+  max-width: 100%;
   padding: 9px 0;
   background: transparent;
   border: 0;
@@ -261,39 +267,27 @@ const time = computed(() => shortTime(props.createdAt))
     transform: rotate(360deg);
   }
 }
-</style>
 
-<style>
 @media (max-width: 480px) {
-  .msg {
+  .msg--user {
     position: relative;
     display: block;
     margin-bottom: 28px;
-  }
-
-  .msg--user {
     text-align: right;
   }
 
-  .bubble {
+  .msg--user .bubble {
     display: inline-block;
     max-width: 86%;
     text-align: left;
   }
 
-  .msg__time {
+  .msg--user .msg__time {
     position: absolute;
     top: calc(100% + 3px);
     right: 0;
     padding: 0;
   }
-
-  .msg--assistant .msg__time {
-    right: auto;
-    left: 0;
-  }
-
-  .msg--assistant .bubble { max-width: 100%; }
 }
 
 @media (hover: hover) {

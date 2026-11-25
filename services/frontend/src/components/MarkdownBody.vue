@@ -115,7 +115,8 @@ function copyCode (event) {
 .msg--assistant .bubble__body a,
 .execution-output .bubble__body a { color: var(--accent-hover); }
 .bubble__body blockquote { margin: 8px 0; padding-left: 10px; border-left: 2px solid var(--border-strong); color: var(--text-muted); }
-.bubble__body table { width: 100%; margin: 8px 0; border-collapse: collapse; font-size: 0.8125rem; }
+.bubble__body .markdown-table { margin: 8px 0; overflow-x: auto; }
+.bubble__body table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; overflow-wrap: normal; }
 .bubble__body th,
 .bubble__body td { padding: 5px 8px; border: 1px solid var(--border); text-align: left; }
 </style>

@@ -84,6 +84,12 @@ export function renderMarkdown (text) {
     pre.replaceWith(block)
     block.append(toolbar, pre)
   }
+  for (const table of fragment.querySelectorAll('table')) {
+    const scroll = document.createElement('div')
+    scroll.className = 'markdown-table'
+    table.replaceWith(scroll)
+    scroll.append(table)
+  }
   for (const slot of fragment.querySelectorAll('denkzeug-math')) {
     const index = slot.textContent
     const formula = /^\d+$/.test(index) && formulas[Number(index)]

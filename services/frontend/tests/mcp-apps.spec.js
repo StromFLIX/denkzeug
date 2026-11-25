@@ -138,7 +138,37 @@ test('sandbox blocks parent access and unapproved network requests', async ({ pa
 test('saved workflow results and tool results share the inline host without replay', async ({ page, context }) => {
   const state = await mockAgents(context)
   const descriptor = { id: 'saved-app', title: 'Release notes', app_id: 'release-notes', revision: 1 }
-  state.data.messages = [{ id: 'result', role: 'assistant', content: 'Release prepared.', created_at: Date.now() / 1000, meta: { apps: [descriptor], origin: { kind: 'workflow', workflow: 'prepare-release', relation: 'result' } } }]
+  const columns = `| ${Array(48).fill('Column').join(' | ')} |`
+  const divider = `| ${Array(48).fill('---').join(' | ')} |`
+  state.data.messages = [
+    { id: 'result', role: 'assistant', content: 'Release prepared.', created_at: Date.now() / 1000, meta: { apps: [descriptor], origin: { kind: 'workflow', workflow: 'prepare-release', relation: 'result' } } },
+    { id: 'explanation', role: 'assistant', content: `Explanation with a wide table:\n\n${columns}\n${divider}\n${columns}`, created_at: Date.now() / 1000, meta: {} },
+    { id: 'prompt', role: 'user', content: 'Thanks!', meta: {} }
+  ]
+  async function expectFullChatWidth () {
+    await expect.poll(() => page.locator('.thread__inner').evaluate(thread => {
+      const column = thread.getBoundingClientRect()
+      const padding = getComputedStyle(thread)
+      const left = column.left + parseFloat(padding.paddingLeft)
+      const right = column.right - parseFloat(padding.paddingRight)
+      const reply = thread.querySelector('#message-explanation .bubble')
+      const card = thread.querySelector('.mcp-app')
+      const frame = card?.querySelector('iframe')
+      const table = reply?.querySelector('.markdown-table')
+      const time = thread.querySelector('#message-result .msg__time')
+      const prompt = thread.querySelector('#message-prompt .bubble')
+      if (!reply || !frame || !table || !time || !prompt) return false
+      const fillsColumn = el => {
+        const box = el.getBoundingClientRect()
+        return Math.abs(box.left - left) < 1 && Math.abs(box.right - right) < 1
+      }
+      return [reply, card, table].every(fillsColumn) &&
+        frame.clientWidth === card.clientWidth &&
+        time.getBoundingClientRect().top >= card.getBoundingClientRect().bottom &&
+        table.scrollWidth > table.clientWidth && thread.scrollWidth <= thread.clientWidth &&
+        prompt.getBoundingClientRect().width < reply.getBoundingClientRect().width
+    })).toBe(true)
+  }
   let loads = 0
   const mutations = []
   page.on('request', request => { if (request.method() === 'POST' && /\/api\/(workflows|chats).*\/(run|messages)/.test(request.url())) mutations.push(request.url()) })
@@ -153,6 +183,10 @@ test('saved workflow results and tool results share the inline host without repl
   const summary = page.getByText('Release prepared.', { exact: true })
   await expect(summary).toHaveCount(1)
   await expect(summary).toBeHidden()
+  for (const width of [1440, 540, 320]) {
+    await page.setViewportSize({ width, height: 1000 })
+    await expectFullChatWidth()
+  }
   await page.getByText('Original result', { exact: true }).click()
   await expect(summary).toBeVisible()
   await page.reload()
@@ -165,6 +199,7 @@ test('saved workflow results and tool results share the inline host without repl
   state.data.messages[0].meta = { steps: [{ kind: 'tool', id: 'call', name: 'weather_forecast', ok: true, result: 'Release prepared.', app: descriptor }] }
   await page.reload()
   await expect(view.locator('#result')).toHaveText('# A useful release')
+  await expectFullChatWidth()
   expect(mutations).toEqual([])
 })
 
