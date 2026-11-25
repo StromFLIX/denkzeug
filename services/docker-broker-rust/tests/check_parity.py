@@ -20,6 +20,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 CRATE = ROOT / "services/docker-broker-rust"
+# These five independently required safety cases were part of the frozen
+# reference. A report that deselects a sibling is not full conformance evidence.
+SHARED_PARAMETER_IDS = {
+    (
+        "tests/runtime_helpers/test_artcraft_offline.py::"
+        "test_offline_helper_never_publishes_invalid_or_incompatible_artifacts"
+    ): (
+        "checksum",
+        "size",
+        "symlink",
+        "probe",
+        "nonempty",
+    ),
+}
 
 
 def inventory():
@@ -54,6 +68,7 @@ def rust_passes(paths):
 def shared_passes(paths):
     result = set()
     skipped = set()
+    passed_cases = set()
     for path in paths:
         data = path.read_bytes()
         if b"<!DOCTYPE" in data or b"<!ENTITY" in data:
@@ -68,7 +83,11 @@ def shared_passes(paths):
                 skipped.add(reference)
             else:
                 result.add(reference)
-    # One passing parametrization cannot mask skipped siblings.
+                passed_cases.add(f"{module}::{case.attrib['name']}")
+    # One passing parametrization cannot mask skipped or entirely omitted siblings.
+    for reference, parameters in SHARED_PARAMETER_IDS.items():
+        if any(f"{reference}[{parameter}]" not in passed_cases for parameter in parameters):
+            result.discard(reference)
     return result - skipped
 
 

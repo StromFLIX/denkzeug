@@ -56,6 +56,18 @@ def test_skipped_shared_parametrization_cannot_be_masked_by_passing_sibling(tmp_
     assert checks.shared_passes([report]) == set()
 
 
+def test_omitted_shared_parametrizations_cannot_be_masked_by_passing_sibling(tmp_path):
+    report = tmp_path / "cases.xml"
+    reference, parameters = next(iter(checks.SHARED_PARAMETER_IDS.items()))
+    path, name = reference.split("::", 1)
+    classname = path.removesuffix(".py").replace("/", ".")
+    cases = [f'<testcase classname="{classname}" name="{name}[{p}]"/>' for p in parameters]
+    report.write_text("<testsuite>" + cases[0] + "</testsuite>")
+    assert reference not in checks.shared_passes([report])
+    report.write_text("<testsuite>" + "".join(cases) + "</testsuite>")
+    assert reference in checks.shared_passes([report])
+
+
 def test_conformance_requires_execution_of_every_historical_scenario(monkeypatch, capsys):
     monkeypatch.setattr("sys.argv", ["check_parity", "--evidence"])
     with pytest.raises(SystemExit) as exc:
