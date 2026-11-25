@@ -33,6 +33,8 @@ llm:
 
 # MCP traffic: one federated endpoint on /mcp for both workers and Pi agents.
 mcp:
+  # Workers and Pi use the same stable federated names even during target changes.
+  prefixMode: always
   # Isolate failed upstreams, not authentication: expired/rejected credentials
   # still fail for that target, while healthy servers remain discoverable.
   # If every upstream fails, the gateway still returns an error.

@@ -11,6 +11,7 @@ import os
 import shutil
 import socket
 import subprocess
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -19,7 +20,7 @@ import httpx
 import pytest
 import yaml
 from fastapi import HTTPException
-from nautionette_backend import mcp_servers
+from nautionette_backend import mcp_servers, mcp_stdio_runtime
 from nautionette_backend.clients import gateway
 from nautionette_backend.config import settings
 
@@ -63,6 +64,11 @@ class HttpMcp(BaseHTTPRequestHandler):
 
 async def test_stdio_with_real_gateway_and_http_baseline(tmp_path, monkeypatch):
     binary = str(Path(os.environ["NAUTIONETTE_TEST_GATEWAY_BINARY"]).resolve())
+    supervisor = Path(__file__).resolve().parents[2] / "services/agentgateway/stdio_supervisor.py"
+    executable = tmp_path / "supervisor"
+    executable.write_text(supervisor.read_text().replace("#!/usr/bin/python3", f"#!{sys.executable}", 1))
+    executable.chmod(0o755)
+    monkeypatch.setattr(mcp_stdio_runtime, "SUPERVISOR", str(executable))
     http_server = ThreadingHTTPServer(("127.0.0.1", 0), HttpMcp)
     threading.Thread(target=http_server.serve_forever, daemon=True).start()
     port = free_port()

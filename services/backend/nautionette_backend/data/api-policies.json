@@ -536,6 +536,11 @@
     "authentication": "internal",
     "resource": null
   },
+  "GET /internal/mcp/targets": {
+    "scope": "mcp:execute",
+    "authentication": "internal",
+    "resource": null
+  },
   "GET /internal/runs": {
     "scope": "runs:read",
     "authentication": "internal",

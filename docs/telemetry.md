@@ -136,6 +136,34 @@ instrumentation only where the data points. Python tests disable inherited OTLP;
 export tests explicitly opt in to localhost so test traffic cannot skew release
 comparisons.
 
+## Diagnosing a workflow MCP failure
+
+1. Open the failed activity in the run history. The compact application error
+   names the phase, tool, attempt and whether dispatch may have occurred; when
+   tracing is active it also includes a trace ID. A returned tool error and an
+   initialization timeout are not the same as a Temporal timer firing late.
+2. In SigNoz, follow `workflow.mcp.*` spans with `temporalAttempt`,
+   `denkzeug.mcp.stage`, `denkzeug.mcp.target`, `denkzeug.mcp.outcome` and
+   `denkzeug.mcp.deadline_ms`. Graph `denkzeug.workflow.mcp.phase.duration` by
+   stage/outcome and `denkzeug.workflow.mcp.sessions.held` for worker-held handles
+   (not a gateway-wide session count; a failed DELETE is a separate span).
+   `mcp.stdio.first_reply` is a gateway-runtime child span when trace context is
+   available. It separates a successful handshake, spawn failure, early exit,
+   protocol error, cancellation and deadline; no child stderr is exported.
+3. Correlate the live managed child-group gauge `denkzeug.gateway.stdio.children`
+   with `denkzeug.container.memory.current`, cgroup v2 memory events (including
+   `oom_kill`) and Linux memory PSI `denkzeug.host.memory.pressure.*.avg10` /
+   `denkzeug.container.memory.pressure.*.avg10`. Missing procfs/cgroup fields are
+   omitted. Host PSI is shared infrastructure when stacks share the same machine;
+   it is not a per-environment memory attribution. The gateway runtime uses
+   nonblocking, bounded local reporting; dropped telemetry is not a healthy sample.
+4. The optional collector scrapes Temporal's **private** Prometheus endpoint.
+   Compare `task_latency_load`, `task_latency_schedule`, `task_latency_queue`,
+   `task_schedule_to_start_latency` and persistence metrics; select timer task
+   types separately from worker queue latency. Correlate with the activity's
+   started/deadline/completion timestamps before attributing a slow run to storage
+   or to missing worker slots. No port or Docker socket is published for scraping.
+
 ## Privacy and operational limits
 
 Python exports allowlisted attributes and exception **types**, removing exception

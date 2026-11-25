@@ -44,6 +44,20 @@ class ActivityGrant(BaseModel):
     tool: str = Field(min_length=1, max_length=160)
 
 
+@router.get("/internal/mcp/targets")
+async def workflow_mcp_targets() -> dict:
+    # The worker needs only names for routing. Never send it gateway admin
+    # configuration, target URLs or the credentials in hybrid resources.
+    from ..clients import gateway
+
+    config = await gateway.config()
+    targets = config["targets"]
+    mode = config.get("mcp_prefix_mode", "conditional")
+    if mode == "never" or (len(targets) < 2 and mode != "always"):
+        return {"targets": []}  # Raw names carry no reliable ownership information.
+    return {"targets": [target["name"] for target in targets]}
+
+
 @router.post("/internal/auth/activity-grant")
 async def activity_grant(body: ActivityGrant) -> dict:
     if not body.tool.startswith(("backend_", "workflows_")):
@@ -70,7 +84,19 @@ async def activity_grant(body: ActivityGrant) -> dict:
     if who.role != "admin" and not access.allowed("tool", body.tool, who):
         fail(403, "tool_not_shared", "This activity tool is not shared with the workflow caller.")
     token = access.issue_activity_grant(owner["id"], source["workflow_id"], [body.tool])
-    return {"grant": token}
+    if body.tool.startswith("backend_"):
+        from ..main import backend_mcp
+
+        operation = backend_mcp.operations.get(body.tool.removeprefix("backend_"), {})
+        read_only = operation.get("method") in {"GET", "HEAD"}
+    else:
+        read_only = body.tool in {
+            "workflows_list_workflows",
+            "workflows_read_workflow",
+            "workflows_list_runs",
+            "workflows_read_run",
+        }
+    return {"grant": token, "read_only": read_only}
 
 
 class ActivityRevoke(BaseModel):

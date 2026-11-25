@@ -1,0 +1,52 @@
+name: Verify staging issue audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_sha:
+        description: Full commit SHA currently deployed to staging
+        required: true
+        type: string
+      isolated_qa:
+        description: Confirm reviewed staging-only model inputs and exclusive use of the synthetic QA account for this run
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coolify-nautionette-deploy
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    # Reconcile ambiguous starts rather than replaying a GitHub job.
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.isolated_qa
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # Set these staging environment vars only after review, not from a dispatch:
+      # ISSUE_AUDIT_SOURCE_SHA256: digest of the reviewed existing workflow source (UTF-8 API code).
+      # ISSUE_AUDIT_QA_USER_ID: dedicated existing staging smoke account, not the snapshot owner.
+      # ISSUE_AUDIT_REVIEW_AGENT_ID: approved staging model profile with no project context.
+      # Before dispatch: confirm run-owner scoping on the pinned deployment; review the model
+      # destination and all non-chat inputs (system diagnostics and GitHub data). Reserve the
+      # QA account and prevent concurrent deployments, workflow edits/reloads or staging refreshes
+      # until terminal. Do not dispatch again after any uncertain start until reconciled.
+      - name: Run and verify existing audit dry run (metadata only)
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          DENKZEUG_SMOKE_USERNAME: ${{ secrets.DENKZEUG_SMOKE_USERNAME }}
+          DENKZEUG_SMOKE_PASSWORD: ${{ secrets.DENKZEUG_SMOKE_PASSWORD }}
+          ISSUE_AUDIT_QA_USER_ID: ${{ vars.ISSUE_AUDIT_QA_USER_ID }}
+          ISSUE_AUDIT_REVIEW_AGENT_ID: ${{ vars.ISSUE_AUDIT_REVIEW_AGENT_ID }}
+          ISSUE_AUDIT_SOURCE_SHA256: ${{ vars.ISSUE_AUDIT_SOURCE_SHA256 }}
+          ISSUE_AUDIT_STAGING_SHA: ${{ inputs.staging_sha }}
+          ISSUE_AUDIT_ISOLATED_QA: ${{ inputs.isolated_qa }}
+        run: python3 -m scripts.check_issue_audit_deployment

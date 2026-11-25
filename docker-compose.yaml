@@ -423,6 +423,8 @@ services:
       POSTGRES_PWD: ${POSTGRES_PASSWORD}
       POSTGRES_SEEDS: postgres
       DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+      # Private to the Compose network; scraped by the optional observability relay.
+      PROMETHEUS_ENDPOINT: 0.0.0.0:9090
       # Schema and namespace initialization are explicit maintenance operations.
       NUM_HISTORY_SHARDS: ${TEMPORAL_NUM_HISTORY_SHARDS:-4}
       TEMPORAL_MAINTENANCE_APP: ${TEMPORAL_MAINTENANCE_APP:-}

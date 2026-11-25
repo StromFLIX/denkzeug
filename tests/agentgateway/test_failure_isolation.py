@@ -266,7 +266,7 @@ async def test_real_gateway_scopes_before_contact_preserves_names_and_singleton_
                 else:
                     pytest.fail("gateway did not start")
                 native = GatewayClient(base)
-                assert [tool["name"] for tool in await native.mcp_tools(f"{base}/mcp")] == ["read"]
+                assert [tool["name"] for tool in await native.mcp_tools(f"{base}/mcp")] == ["workflows_read"]
                 # Existing hybrid records must round-trip through real GET, not
                 # only our in-memory fake's simplified resource representation.
                 saved = await client.put(

@@ -3,6 +3,7 @@
 import json
 import time
 import uuid
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 
 from scripts.smoke_api import API
@@ -15,7 +16,9 @@ def check(api):
     path = "/api/workflows/" + name
     if any(item["name"] == name for item in api.call("/api/workflows")["workflows"]):
         raise RuntimeError("Disposable workflow name already exists; refusing to overwrite")
-    code = """from temporalio import workflow
+    code = """from datetime import timedelta
+from temporalio import workflow
+from temporalio.common import RetryPolicy
 MANIFEST = {"schema":1,"name":"__NAME__","title":"Disposable workflow lifecycle smoke",
  "inputs":{"type":"object","properties":{"silent":{"type":"boolean"},
  "mode":{"type":"string","enum":["preview","publish"]},"zero":{"type":"integer"},
@@ -25,6 +28,11 @@ MANIFEST = {"schema":1,"name":"__NAME__","title":"Disposable workflow lifecycle 
 class LifecycleSmoke:
  @workflow.run
  async def run(self, params: dict) -> dict:
+  for tool in ("backend_list_chat_sessions", "backend_search_chats", "workflows_list_runs"):
+   answer = await workflow.execute_activity("mcp_call", {"tool":tool,"arguments":{"limit":1}},
+    start_to_close_timeout=timedelta(seconds=30), retry_policy=RetryPolicy(maximum_attempts=1))
+   if not answer.get("ok") or not isinstance(answer.get("json"), dict):
+    raise ValueError("Scoped MCP lifecycle check failed")
   return {"summary":"Lifecycle delivery verified", "notify":not params.get("silent",False)}
 """.replace("__NAME__", name)
     created = False
@@ -63,6 +71,25 @@ class LifecycleSmoke:
             if status == "completed" and chat_id:
                 if info["run"].get("input") != inputs:
                     raise RuntimeError("Typed workflow inputs did not survive the run admission path")
+                calls = [
+                    row
+                    for row in info.get("statistics", {}).get("tools", [])
+                    if row.get("source") == "workflow"
+                ]
+                expected = Counter(
+                    {
+                        name: 1
+                        for name in (
+                            "backend_list_chat_sessions",
+                            "backend_search_chats",
+                            "workflows_list_runs",
+                        )
+                    }
+                )
+                if Counter({row["name"]: row.get("completed", 0) for row in calls}) != expected or any(
+                    row.get("calls") != 1 for row in calls
+                ):
+                    raise RuntimeError("Scoped MCP calls were not completed exactly once")
                 snapshot = api.call("/api/chats/" + chat_id)
                 replies = [
                     m
@@ -86,6 +113,7 @@ class LifecycleSmoke:
                     "schedule_control": "verified",
                     "chat_delivery": "verified",
                     "typed_input_admission": "verified",
+                    "scoped_first_party_mcp": "verified",
                 }
             )
         )

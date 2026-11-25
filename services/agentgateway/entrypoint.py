@@ -58,12 +58,19 @@ def main() -> None:
     if os.environ.get("CLI_OAUTH_TOKEN", "").strip():
         commands.append([sys.executable, "/app/cli_oauth.py"])
     children = [subprocess.Popen(command, start_new_session=True) for command in commands]  # noqa: S603
+    # Telemetry must not make the data plane unavailable. Start it only for the
+    # optional relay configuration, and do not include it in the health fence.
+    observers = (
+        [subprocess.Popen([sys.executable, "/app/runtime_telemetry.py"], start_new_session=True)]  # noqa: S603
+        if config is not None
+        else []
+    )
     stopping = False
 
     def stop(*_args):
         nonlocal stopping
         stopping = True
-        for child in children:
+        for child in children + observers:
             if child.poll() is None:
                 try:
                     os.killpg(child.pid, signal.SIGTERM)
@@ -83,7 +90,7 @@ def main() -> None:
     finally:
         stop()
         deadline = time.monotonic() + 15
-        for child in children:
+        for child in children + observers:
             try:
                 child.wait(timeout=max(0.1, deadline - time.monotonic()))
             except subprocess.TimeoutExpired:

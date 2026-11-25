@@ -23,7 +23,7 @@ from pathlib import Path
 import httpx
 import pytest
 import yaml
-from nautionette_backend import mcp_oauth
+from nautionette_backend import mcp_oauth, mcp_stdio_runtime
 from nautionette_backend.clients.agentgateway import GatewayClient
 from nautionette_backend.config import settings
 
@@ -42,6 +42,11 @@ spec.loader.exec_module(cli)
 
 @pytest.fixture
 def stack(backend, live, tmp_path, monkeypatch):
+    source = ROOT / "services/agentgateway/stdio_supervisor.py"
+    executable = tmp_path / "stdio-supervisor"
+    executable.write_text(source.read_text().replace("#!/usr/bin/python3", f"#!{sys.executable}", 1))
+    executable.chmod(0o755)
+    monkeypatch.setattr(mcp_stdio_runtime, "SUPERVISOR", str(executable))
     monkeypatch.setattr(mcp_oauth, "_sessions", {})
     monkeypatch.setattr(mcp_oauth, "_lock", asyncio.Lock())
     control = cli.ControlServer(("127.0.0.1", 0), INTERNAL_TOKEN)

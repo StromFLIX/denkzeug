@@ -34,7 +34,9 @@ def _strip_userinfo(url: str) -> str:
 def public_target(entry: dict[str, Any]) -> dict[str, Any]:
     """Expose editable launch metadata, but never environment values or HTTP auth."""
     from ..mcp_selection import has_scope
+    from ..mcp_stdio_runtime import logical_stdio
 
+    entry = logical_stdio(entry)
     scope = {"selection_scoped": True} if has_scope(entry) else {}
     if "stdio" in entry:
         stdio = entry["stdio"]
@@ -144,9 +146,17 @@ class GatewayClient:
             "code": response.status_code,
         }
         try:
+            from ..mcp_selection import target_headers
+
             async with asyncio.timeout(5):
-                tools = await self.mcp_tools(f"{self.base_url}/mcp", timeout=5)
-            result["mcp"] = {"status": "ok", "tool_count": len(tools)}
+                # Core health must not start package launchers. Optional MCP
+                # integrations have isolated probes in Settings.
+                url = f"{self.base_url}/mcp"
+                tools = await self.mcp_tools(url, extra=target_headers([]), timeout=5)
+                names = {tool["name"] for tool in tools}
+                if not ("backend_system_status" in names and "workflows_list_workflows" in names):
+                    raise ValueError("First-party MCP tools unavailable")
+            result["mcp"] = {"status": "ok", "tool_count": len(tools), "scope": "first_party"}
         except (httpx.HTTPError, ValueError, TimeoutError):
             # Provider/transport errors can contain credentials. Health exposes
             # only availability; never exception text, URLs or response bodies.
@@ -201,8 +211,10 @@ class GatewayClient:
                     model_routes.append(route)
             if entry.get("name") == "*":
                 wildcard = True
-        targets = [public_target(entry) for entry in (payload.get("mcp") or {}).get("targets", []) or []]
+        mcp = payload.get("mcp") or {}
+        targets = [public_target(entry) for entry in mcp.get("targets", []) or []]
         return {
+            "mcp_prefix_mode": mcp.get("prefixMode", "conditional"),
             "providers": providers,
             "wildcard_models": wildcard,
             "model_routes": model_routes,
@@ -254,9 +266,10 @@ class GatewayClient:
 
     async def _write_config_resources(self, kind: str, values: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if kind == "mcp.target":
+            from ..mcp_stdio_runtime import supervised_target
             from ..mcp_timeouts import with_http_timeout
 
-            values = [with_http_timeout(value) for value in values]
+            values = [with_http_timeout(supervised_target(value)) for value in values]
         response = await shared().put(
             f"{self.base_url}/api/config/resources/{kind}",
             json={"resources": [{"value": value} for value in values]},
@@ -386,7 +399,8 @@ class GatewayClient:
             **(extra or {}),
         }
         client = shared()
-        handshake = await client.post(
+        request = client.build_request(
+            "POST",
             url,
             headers=headers,
             timeout=timeout,
@@ -406,12 +420,18 @@ class GatewayClient:
                 },
             ),
         )
-        _mcp_status(handshake, "initialize")
+        handshake = await client.send(request, stream=True)
         session = handshake.headers.get("mcp-session-id")
         if session:
             headers["Mcp-Session-Id"] = session
+            headers["MCP-Protocol-Version"] = "2025-06-18"
         try:
-            version = _rpc_result(handshake).get("protocolVersion")
+            try:
+                await handshake.aread()
+                _mcp_status(handshake, "initialize")
+                version = _rpc_result(handshake).get("protocolVersion")
+            finally:
+                await handshake.aclose()
             if not isinstance(version, str) or not version:
                 raise ValueError("the endpoint did not answer as an MCP server")
             headers["MCP-Protocol-Version"] = version
@@ -462,8 +482,9 @@ class GatewayClient:
         finally:
             # Catalog and test sessions must not leave stdio child processes alive.
             if session:
-                with contextlib.suppress(httpx.HTTPError):
-                    await client.delete(url, headers=headers, timeout=5)
+                with contextlib.suppress(httpx.HTTPError, TimeoutError):
+                    async with asyncio.timeout(3):
+                        await client.delete(url, headers=headers, timeout=3)
 
 
 gateway = GatewayClient()

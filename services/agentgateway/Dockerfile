@@ -16,9 +16,14 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends \
 
 COPY --from=gateway /app/agentgateway /app/agentgateway
 COPY --from=busybox:1.38.0-musl /bin/busybox /usr/local/bin/busybox
+COPY brave/package.json brave/package-lock.json /opt/brave/
+# Only the exact built-in npm launch is rewritten; other custom launches are unchanged.
+RUN npm ci --prefix /opt/brave --omit=dev --ignore-scripts --no-audit --no-fund \
+    && test -f /opt/brave/node_modules/@brave/brave-search-mcp-server/dist/index.js \
+    && npm cache clean --force
 COPY config/config.yaml /config/config.yaml
-COPY entrypoint.py cli_oauth.py cli_oauth_browser.py /app/
-RUN chmod 755 /app/cli_oauth_browser.py
+COPY entrypoint.py cli_oauth.py cli_oauth_browser.py stdio_supervisor.py runtime_telemetry.py /app/
+RUN chmod 755 /app/cli_oauth_browser.py /app/stdio_supervisor.py
 COPY --chown=65532:65532 data/ /data/
 
 ENV AGENTGATEWAY_ENV=container HOME=/data/mcp

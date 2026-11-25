@@ -18,6 +18,8 @@ async def test_first_party_activity_scope_is_server_minted_and_revoked(monkeypat
         workflow_run_id="temporal-run",
         activity_id="step-1",
         attempt=1,
+        start_to_close_timeout=None,
+        schedule_to_close_timeout=None,
     )
     monkeypatch.setattr(activities.activity, "in_activity", lambda: running)
     monkeypatch.setattr(activities.activity, "info", lambda: info)
@@ -33,8 +35,16 @@ async def test_first_party_activity_scope_is_server_minted_and_revoked(monkeypat
         async def __aexit__(self, *args):
             pass
 
+        def build_request(self, method, url, *, json, headers):
+            return httpx.Request(method, url, json=json, headers=headers)
+
+        async def send(self, request, **_kwargs):
+            return await self.post(
+                str(request.url), json=json.loads(request.content), headers=request.headers
+            )
+
         async def post(self, url, *, json=None, headers=None, **kwargs):
-            calls.append((url, json, headers or {}))
+            calls.append((url, json, dict(headers or {})))
             if url.endswith("/activity-grant"):
                 assert headers["X-Internal-Token"] == INTERNAL_TOKEN
                 assert json["source"] == {
@@ -52,11 +62,13 @@ async def test_first_party_activity_scope_is_server_minted_and_revoked(monkeypat
             else:
                 assert "X-Internal-Token" not in headers
                 assert "Authorization" not in headers
+                assert headers[activities.MCP_SCOPE_HEADER] == "backend"
                 if json["method"] == "tools/call":
                     assert json["params"]["arguments"]["__denkzeug_actor"] == "private-activity-scope"
                     value = {"result": {"content": [{"type": "text", "text": '{"done":true}'}]}}
                 else:
-                    value = {"result": {}}
+                    value = {"result": {"protocolVersion": "2025-06-18"}}
+                value["id"] = json.get("id")
             return httpx.Response(200, json=value, request=httpx.Request("POST", url))
 
     monkeypatch.setattr(activities.httpx, "AsyncClient", Client)

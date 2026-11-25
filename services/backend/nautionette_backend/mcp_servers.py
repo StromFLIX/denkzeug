@@ -34,6 +34,7 @@ from .gateway_config import (
     storage_mode,
 )
 from .mcp_selection import logical_target, scoped_target
+from .mcp_stdio_runtime import logical_stdio, supervised_target
 from .mcp_timeouts import logical_http_timeout, with_http_timeout
 from .runtime import forget_catalog
 
@@ -193,7 +194,7 @@ async def probe_target(target: dict[str, Any]) -> dict[str, Any]:
         "matches": [{"path": {"exact": path}}],
         "backends": [{"mcp": {"targets": [target]}}],
     }
-    route["backends"][0]["mcp"]["targets"] = [with_http_timeout(target)]
+    route["backends"][0]["mcp"]["targets"] = [with_http_timeout(supervised_target(target))]
     _active_probes.add(identifier)
     try:
         await gateway.put_config_resources("traffic.route", [route])
@@ -319,7 +320,8 @@ async def fetch_resources() -> tuple[str, list[dict[str, Any]]]:
     # Selection and our exact default timeout are transport metadata, not an
     # external edit to OAuth/CLI credential ownership (including old snapshots).
     return storage_mode(runtime_state), [
-        {**resource, "value": logical_http_timeout(logical_target(resource["value"]))} for resource in targets
+        {**resource, "value": logical_http_timeout(logical_target(logical_stdio(resource["value"])))}
+        for resource in targets
     ]
 
 
@@ -452,7 +454,7 @@ async def reconcile_selection() -> None:
             # externally identified resource under a new ID while reconciling.
             continue
         value = current["value"]
-        desired = with_http_timeout(scoped_target(value) if multiple else value)
+        desired = with_http_timeout(supervised_target(scoped_target(value) if multiple else value))
         if desired != value:
             await gateway.put_config_resources("mcp.target", [desired])
 

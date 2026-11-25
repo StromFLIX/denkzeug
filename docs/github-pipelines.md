@@ -93,6 +93,28 @@ Use the narrowest abilities/resource/team scope your Coolify version supports;
 do not claim application-scoped permissions if the installed version only offers
 team-wide abilities. Never use the temporary administrator token from chat here.
 
+### Verify the real issue audit on staging
+
+The regular Deploy action validates the generic workflow lifecycle without a
+model. To verify the existing weekly issue audit separately, run **Actions →
+Verify staging issue audit** from `main` against the exact healthy staging SHA.
+This workflow is manual only and refuses production, an ambiguous prior run,
+unchecked workflow source, or an account that already has evidence in scope.
+
+Set staging environment variables `ISSUE_AUDIT_SOURCE_SHA256` (SHA-256 of the
+reviewed `GET /api/workflows/weekly_nautionette_issue_audit` code as UTF-8),
+`ISSUE_AUDIT_QA_USER_ID` (reserved verified staging QA identity) and
+`ISSUE_AUDIT_REVIEW_AGENT_ID` (approved staging model profile with no projects).
+Use the existing staging QA secrets. The QA account must not have other chats,
+sessions, or runs. Review the configured model and system/GitHub inputs; dry-run
+still sends evidence to that model and stores artifacts. Keep production-copied
+schedules paused and don't change staging, the workflow or QA inventory mid-run.
+The check adds only a title-only synthetic chat, starts the existing workflow
+once with `days=7, dry_run=true`, and verifies terminal review/final artifacts. It
+does not deploy another workflow or allow an issue write. A run with no evidence
+is not an end-to-end pass. After an interrupted/uncertain start, inspect the
+run's recorded identity and outcome before trying again.
+
 ### First authentication-enabled deployment
 
 Before enabling the new release pipeline, back up staging and production and set

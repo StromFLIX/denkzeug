@@ -61,7 +61,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Deployment, snapshot, gateway buffers and agent image safety tests
-        run: uv run pytest tests/test_account_session.py tests/test_auth_deployment.py tests/test_smoke_auth.py tests/test_chat_ttft.py tests/test_dependencies.py tests/test_playwright_ci.py tests/test_coolify_release.py tests/test_usage_deployment.py tests/test_cli_oauth_deployment.py tests/test_dictation_deployment.py tests/test_publish_agent_images.py tests/test_workflow_lifecycle_smoke.py tests/test_smoke_api.py tests/test_chat_diagnostics_deployment.py tests/test_staging_refresh.py tests/agentgateway tests/runtime_helpers tests/test_image_context.py tests/test_broker_retirement.py
+        run: uv run pytest tests/test_account_session.py tests/test_auth_deployment.py tests/test_smoke_auth.py tests/test_chat_ttft.py tests/test_dependencies.py tests/test_playwright_ci.py tests/test_coolify_release.py tests/test_usage_deployment.py tests/test_cli_oauth_deployment.py tests/test_dictation_deployment.py tests/test_publish_agent_images.py tests/test_workflow_lifecycle_smoke.py tests/test_smoke_api.py tests/test_chat_diagnostics_deployment.py tests/test_staging_refresh.py tests/test_issue_audit_deployment.py tests/agentgateway tests/runtime_helpers tests/test_image_context.py tests/test_broker_retirement.py
 
       - name: Accounts, private ownership, scoped delegation and session lifecycle
         run: >-
@@ -103,7 +103,7 @@ jobs:
           fi
           echo "1b2fc01a2de29ca113bbb6258b5cae7b1eb3c724071c09d687a449132f2f42f8  $RUNNER_TEMP/agentgateway" | sha256sum --check
           chmod +x "$RUNNER_TEMP/agentgateway"
-          NAUTIONETTE_TEST_GATEWAY_BINARY="$RUNNER_TEMP/agentgateway" uv run pytest tests/backend/test_mcp_oauth_e2e.py tests/backend/test_mcp_http_oauth_e2e.py tests/agentgateway/test_stdio_runtime.py tests/agentgateway/test_failure_isolation.py tests/agentgateway/test_actor_passthrough.py tests/agentgateway/test_timeouts.py
+          NAUTIONETTE_TEST_GATEWAY_BINARY="$RUNNER_TEMP/agentgateway" uv run pytest tests/backend/test_mcp_oauth_e2e.py tests/backend/test_mcp_http_oauth_e2e.py tests/agentgateway/test_stdio_runtime.py tests/agentgateway/test_failure_isolation.py tests/agentgateway/test_workflow_mcp_lifecycle.py tests/agentgateway/test_actor_passthrough.py tests/agentgateway/test_timeouts.py
 
       - name: Agent defaults, profiles and durable chat configuration
         run: uv run pytest tests/backend/test_auth.py tests/backend/test_agent_profiles.py tests/backend/test_agent_grouping.py tests/backend/test_subagents.py tests/backend/test_delegated_chat_tree.py tests/backend/test_reasoning.py tests/backend/test_settings.py tests/backend/test_chats.py tests/backend/test_backend_mcp.py tests/backend/test_chat_inspection.py tests/backend/test_activity_timing.py tests/backend/test_usage.py

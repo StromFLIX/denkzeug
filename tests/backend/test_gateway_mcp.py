@@ -83,13 +83,14 @@ async def test_mcp_sessions_are_closed_after_success_or_failure(http, failure):
     assert requests == ["initialize", "notifications/initialized", "tools/list", "DELETE"]
 
 
-@pytest.mark.parametrize("failure", ["", "http", "rpc", "timeout"])
+@pytest.mark.parametrize("failure", ["", "http", "rpc", "timeout", "no_first_party"])
 async def test_gateway_health_checks_tools_not_just_model_routes(http, monkeypatch, failure):
     http["http://gateway.test/v1/models"] = lambda _: httpx.Response(200, json={"data": []})
     client = GatewayClient("http://gateway.test")
 
-    async def tools(url, *, timeout):
+    async def tools(url, *, extra, timeout):
         assert url == "http://gateway.test/mcp"
+        assert extra == {"x-nautionette-mcp-targets": ""}
         assert timeout <= 5
         if failure == "http":
             raise MCPHTTPError(
@@ -104,13 +105,17 @@ async def test_gateway_health_checks_tools_not_just_model_routes(http, monkeypat
             raise ValueError("private upstream RPC failure")
         if failure == "timeout":
             raise TimeoutError("private upstream timeout")
-        return [{"name": "healthy_read"}]
+        if failure == "no_first_party":
+            return [{"name": "healthy_read"}]
+        return [{"name": name} for name in ("backend_system_status", "workflows_list_workflows")]
 
     monkeypatch.setattr(client, "mcp_tools", tools)
     result = await client.health()
     assert result["status"] == ("degraded" if failure else "ok")
     assert result["code"] == 200
-    assert result["mcp"] == ({"status": "unavailable"} if failure else {"status": "ok", "tool_count": 1})
+    assert result["mcp"] == (
+        {"status": "unavailable"} if failure else {"status": "ok", "tool_count": 2, "scope": "first_party"}
+    )
     assert "private" not in json.dumps(result)
 
 
@@ -138,7 +143,7 @@ async def test_gateway_health_exposes_unsupported_or_missing_startup_policy(http
     client = GatewayClient("http://gateway.test")
 
     async def tools(*_args, **_kwargs):
-        return [{"name": "backend_system_status"}]
+        return [{"name": name} for name in ("backend_system_status", "workflows_list_workflows")]
 
     monkeypatch.setattr(client, "mcp_tools", tools)
     result = await client.health()

@@ -183,6 +183,38 @@ blindly replayed.
 Deploy **backend, broker and rebuilt agent images** together for these changes;
 frontend changes are not required.
 
+## Direct workflow calls and stdio lifecycle
+
+A workflow `mcp_call` opens one session per attempt. First-party tool prefixes
+are scoped before the MCP handshake; other known federated prefixes are resolved
+from a names-only, private backend endpoint, not from a full `tools/list`.
+Raw/unknown tool names retain a bounded compatibility handshake. The scope header
+is not authorization: the existing run-owner capability is issued/revoked per
+first-party call. Core health checks first-party tools; optional integrations have
+independent tests in Settings.
+
+Initialize and initialized notification share a 15-second first-party or
+45-second compatibility budget; tool execution has a separate budget up to
+120 seconds, with cleanup time reserved before Temporal's deadline. The worker
+sends `DELETE` wherever it received a session ID, including partial handshakes.
+A potentially dispatched write does not retry on an unverified outcome; check
+external state before retrying manually. First-party read-only classification comes
+from the backend. For a known third-party read-only call, workflow authors can set
+`{"tool": "...", "arguments": {}, "read_only": true}` and a bounded Temporal retry
+policy. An omitted flag is conservative; it is not a permission setting.
+
+App-managed stdio targets and their isolated probes use the gateway image's
+process supervisor. Its 20-second **first reply** deadline includes package
+startup. A stalled target is reported and its process group terminated; healthy
+targets can finish discovery. It doesn't impose a 20-second limit on subsequent
+tool calls. Existing matching hybrid targets are wrapped during backend bootstrap
+and still show the original launch in Settings; deploy the gateway and backend
+images from the same revision. Additional file-owned/externally managed targets
+are unchanged. Operators can use `/app/stdio_supervisor.py` with arguments
+`["server-name", "--", "executable", "arg1", "arg2"]` for those targets. Children
+inherit only the configured environment for app-managed targets; their stderr is
+not forwarded.
+
 ## Brave Search example
 
 In **Settings > MCP servers > Add server**:
@@ -192,14 +224,15 @@ In **Settings > MCP servers > Add server**:
 | Name | `brave-search` |
 | Transport | `stdio` |
 | Command | `npx` |
-| Arguments | `["-y", "@brave/brave-search-mcp-server", "--transport", "stdio"]` |
+| Arguments | `["-y", "@brave/brave-search-mcp-server@2.1.3", "--transport", "stdio"]` |
 | Environment variable name | `BRAVE_API_KEY` |
 | Environment variable value | Your Brave Search API key |
 
-Pin the npm package to a version you have reviewed for repeatable deployments:
-replace the package argument with `@brave/brave-search-mcp-server@<version>`.
-Use `--transport stdio`, **not** the `--transport http` in some upstream client
-examples. The command must speak MCP on stdout; diagnostics belong on stderr.
+The exact launch above (and the legacy unversioned form) uses the locked copy
+baked into the gateway image; starting a session doesn't invoke npm or the
+registry. Other explicitly configured versions or extra arguments keep their
+configured launch and are subject to the same first-reply budget. Use
+`--transport stdio`, not `--transport http`. Only MCP protocol frames belong on stdout.
 
 The executable and arguments are separate, not a shell command line. An argument
 containing spaces stays one argument. Stdio arguments and environment values are

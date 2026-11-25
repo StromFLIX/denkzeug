@@ -29,7 +29,9 @@ class API:
             checked = run_checks(name, body["code"])
             assert checked["valid"], checked
             self.manifest = checked["manifest"]
-            assert "execute_activity" not in body["code"]
+            assert 'execute_activity("mcp_call"' in body["code"]
+            assert '"backend_list_chat_sessions"' in body["code"]
+            assert "agent_call" not in body["code"]
             return {"ready": True}
         if path.endswith("/schedule"):
             if expected == 409:
@@ -52,7 +54,19 @@ class API:
             self.settings["chat_id"] = "owned-chat"
             return {"workflow_id": "owned-run"}
         elif path == "/api/runs/owned-run":
-            return {"run": {"status": "completed", "input": self.inputs}}
+            return {
+                "run": {"status": "completed", "input": self.inputs},
+                "statistics": {
+                    "tools": [
+                        {"name": name, "source": "workflow", "calls": 1, "completed": 1}
+                        for name in (
+                            "backend_list_chat_sessions",
+                            "backend_search_chats",
+                            "workflows_list_runs",
+                        )
+                    ]
+                },
+            }
         elif path == "/api/chats/owned-chat":
             return {
                 "messages": [
