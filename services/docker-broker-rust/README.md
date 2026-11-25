@@ -10,14 +10,18 @@ absent from this image. Python migration/restore code still runs only in the
 separate temporary maintenance controller. Regenerate/check the staging files
 with `python scripts/sync_rust_broker_staging.py [--check]` from the repo root.
 Deployment requires `EXPECTED_BROKER_IMPLEMENTATION=rust` through authenticated
-backend health in both environments. The Python broker Dockerfile is retained
-for rollback. The generated dispatch uses the Rust launcher protocol when it is
-available, or the candidate-pinned Python launcher in older compatibility images.
-This supports the first compatibility-to-scratch deploy and explicit rollback;
-an unsupported protocol or unavailable launcher fails closed. To roll back only the broker while keeping the application version,
-restore the Python build recipe and adjust the deployment health expectation in
-a forward rollback commit; stage and verify that exact commit before promotion.
-Do not revert Temporal or restore its data just to switch the HTTP broker.
+backend health in both environments. The Python broker, Dockerfile, package and
+launcher fallback have been removed. Deployment requires an installed Rust
+launcher protocol 1 (v1.27.0 or later). Missing/unknown launchers fail closed;
+there is no interpreter fallback. Roll back to a staged Rust-launcher-capable
+release, not a pre-port Python broker. Do not downgrade Temporal or restore its
+data just to switch broker application revisions.
+
+The offline ArtCraft verifier remains Python only inside isolated Pi installer
+containers; its embedded bytes live in `runtime/artcraft_offline.py`. Stdlib CI
+fingerprint tooling lives in `scripts/image_context.py`. Neither is a second
+broker implementation. CI artifact preparation invokes this Rust binary, then
+a separate verify-only process rechecks the persisted volumes offline.
 
 See [PARITY.md](PARITY.md) for the frozen reference scope, deliberate safety
 limits and verification boundaries. The full scenario mapping is

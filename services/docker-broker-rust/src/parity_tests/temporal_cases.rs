@@ -49,6 +49,30 @@ async fn controller_receipts_gate_the_exact_commit_and_cleanup_policy_without_le
             "inspection_failed",
         ),
         ("running", "no", "current", "legacy", false, "completed"),
+        (
+            "running",
+            "no",
+            "current",
+            "prepared",
+            true,
+            "verification_pending",
+        ),
+        (
+            "running",
+            "no",
+            "current",
+            "needs_recovery",
+            true,
+            "verification_pending",
+        ),
+        (
+            "running",
+            "no",
+            "current",
+            "legacy",
+            true,
+            "cleanup_pending",
+        ),
     ] {
         let fixture = Fixture::new().await;
         let mut cfg = fixture.worker_settings();
@@ -70,6 +94,9 @@ async fn controller_receipts_gate_the_exact_commit_and_cleanup_policy_without_le
                 "malformed" => {
                     d.receipts
                         .insert(id.clone(), b"private-damaged-receipt".to_vec());
+                }
+                "prepared" | "needs_recovery" => {
+                    d.exec_reply = Some(json!({"status":archive,"commit":found}));
                 }
                 "legacy" => {
                     d.exec_reply = Some(

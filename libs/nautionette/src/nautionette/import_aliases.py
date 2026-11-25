@@ -18,7 +18,6 @@ from types import ModuleType
 ALIASES = {
     "denkzeug": "nautionette",
     "denkzeug_backend": "nautionette_backend",
-    "denkzeug_docker_broker": "nautionette_docker_broker",
     "denkzeug_worker": "nautionette_worker",
     "denkzeug_workflow_mcp": "nautionette_workflow_mcp",
 }

@@ -11,13 +11,13 @@ resolution-markers = [
 members = [
     "nautionette",
     "nautionette-backend",
-    "nautionette-docker-broker",
     "nautionette-worker",
     "nautionette-workflow-mcp",
 ]
 
 [manifest.dependency-groups]
 dev = [
+    { name = "docker", specifier = ">=7.1" },
     { name = "pytest", specifier = ">=8.3" },
     { name = "pytest-asyncio", specifier = ">=0.25" },
     { name = "ruff", specifier = ">=0.9" },
@@ -996,25 +996,6 @@ requires-dist = [
     { name = "temporalio", specifier = ">=1.9" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
     { name = "websockets", specifier = ">=17.3,<18" },
-]
-
-[[package]]
-name = "nautionette-docker-broker"
-version = "0.1.0"
-source = { editable = "services/docker-broker" }
-dependencies = [
-    { name = "docker" },
-    { name = "fastapi" },
-    { name = "nautionette" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "docker", specifier = ">=7.1" },
-    { name = "fastapi", specifier = ">=0.115" },
-    { name = "nautionette", editable = "libs/nautionette" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
 ]
 
 [[package]]

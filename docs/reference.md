@@ -502,13 +502,13 @@ Deploy recovery changes to **both** services: rebuild/recreate `docker-broker`
 first, then `backend` (or deploy them together). An old broker without the cleanup
 verbs causes new chats to fail closed until it is upgraded. Validate real Docker
 cleanup and Git preservation with
-`NAUTIONETTE_DOCKER_TESTS=1 uv run pytest tests/broker/test_chat_recovery_docker.py`
-(on a Docker host with `nautionette/pi-base:dev` built).
+`services/docker-broker-rust/tests/run-local-conformance.sh --docker`
+(on a prepared disposable Docker host; fixture inputs are in the Rust broker README).
 
 Deploy chat controls by rebuilding/recreating the backend, Docker broker, frontend,
 and Pi agent images. Chat containers use Pi RPC mode for live steering; workflow
 agent calls retain their existing one-shot JSON mode. Validate the real runtime with
-`NAUTIONETTE_DOCKER_TESTS=1 uv run pytest tests/broker/test_chat_control_docker.py`.
+`services/docker-broker-rust/tests/run-local-conformance.sh --docker`.
 
 ### File attachments
 
@@ -587,7 +587,7 @@ to `JOB.json`, persisted jobs, snapshots, or events.
 Deploy by rebuilding the backend, Docker broker, frontend, and Pi images together.
 
 File regression checks: `uv run pytest tests/backend/test_chat_files.py tests/backend/test_chat_images.py
- tests/broker/test_broker.py`, `node --test tests/agent/test_chat_files.mjs tests/agent/test_images.mjs`,
+`, `cargo test --locked --manifest-path services/docker-broker-rust/Cargo.toml`,  `node --test tests/agent/test_chat_files.mjs tests/agent/test_images.mjs`,
 and `npm --prefix services/frontend run test:e2e -- tests/chat.spec.js --grep 'PDF|files|images'`.
 
 For Copilot, the catalog reads the model's `supported_endpoints` through agentgateway
@@ -787,10 +787,9 @@ new turns use the new image and network. Backend startup removes legacy permissi
 columns and stale instructions from saved jobs while preserving messages and worktrees.
 Old unused Docker networks can be removed after their containers have stopped.
 
-Focused checks: `uv run pytest tests/backend/test_sandbox_network.py tests/broker/test_sandbox_network.py`.
-The opt-in Docker check uses a local `node:24-bookworm-slim` image, temporary
-containers/networks and outbound HTTPS to example.com:
-`NAUTIONETTE_DOCKER_TESTS=1 uv run pytest tests/broker/test_sandbox_network_docker.py`.
+Focused checks: `uv run pytest tests/backend/test_sandbox_network.py tests/runtime_helpers/test_compose.py`.
+The full Rust Docker conformance gate uses disposable containers/networks and
+pinned fixtures: `services/docker-broker-rust/tests/run-local-conformance.sh --docker`.
 
 ## GitHub Projects
 
@@ -1036,12 +1035,10 @@ with capabilities dropped. Custom agent sets must keep
 their image-provided Pi configuration readable so it can be copied into `/workspace`.
 
 Checks: `uv run pytest tests/backend/test_projects.py tests/backend/test_github_setup.py tests/backend/test_github_connections.py
-tests/backend/test_project_credentials.py tests/broker/test_git_credentials.py
- tests/broker/test_projects.py`, `node --test tests/agent/test_project_git.mjs`, and
+tests/backend/test_project_credentials.py`, `node --test tests/agent/test_project_git.mjs`, and
 `npm --prefix services/frontend run test:e2e -- projects.spec.js`. The opt-in Docker
-check is `NAUTIONETTE_DOCKER_TESTS=1 uv run pytest tests/broker/test_projects_docker.py
- tests/broker/test_git_credentials_docker.py`;
-it uses a local `nautionette/pi-base:dev` image and removes its temporary resources.
+check is `services/docker-broker-rust/tests/run-local-conformance.sh --docker`;
+it uses prepared pinned Pi/Node fixtures and removes its temporary resources.
 
 ## Chats become workflows
 
@@ -1424,7 +1421,7 @@ pyproject.toml / uv.lock      one uv workspace for every Python service
 libs/nautionette/             manifest schema and source helpers, shared by the services
 services/
   backend/                    entrypoint, management, calls the broker
-  docker-broker/              owns docker.sock, fixed verbs only
+  docker-broker-rust/         owns docker.sock, fixed verbs and local maintenance CLI only
   agentgateway/               gateway runtime image and baseline config
   workflow-mcp/               MCP + REST server for workflow authoring
   worker/                     Temporal workers
@@ -1438,8 +1435,9 @@ tests/                        one pytest suite over every Python service
 ```
 
 Every Python service ships one distinctly named package — `nautionette_backend`,
-`nautionette_worker`, `nautionette_workflow_mcp`, `nautionette_docker_broker` — so all
-four can be installed into the one workspace venv without shadowing each other.
+`nautionette_worker`, `nautionette_workflow_mcp` — so they can be installed into
+one workspace venv without shadowing each other. The broker and maintenance
+launcher are Rust-only; the retired Python broker is not a workspace member.
 
 The backend is the largest of them, and is laid out by what each file is about:
 
@@ -1542,7 +1540,8 @@ routing table. So `uv run pytest` needs nothing running and finishes in seconds.
 
 ```
 tests/backend/        the API surface, plus the modules behind it
-tests/broker/         image tagging, the fixed verbs, the restart scoping
+services/docker-broker-rust/tests/  native broker and real-Docker conformance
+tests/runtime_helpers/              shared Compose and offline-verifier invariants
 tests/worker/         the activities a workflow may name, and loading workflow files
 tests/workflow_mcp/   the store, the check chain, the REST face
 tests/lib/            the manifest schema and the source reader

@@ -20,6 +20,7 @@ pub mod stream;
 pub mod telemetry;
 pub mod turns;
 pub mod workers;
+pub use artcraft::prepare_test_artifacts;
 pub use images::{Fingerprints, effective_fingerprints, fingerprints};
 
 use std::{

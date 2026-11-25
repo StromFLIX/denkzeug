@@ -42,7 +42,7 @@ jobs:
         run: uv sync --locked --all-packages
 
       - name: Canonical image fingerprints match repository source
-        run: python3 services/docker-broker/nautionette_docker_broker/image_context.py --check-lock
+        run: python3 scripts/image_context.py --check-lock
 
       - name: Both deployment stacks select the same Rust broker image
         run: |
@@ -61,7 +61,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Deployment, snapshot, gateway buffers and agent image safety tests
-        run: uv run pytest tests/test_account_session.py tests/test_auth_deployment.py tests/test_smoke_auth.py tests/test_chat_ttft.py tests/test_dependencies.py tests/test_playwright_ci.py tests/test_coolify_release.py tests/test_usage_deployment.py tests/test_cli_oauth_deployment.py tests/test_dictation_deployment.py tests/test_publish_agent_images.py tests/test_workflow_lifecycle_smoke.py tests/test_smoke_api.py tests/test_chat_diagnostics_deployment.py tests/test_staging_refresh.py tests/agentgateway tests/broker/test_broker.py tests/broker/test_chat_sessions.py tests/broker/test_chat_recovery.py tests/broker/test_sandbox_network.py
+        run: uv run pytest tests/test_account_session.py tests/test_auth_deployment.py tests/test_smoke_auth.py tests/test_chat_ttft.py tests/test_dependencies.py tests/test_playwright_ci.py tests/test_coolify_release.py tests/test_usage_deployment.py tests/test_cli_oauth_deployment.py tests/test_dictation_deployment.py tests/test_publish_agent_images.py tests/test_workflow_lifecycle_smoke.py tests/test_smoke_api.py tests/test_chat_diagnostics_deployment.py tests/test_staging_refresh.py tests/agentgateway tests/runtime_helpers tests/test_image_context.py tests/test_broker_retirement.py
 
       - name: Accounts, private ownership, scoped delegation and session lifecycle
         run: >-
@@ -72,7 +72,7 @@ jobs:
           tests/worker/test_activity_authority.py
 
       - name: Native creative app release contracts, installer isolation and Settings
-        run: uv run pytest tests/lib/test_artcraft.py tests/broker/test_artcraft.py tests/broker/test_artcraft_offline.py tests/backend/test_artcraft.py tests/test_artcraft_deployment.py
+        run: uv run pytest tests/lib/test_artcraft.py tests/backend/test_artcraft.py tests/test_artcraft_deployment.py
 
       - name: OpenTelemetry privacy boundary
         run: uv run pytest tests/lib/test_telemetry.py tests/lib/test_telemetry_http.py
@@ -109,7 +109,7 @@ jobs:
         run: uv run pytest tests/backend/test_auth.py tests/backend/test_agent_profiles.py tests/backend/test_agent_grouping.py tests/backend/test_subagents.py tests/backend/test_delegated_chat_tree.py tests/backend/test_reasoning.py tests/backend/test_settings.py tests/backend/test_chats.py tests/backend/test_backend_mcp.py tests/backend/test_chat_inspection.py tests/backend/test_activity_timing.py tests/backend/test_usage.py
 
       - name: Database upgrades, API retirement and workflow transports
-        run: uv run pytest tests/backend/test_db.py tests/backend/test_retired_features.py tests/backend/test_retired_state.py tests/broker/test_retired_resources.py tests/broker/test_image_context.py tests/workflow_mcp/test_tools.py tests/backend/test_gateway_mcp.py tests/backend/test_temporal_schedules.py
+        run: uv run pytest tests/backend/test_db.py tests/backend/test_retired_features.py tests/backend/test_retired_state.py tests/workflow_mcp/test_tools.py tests/backend/test_gateway_mcp.py tests/backend/test_temporal_schedules.py
 
       - name: Workflow history expiry, retention and run recovery
         run: uv run pytest tests/backend/test_run_retention.py tests/backend/test_runs.py tests/backend/test_workflow_inputs.py tests/backend/test_workflow_graph.py tests/backend/test_execution_graph.py tests/backend/test_internal.py tests/backend/test_workflow_agents.py tests/backend/test_provenance.py tests/backend/test_schedule_recovery.py tests/backend/test_silent_runs.py tests/backend/test_workflow_lifecycle.py tests/backend/test_run_statistics.py tests/worker/test_activities.py
@@ -129,7 +129,7 @@ jobs:
         run: uv run pytest tests/backend/test_chat_draining.py tests/backend/test_chat_restart_process.py tests/backend/test_chat_recovery.py tests/backend/test_chat_finalization.py tests/backend/test_chat_queue.py tests/backend/test_chat_activity.py tests/backend/test_chat_sessions.py tests/backend/test_chat_branches.py tests/backend/test_chat_branch_projects.py
 
       - name: GitHub connections, migrations and project credentials
-        run: uv run pytest tests/backend/test_github_connections.py tests/backend/test_github_setup.py tests/backend/test_github_origin_migration.py tests/backend/test_projects.py tests/backend/test_worktree_retention.py tests/backend/test_project_changes.py tests/backend/test_project_credentials.py tests/broker/test_projects.py tests/broker/test_git_credentials.py
+        run: uv run pytest tests/backend/test_github_connections.py tests/backend/test_github_setup.py tests/backend/test_github_origin_migration.py tests/backend/test_projects.py tests/backend/test_worktree_retention.py tests/backend/test_project_changes.py tests/backend/test_project_credentials.py
 
       - name: Workflow source validation and authoring
         run: uv run pytest tests/workflow_mcp/test_validate.py tests/workflow_mcp/test_api.py
@@ -266,7 +266,6 @@ jobs:
           - { name: app-sandbox, context: ., file: services/app-sandbox/Dockerfile }
           - { name: worker, context: ., file: services/worker/Dockerfile }
           - { name: workflow-mcp, context: ., file: services/workflow-mcp/Dockerfile }
-          - { name: docker-broker, context: ., file: services/docker-broker/Dockerfile }
           - { name: docker-broker-rust-staging, context: ., file: services/docker-broker-rust/Dockerfile.staging }
           - { name: docker-broker-rust-scratch, context: ., file: services/docker-broker-rust/Dockerfile.spike }
           - { name: frontend, context: services/frontend, file: services/frontend/Dockerfile }
@@ -422,7 +421,14 @@ jobs:
           enable-cache: true
           cache-dependency-glob: uv.lock
 
+      - name: Install pinned Rust toolchain for broker fixtures and conformance
+        run: rustup toolchain install 1.100.0 --profile minimal --component clippy
+
       - name: Prepare and offline-reverify creative-app artifact volumes
+        env:
+          BROKER_DOCKER_SOCKET: /var/run/docker.sock
+          WORKFLOWS_VOLUME: nautionette-ci-artifacts
+          RUSTUP_TOOLCHAIN: 1.100.0
         run: |
           docker run --rm --network none --cap-drop ALL --entrypoint sh nautionette/pi-agent-default:dev -c 'test ! -e /opt/artcraft/cadcraft/bin/cadcraft-cli'
           docker image inspect nautionette/pi-agent-default:dev --format 'Pi image bytes (without creative-app binaries): {{.Size}}'
@@ -444,18 +450,10 @@ jobs:
             --volume "$PWD/scripts/check-pi-dev-tools.sh:/check-pi-dev-tools.sh:ro" \
             --entrypoint bash nautionette/pi-agent-default:dev /check-pi-dev-tools.sh
 
-      - name: Git credential rotation in a live unprivileged container (offline)
-        run: |
-          uv sync --locked --all-packages
-          NAUTIONETTE_DOCKER_TESTS=1 uv run pytest tests/broker/test_git_credentials_docker.py tests/broker/test_chat_sessions_docker.py
-
       - name: Build broker conformance fixture overlays
         run: |
           docker build --target node-fixture -f services/docker-broker-rust/tests/Dockerfile.fixture -t nautionette/broker-node-fixture:ci .
           docker build --build-arg PI_BASE_IMAGE=nautionette/pi-base:dev -f services/docker-broker-rust/tests/Dockerfile.pi-fixture -t nautionette/broker-pi-fixture:ci .
-
-      - name: Install pinned Rust toolchain for Docker conformance
-        run: rustup toolchain install 1.100.0 --profile minimal --component clippy
 
       - uses: actions/setup-node@v7
         with:
@@ -558,7 +556,7 @@ jobs:
 
       - name: Source fingerprints
         id: images
-        run: python3 services/docker-broker/nautionette_docker_broker/image_context.py >> "$GITHUB_OUTPUT"
+        run: python3 scripts/image_context.py >> "$GITHUB_OUTPUT"
 
       - name: Publish tested agent images
         if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')

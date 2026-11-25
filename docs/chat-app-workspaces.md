@@ -223,8 +223,8 @@ Existing architecture provides most of the plumbing:
 | `services/backend/nautionette_backend/db.py` | SQLite chat metadata, turns and migrations; suitable for app-instance metadata, not frequent large document blobs. |
 | `services/backend/nautionette_backend/conversations.py` | Turn execution, cleanup and recovery. App grants should be minted at execution, not persisted into queued jobs. |
 | `services/backend/nautionette_backend/backend_mcp.py` | Automatically exposes selected HTTP operations, but authenticates globally and has no trusted per-chat caller identity. |
-| `services/docker-broker/nautionette_docker_broker/agent_run.py` | Fixed container creation, deployment/chat/turn labels, caps and cleanup; useful patterns, **not** the right lifecycle for app documents. |
-| `services/docker-broker/nautionette_docker_broker/chat_agents.py` | Exact-turn inventory/cleanup; new app runtimes must be excluded from this ownership model. |
+| `services/docker-broker-rust/src/runtime.rs` | Fixed container creation, deployment/chat/turn labels, caps and cleanup; useful patterns, **not** the right lifecycle for app documents. |
+| `services/docker-broker-rust/src/turns.rs` | Exact-turn inventory/cleanup; new app runtimes must be excluded from this ownership model. |
 | `images/agent-sets/default/extensions/nautionette/index.ts` | Discovers MCP tools once at startup. Stable app tools avoid runtime rediscovery. Currently renders MCP results as text rather than preserving image blocks. |
 
 Two particularly important boundaries:

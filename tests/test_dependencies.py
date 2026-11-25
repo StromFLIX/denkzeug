@@ -51,8 +51,7 @@ def test_artifact_summary_refuses_empty_or_incomplete_downloads(tmp_path):
 
 def test_python_services_copy_uv_into_the_same_patch_pinned_python_runtime():
     dockerfiles = [
-        ROOT / "services" / name / "Dockerfile"
-        for name in ("backend", "worker", "workflow-mcp", "docker-broker", "stt")
+        ROOT / "services" / name / "Dockerfile" for name in ("backend", "worker", "workflow-mcp", "stt")
     ]
     bases = {path.read_text().splitlines()[0] for path in dockerfiles}
     assert len(bases) == 1
@@ -84,7 +83,7 @@ def test_gateway_version_follows_the_tested_dockerfile_not_a_persisted_deploymen
 def test_mcp_schema_search_experiment_has_no_deployment_switch():
     compose = (ROOT / "docker-compose.yaml").read_text()
     example = (ROOT / ".env.example").read_text()
-    broker = (ROOT / "services/docker-broker/nautionette_docker_broker/config.py").read_text()
+    broker = (ROOT / "services/docker-broker-rust/src/main.rs").read_text()
     assert "AGENT_MCP_SCHEMA_MODE" not in compose
     assert not re.search(r"^AGENT_MCP_SCHEMA_MODE\s*=", example, re.MULTILINE)
     assert "NAUTIONETTE_MCP_SCHEMA_MODE" not in broker

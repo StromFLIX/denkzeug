@@ -3,6 +3,7 @@
 mod admission_cases;
 mod artifact_cases;
 mod credential_cases;
+mod fixture_artcraft_cases;
 mod image_cases;
 mod maintenance_cases;
 mod project_cases;

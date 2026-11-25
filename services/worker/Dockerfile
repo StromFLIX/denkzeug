@@ -11,7 +11,6 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 COPY services/backend/pyproject.toml services/backend/
-COPY services/docker-broker/pyproject.toml services/docker-broker/
 COPY services/workflow-mcp/pyproject.toml services/workflow-mcp/
 COPY libs/ libs/
 COPY services/worker/ services/worker/

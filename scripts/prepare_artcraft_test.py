@@ -1,19 +1,43 @@
-"""Prepare real deployment artifacts, then emit Docker mount arguments for offline CI.
+"""Prepare/reverify pinned CI artifacts through the production Rust installer.
 
-Run on the Docker host with `uv run python scripts/prepare_artcraft_test.py`.
-The image must already exist. The broker fetches pinned archives; extraction and
-native probes run only in isolated, network-none installer containers.
+Requires the pinned Rust toolchain, an explicit disposable BROKER_DOCKER_SOCKET,
+WORKFLOWS_VOLUME namespace, and the already-built Pi image. Stdout contains only
+Docker --mount arguments, emitted after a separate offline verification process.
 """
 
-from nautionette.artcraft import bundled_selection, catalog
-from nautionette_docker_broker import artcraft
+import os
+import shutil
+import subprocess
+from pathlib import Path
 
-image = "nautionette/pi-agent-default:dev"
-artcraft.ensure_bundled(image=image)
-# Simulate broker restart: reuse must verify persisted manifests/CLIs OFFLINE,
-# not download the releases again or trust volume labels without a manifest.
-artcraft._verified.clear()
-artcraft.ensure_bundled(image=image)
-assert artcraft.bundled_ready()
-for mount in artcraft.mounts([bundled_selection(app) for app in catalog()]):
-    print(f"--mount=type=volume,source={mount['Source']},target={mount['Target']},readonly")
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def main():
+    if not os.environ.get("BROKER_DOCKER_SOCKET"):
+        raise SystemExit("Set BROKER_DOCKER_SOCKET to a disposable local Docker socket")
+    if not os.environ.get("WORKFLOWS_VOLUME"):
+        raise SystemExit("Set WORKFLOWS_VOLUME to a disposable fixture namespace")
+    cargo = shutil.which("cargo")
+    if not cargo:
+        raise SystemExit("The pinned Cargo toolchain is required")
+    for mode in ("prepare-test-artifacts", "verify-test-artifacts"):
+        subprocess.run(  # noqa: S603,S607 - fixed Cargo target and prepared fixture, never shell
+            [
+                cargo,
+                "run",
+                "--quiet",
+                "--locked",
+                "--manifest-path",
+                str(ROOT / "services/docker-broker-rust/Cargo.toml"),
+                "--",
+                mode,
+                "nautionette/pi-agent-default:dev",
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL if mode == "prepare-test-artifacts" else None,
+        )
+
+
+if __name__ == "__main__":
+    main()

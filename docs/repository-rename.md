@@ -69,7 +69,7 @@ of preparation. The actual cutover is a separate operation.
    ```sh
    python scripts/sync_brand.py
    python scripts/sync_brand.py --check
-   python services/docker-broker/nautionette_docker_broker/image_context.py --write-lock
+   python scripts/image_context.py --write-lock
    uv run pytest tests/test_branding.py tests/test_readme.py
    ```
 

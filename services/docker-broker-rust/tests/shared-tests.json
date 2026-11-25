@@ -1,0 +1,12 @@
+{
+  "tests/broker/test_artcraft_offline.py::test_offline_helper_never_publishes_invalid_or_incompatible_artifacts": "tests/runtime_helpers/test_artcraft_offline.py::test_offline_helper_never_publishes_invalid_or_incompatible_artifacts",
+  "tests/broker/test_artcraft_offline.py::test_offline_helper_rechecks_bytes_removes_staging_and_publishes_only_after_probe": "tests/runtime_helpers/test_artcraft_offline.py::test_offline_helper_rechecks_bytes_removes_staging_and_publishes_only_after_probe",
+  "tests/broker/test_broker.py::test_ci_outputs_exactly_the_brokers_source_fingerprints": "tests/runtime_helpers/test_compose.py::test_ci_outputs_exactly_the_brokers_source_fingerprints",
+  "tests/broker/test_broker.py::test_every_deployed_compose_service_has_a_healthcheck": "tests/runtime_helpers/test_compose.py::test_every_deployed_compose_service_has_a_healthcheck",
+  "tests/broker/test_broker.py::test_explicit_agent_resource_overrides_are_preserved": null,
+  "tests/broker/test_broker.py::test_full_stack_smoke_provisions_separate_required_maxio_credentials": "tests/runtime_helpers/test_compose.py::test_full_stack_smoke_provisions_separate_required_maxio_credentials",
+  "tests/broker/test_broker.py::test_maxio_compose_is_private_pinned_persistent_and_not_an_agent_credential_delivery": "tests/runtime_helpers/test_compose.py::test_maxio_compose_is_private_pinned_persistent_and_not_an_agent_credential_delivery",
+  "tests/broker/test_broker.py::test_resource_defaults_match_compose_and_example": "tests/runtime_helpers/test_compose.py::test_resource_defaults_match_compose_and_example",
+  "tests/broker/test_broker.py::test_stt_compose_is_self_hosted_bounded_and_never_gates_chat_startup": "tests/runtime_helpers/test_compose.py::test_stt_compose_is_self_hosted_bounded_and_never_gates_chat_startup",
+  "tests/broker/test_sandbox_network.py::test_compose_sandbox_network_has_outbound_access_without_control_plane_membership": "tests/runtime_helpers/test_compose.py::test_compose_sandbox_network_has_outbound_access_without_control_plane_membership"
+}

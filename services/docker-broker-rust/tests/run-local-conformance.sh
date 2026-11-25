@@ -72,7 +72,7 @@ fi
 }
 PI_OFFLINE=1 PI_SKIP_VERSION_CHECK=1 PI_TELEMETRY=0 node --test \
   tests/agent/test_chat_control.mjs tests/agent/test_chat_recovery.mjs tests/agent/test_chat_recovery_rpc.mjs 2>&1 | tee "$evidence/reference-node.log"
-NAUTIONETTE_DOCKER_TESTS=0 uv run --locked pytest tests/broker --junitxml="$evidence/reference.xml" 2>&1 | tee "$evidence/reference.log"
+uv run --locked pytest tests/runtime_helpers tests/test_image_context.py tests/test_broker_retirement.py --junitxml="$evidence/reference.xml" 2>&1 | tee "$evidence/reference.log"
 python services/docker-broker-rust/tests/check_parity.py --evidence \
   --rust-log "$evidence/native.log" --rust-log "$evidence/download.log" \
   --rust-log "$evidence/docker_registry.log" --rust-log "$evidence/docker_inventory.log" \

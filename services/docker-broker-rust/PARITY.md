@@ -4,22 +4,25 @@
 
 The compatibility target is the **authenticated Linux Docker broker's fixed-verb
 contract at reference checkout `2ce96e92edfee57ee0c4b3ba84bd07a6bea86fbf`**.
-The baseline `tests/broker` inventory has **146 test functions / 245 parametrized
-cases**. `tests/parity-map.json` accounts for every function and freezes the
-reference files by SHA-256 so future additions or changes cannot silently fall
-out of the migration checklist.
+The final reference inventory at checkout `a340fe9fcd649a78f088fd517c597a0f49875423`
+has **147 test functions**. The earlier recorded execution has 245 parametrized
+cases. The Python server and SDK mocks are now removed; their names and source
+hashes remain in the digest-pinned, non-executable `tests/reference-inventory.json`.
+`tests/parity-map.json` still accounts for every original function, with all
+**84 mapped Rust scenarios** required to execute in conformance.
 
 The language-specific SDK mocks are replaced by native Rust tests of observable
 HTTP, Engine API, filesystem and NDJSON behavior. Several Python parameter sets
 are loops within one Rust test; test-function counts are not directly comparable.
-The ten shared reference functions (14 parametrized cases) remain in Python:
-unchanged offline helper verification, shared Compose/CI constraints, and default
-resource consistency. The resource constraints additionally have native Rust
-checks. The broker image itself needs **no Python interpreter**; the unchanged
+Retained offline helper and Compose/CI invariants live in
+`tests/runtime_helpers`, with explicit historical-to-current bindings in
+`tests/shared-tests.json`. The configuration-override invariant now runs only in
+Rust; default Compose limits are checked in both languages. Skipped shared
+parametrizations cannot be masked by a passing sibling. The broker image itself needs **no Python interpreter**; the unchanged
 Python offline installer runs inside the existing, isolated Pi helper image.
 
 `tests/check_parity.py --evidence` refuses missing reference entries, changed
-reference files, missing Rust selectors, absent passing scenario executions, or
+frozen inventory/source hashes, missing shared bindings or Rust selectors, absent passing scenario executions, or
 failed logs. It does not interpret a successful compilation or ignored Docker
 test as a passing execution. A mapping by itself is not a test result.
 

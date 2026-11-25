@@ -34,8 +34,7 @@ const DEPLOY: &str = "nautionette.deployment";
 const LABEL: &str = "nautionette.artcraft";
 const HELPER: &str = "nautionette.artcraft.installer";
 const MAX_ARCHIVE: usize = 256 * 1024 * 1024;
-const OFFLINE: &[u8] =
-    include_bytes!("../../docker-broker/nautionette_docker_broker/artcraft_offline.py");
+const OFFLINE: &[u8] = include_bytes!("../runtime/artcraft_offline.py");
 static CATALOG: LazyLock<BTreeMap<String, Value>> = LazyLock::new(|| {
     serde_json::from_str(include_str!(
         "../../../images/pi-base/artcraft/catalog.json"
@@ -714,6 +713,77 @@ impl Broker {
             }
         }
     }
+}
+
+/// Explicit disposable-host CI preparation using the production Rust installer.
+/// Clear the verification cache and reverify persisted volumes offline before
+/// emitting mount flags. No HTTP runtime, workers or reconcilers are started.
+pub async fn prepare_test_artifacts(
+    config: crate::Config,
+    image: &str,
+    verify_only: bool,
+) -> Result<Vec<String>, &'static str> {
+    prepare_fixture_artifacts(crate::new_state(config), image, verify_only).await
+}
+
+pub(crate) async fn prepare_fixture_artifacts(
+    broker: Arc<Broker>,
+    image: &str,
+    verify_only: bool,
+) -> Result<Vec<String>, &'static str> {
+    let path = form_urlencoded::byte_serialize(image.as_bytes()).collect::<String>();
+    let (status, found) = broker
+        .docker_json(
+            Method::GET,
+            &format!("{API}/images/{path}/json"),
+            Value::Null,
+            broker.config.deadline,
+        )
+        .await
+        .map_err(|_| "Cannot inspect prepared Pi image")?;
+    let image_id = found["Id"]
+        .as_str()
+        .filter(|id| id.strip_prefix("sha256:").is_some_and(valid_docker_id))
+        .ok_or("Invalid prepared Pi image identity")?;
+    if status != StatusCode::OK {
+        return Err("Prepared Pi image is unavailable");
+    }
+    if verify_only {
+        // A separate CLI invocation starts with no in-memory verification state.
+        // Never install, delete, repair or download on the verification path.
+        for spec in defaults()? {
+            let id = spec.id();
+            let name = broker
+                .artcraft_volume(&id, &spec)
+                .await
+                .map_err(|_| "Native artifact ownership mismatch")?
+                .ok_or("Native artifact is missing")?;
+            broker
+                .artcraft_helper(&id, &spec, image_id, true)
+                .await
+                .map_err(|_| "Cannot reverify persisted native artifacts")?;
+            broker.verified_artcraft.lock().unwrap().insert(name);
+        }
+    } else {
+        broker
+            .prepare_artcraft_defaults(image_id)
+            .await
+            .map_err(|_| "Cannot prepare pinned native artifacts")?;
+    }
+    if !broker.artcraft_ready().await {
+        return Err("Native artifact readiness verification failed");
+    }
+    let namespace = &broker.config.workflows_volume;
+    Ok(defaults()?
+        .iter()
+        .map(|spec| {
+            format!(
+                "--mount=type=volume,source={},target=/opt/artcraft/{},readonly",
+                volume(namespace, &spec.id()),
+                spec.app
+            )
+        })
+        .collect())
 }
 
 pub(super) async fn install(

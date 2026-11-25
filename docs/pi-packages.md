@@ -147,7 +147,8 @@ New SQLite tables/chat columns are additive; legacy chats keep an empty selectio
 
 ```sh
 docker compose up -d --build backend docker-broker frontend-web
-uv run pytest tests/backend/test_pi_packages.py tests/broker/test_packages.py
+uv run pytest tests/backend/test_pi_packages.py
+cargo test --locked --manifest-path services/docker-broker-rust/Cargo.toml artifact_cases
 node --test tests/agent/*.mjs tests/agent/*.ts
 npm --prefix services/frontend test
 npm --prefix services/frontend run test:e2e -- tests/packages.spec.js tests/agent-profiles.spec.js --workers=1
@@ -161,8 +162,9 @@ configuration delivery without Docker. A separate real-Docker smoke test require
 a rebuilt default agent image and explicit permission for public package downloads:
 
 ```sh
-NAUTIONETTE_DOCKER_TESTS=1 NAUTIONETTE_PACKAGE_TEST_SOURCE='npm:<trusted-package>@<version>' \
-  uv run pytest tests/broker/test_packages_docker.py
+# Supply the disposable Docker socket and prepared fixture images documented
+# in services/docker-broker-rust/README.md, including the pinned package source.
+services/docker-broker-rust/tests/run-local-conformance.sh --docker
 ```
 
 That opt-in test installs the chosen package with scripts disabled, checks cleanup

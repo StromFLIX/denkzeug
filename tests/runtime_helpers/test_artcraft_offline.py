@@ -1,10 +1,16 @@
 import hashlib
+import importlib.util
 import json
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 from nautionette.artcraft import bundled_release
-from nautionette_docker_broker import artcraft_offline as offline
+
+SOURCE = Path(__file__).resolve().parents[2] / "services/docker-broker-rust/runtime/artcraft_offline.py"
+spec = importlib.util.spec_from_file_location("artcraft_offline", SOURCE)
+offline = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(offline)
 
 
 @pytest.fixture

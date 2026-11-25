@@ -7,7 +7,7 @@ WORKDIR /work/services/docker-broker-rust
 COPY services/docker-broker-rust/Cargo.toml services/docker-broker-rust/Cargo.lock ./
 COPY services/docker-broker-rust/src/ ./src/
 COPY images/pi-base/artcraft/catalog.json /work/images/pi-base/artcraft/catalog.json
-COPY services/docker-broker/nautionette_docker_broker/artcraft_offline.py /work/services/docker-broker/nautionette_docker_broker/artcraft_offline.py
+COPY services/docker-broker-rust/runtime/artcraft_offline.py ./runtime/artcraft_offline.py
 RUN set -eu; \
     case "${TARGETARCH:-$(uname -m)}" in \
       amd64|x86_64) target=x86_64-unknown-linux-musl ;; \

@@ -144,6 +144,15 @@ fn local_runtime(config: Config, token: &str) -> Result<Config, Box<dyn std::err
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args_os().skip(1).collect();
     let local=match args.as_slice() {
+        [command, image] if command == "prepare-test-artifacts" || command == "verify-test-artifacts" => {
+            let socket = env::var_os("BROKER_DOCKER_SOCKET").map(PathBuf::from)
+                .filter(|s| s.is_absolute()).ok_or("Set BROKER_DOCKER_SOCKET to a disposable local Docker socket")?;
+            let image = image.to_str().filter(|v| !v.is_empty()).ok_or("Set a prepared local Pi image")?;
+            let namespace = env::var("WORKFLOWS_VOLUME").ok().filter(|v| !v.trim().is_empty()).ok_or("Set WORKFLOWS_VOLUME to an explicit disposable fixture namespace")?;
+            let config = Config::new(socket, "disposable-artifact-preparation", &namespace, Duration::from_secs(60))?.with_api_negotiation();
+            for mount in denkzeug_docker_broker_spike::prepare_test_artifacts(config, image, command == "verify-test-artifacts").await? { println!("{mount}"); }
+            return Ok(());
+        }
         [command] if command == "maintenance-launcher-version" => {
             println!("1");
             return Ok(());

@@ -12,7 +12,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-from nautionette_docker_broker import temporal_maintenance
 
 from scripts import temporal_deploy as transport
 from scripts import temporal_deploy_host as host
@@ -49,7 +48,7 @@ def test_hooks_use_only_existing_coolify_credentials_and_preserve_custom_hooks(m
         transport,
         "candidate_files",
         lambda commit: {
-            "temporal_deploy_hook.py": "pass",
+            "temporal_state.py": "pass",
             "context/upgrade-plan.json": json.dumps({"target": "1.32.2"}),
         },
     )
@@ -72,22 +71,16 @@ def test_hooks_use_only_existing_coolify_credentials_and_preserve_custom_hooks(m
 
 
 def test_old_candidate_hook_receives_read_only_receipt_adapter(monkeypatch):
-    files = {
-        "temporal_deploy_hook.py": (
-            "def state(container): raise AssertionError('old exec must not run')\n"
-            "def hook(payload): assert state(None) == {'status':'completed'}\n"
-        )
-    }
+    files = {}
     monkeypatch.setattr(
         transport.Path,
         "read_text",
         lambda path: "def controller_state(container): return {'status':'completed'}\n",
     )
     command = transport.command(files, "app", "staging", COMMIT, "4", "prepare")
-    # Simulate the pre-hook in the old compatibility broker: /broker has no
-    # launcher command yet, so sh dispatches to the candidate-pinned Python.
-    result = subprocess.run(["sh", "-c", command], capture_output=True, text=True, check=False)  # noqa: S603,S607 - generated trusted fixture
-    assert result.returncode == 0, result.stderr
+    # The reader is bundled for historical controller sources, but the hook
+    # must not execute it locally or fall back to the removed Python launcher.
+    assert "exec python" not in command and "maintenance-launcher" in command
     assert "temporal_state.py" not in files
 
 
@@ -110,7 +103,6 @@ def test_native_hook_payload_is_single_line_bounded_and_candidate_pinned():
 
     files = {
         "context/launcher-contract.json": '{"protocol":1}',
-        "temporal_deploy_hook.py": "pass",
         "temporal_state.py": "pass",
     }
     command = transport.command(files, "app", "production", COMMIT, "4", "finish")
@@ -127,15 +119,16 @@ def test_native_hook_payload_is_single_line_bounded_and_candidate_pinned():
         "mode": "finish",
         "files": files,
     }
-    assert files["temporal_deploy_hook.py"] == "pass"
+    assert files["temporal_state.py"] == "pass"
 
 
-def test_unknown_installed_launcher_never_falls_back_to_python(tmp_path):
+@pytest.mark.parametrize("probe", ["echo 2", "exit 127", "echo 1; exit 1"])
+def test_unknown_or_missing_installed_launcher_never_falls_back_to_python(tmp_path, probe):
     executable = tmp_path / "broker"
-    executable.write_text("#!/bin/sh\necho 2\n")
+    executable.write_text("#!/bin/sh\n" + probe + "\n")
     executable.chmod(0o755)
     generated = transport.command(
-        {"temporal_deploy_hook.py": "pass", "temporal_state.py": "pass"},
+        {"temporal_state.py": "pass"},
         "app",
         "staging",
         COMMIT,
@@ -144,33 +137,8 @@ def test_unknown_installed_launcher_never_falls_back_to_python(tmp_path):
     ).replace("/broker", str(executable))
     result = subprocess.run(["sh", "-c", generated], capture_output=True, text=True, check=False)  # noqa: S603,S607 - fixed fixture
     assert result.returncode == 1
-    assert "Unsupported installed maintenance launcher protocol" in result.stderr
+    assert "Unsupported or missing installed maintenance launcher protocol" in result.stderr
     assert "Traceback" not in result.stderr
-
-
-def test_legacy_build_failure_does_not_remove_completed_receipt_controller(monkeypatch):
-    from scripts import temporal_deploy_hook as launcher
-
-    controller = Mock(
-        labels={launcher.LABEL: "app", "nautionette.temporal.commit": "a" * 40}, status="exited"
-    )
-    own = Mock(labels={"com.docker.compose.project": "app", "com.docker.compose.service": "docker-broker"})
-    client = Mock()
-    client.containers.get.side_effect = [own, controller]
-    client.images.build.side_effect = RuntimeError("fixture build failure")
-    monkeypatch.setenv("HOSTNAME", "broker")
-    monkeypatch.setattr(launcher.docker, "from_env", lambda: client)
-    reader = (
-        "def controller_state(c): return {'status':'completed','commit':'"
-        + "a" * 40
-        + "'}\ndef completed_receipt(c): return controller_state(c)\n"
-    )
-    with pytest.raises(RuntimeError, match="fixture build failure"):
-        launcher.hook(
-            {"app": "app", "commit": COMMIT, "mode": "prepare", "files": {"temporal_state.py": reader}}
-        )
-    controller.remove.assert_not_called()
-    controller.stop.assert_not_called()
 
 
 def test_preflight_selects_private_data_network_not_coolifys_shared_network(monkeypatch):
@@ -475,82 +443,8 @@ def test_failure_before_schema_writes_can_restore_original_stack(operation):
     assert ("probe", "resume", "1.29.0") in calls
 
 
-@pytest.mark.parametrize(
-    "phase,commit,expected",
-    [
-        ("prepared", COMMIT, "degraded"),
-        ("needs_recovery", COMMIT, "degraded"),
-        ("completed", "c" * 40, "degraded"),
-        ("completed", COMMIT, "ready"),
-    ],
-)
-@pytest.mark.parametrize("container_status", ["running", "exited"])
-def test_swallowed_post_hook_failure_cannot_pass_application_health(
-    monkeypatch, phase, commit, expected, container_status
-):
-    monkeypatch.setenv("APP_VERSION", COMMIT)
-    monkeypatch.setattr(
-        temporal_maintenance.workers, "worker_filters", lambda: {"label": ["com.docker.compose.project=app"]}
-    )
-    container = SimpleNamespace(
-        status=container_status,
-        exec_run=Mock(
-            return_value=SimpleNamespace(
-                exit_code=0, output=json.dumps({"status": phase, "commit": commit}).encode()
-            )
-        ),
-    )
-    client = SimpleNamespace(containers=SimpleNamespace(list=Mock(return_value=[container])))
-    monkeypatch.setattr(temporal_maintenance.daemon, "client", lambda: client)
-    read = Mock(return_value={"status": phase, "commit": commit})
-    monkeypatch.setattr(temporal_maintenance, "controller_state", read)
-    assert temporal_maintenance.snapshot()["status"] == expected
-    read.assert_called_once_with(container)
-    container.exec_run.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    "status,policy,expected",
-    [
-        ("running", "unless-stopped", "degraded"),
-        ("running", "no", "degraded"),
-        ("exited", "unless-stopped", "degraded"),
-        ("exited", "no", "ready"),
-    ],
-)
-def test_automatic_health_requires_completed_controller_to_be_retired(monkeypatch, status, policy, expected):
-    monkeypatch.setenv("APP_VERSION", COMMIT)
-    monkeypatch.setenv("TEMPORAL_MAINTENANCE_APP", "app")
-    monkeypatch.setattr(
-        temporal_maintenance.workers, "worker_filters", lambda: {"label": ["com.docker.compose.project=app"]}
-    )
-    container = SimpleNamespace(status=status, attrs={"HostConfig": {"RestartPolicy": {"Name": policy}}})
-    monkeypatch.setattr(
-        temporal_maintenance.daemon,
-        "client",
-        lambda: SimpleNamespace(containers=SimpleNamespace(list=lambda **kwargs: [container])),
-    )
-    monkeypatch.setattr(
-        temporal_maintenance, "controller_state", lambda _: {"status": "completed", "commit": COMMIT}
-    )
-    assert temporal_maintenance.snapshot()["status"] == expected
-
-
-@pytest.mark.parametrize("automatic", [True, False])
-def test_automatic_health_cannot_silently_accept_a_missing_receipt(monkeypatch, automatic):
-    if automatic:
-        monkeypatch.setenv("TEMPORAL_MAINTENANCE_APP", "app")
-    else:
-        monkeypatch.delenv("TEMPORAL_MAINTENANCE_APP", raising=False)
-    monkeypatch.setattr(
-        temporal_maintenance.workers, "worker_filters", lambda: {"label": ["com.docker.compose.project=app"]}
-    )
-    monkeypatch.setattr(
-        temporal_maintenance.daemon,
-        "client",
-        lambda: SimpleNamespace(containers=SimpleNamespace(list=lambda **kwargs: [])),
-    )
-    assert temporal_maintenance.snapshot()["status"] == ("degraded" if automatic else "ready")
+# Broker completion/cleanup health fences are exercised against the Rust Engine
+# adapter in src/parity_tests/temporal_cases.rs, not the retired Python SDK mocks.
 
 
 @pytest.mark.parametrize(

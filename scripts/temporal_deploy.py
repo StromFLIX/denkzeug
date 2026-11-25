@@ -42,7 +42,6 @@ def candidate_files(commit: str) -> dict[str, str]:
         "temporal_deploy_host.py",
         "temporal_deploy_probe.py",
         "temporal_deploy_job.py",
-        "temporal_deploy_hook.py",
         "staging_refresh_host.py",
     ):
         paths[name] = "scripts/" + name
@@ -85,36 +84,17 @@ def command(files: dict, app: str, target: str, commit: str, shards: str, mode: 
         files["temporal_state.py"] = reader.read_text()
     payload = {"app": app, "target": target, "commit": commit, "shards": shards, "mode": mode, "files": files}
     packed = base64.b64encode(gzip.compress(json.dumps(payload).encode(), mtime=0)).decode()
-    # One physical line: Coolify normalizes command newlines. No credential is
-    # embedded; all runtime DB credentials remain in Docker on the deployment host.
-    source = (
-        "import base64,gzip,json,sys; "
-        f"p=json.loads(gzip.decompress(base64.b64decode({packed!r}))); "
-        "n={'__name__':'temporal_hook'}; "
-        "exec(compile(p['files']['temporal_deploy_hook.py'],'temporal_hook','exec'),n); "
-        "r={'__name__':'temporal_state'}; "
-        "exec(compile(p['files']['temporal_state.py'],'temporal_state','exec'),r); "
-        "n['state']=r['controller_state']; "
-        "exec(\"try:\\n n['hook'](p)\\nexcept Exception:\\n "
-        "print('Temporal hook failed; inspect private controller state.',file=sys.stderr);sys.exit(1)\")"
-    )
+    # One physical line: Coolify normalizes command newlines. Both active
+    # environments support Rust launcher protocol 1; never run Python fallback.
+    # Historical candidate controller files remain supported by this protocol.
     validate_launcher_contract(files)
-    # The old broker runs pre; the new broker runs post. On the first rollout
-    # the old compatibility image lacks the CLI, so use the original pinned
-    # Python launcher there only. Scratch uses Rust for both hooks, including
-    # when staging/promoting a pre-Rust candidate during an explicit rollback.
-    # Protocol 1 supports the legacy payload without a contract marker.
-    source = source.replace(f"base64.b64decode({packed!r})", "base64.b64decode(sys.argv[1])")
     result = (
         MANAGED
         + f"DZ_TEMPORAL_PAYLOAD={shlex.quote(packed)}; "
-        + "if DZ_TEMPORAL_PROTOCOL=$(/broker maintenance-launcher-version 2>/dev/null); then "
-        + 'if [ "$DZ_TEMPORAL_PROTOCOL" != "1" ]; then '
-        + 'echo "Unsupported installed maintenance launcher protocol" >&2; exit 1; fi; '
-        + 'exec /broker maintenance-launcher "$DZ_TEMPORAL_PAYLOAD"; else '
-        + "exec python -c "
-        + shlex.quote(source)
-        + ' "$DZ_TEMPORAL_PAYLOAD"; fi'
+        + "if ! DZ_TEMPORAL_PROTOCOL=$(/broker maintenance-launcher-version 2>/dev/null) "
+        + '|| [ "$DZ_TEMPORAL_PROTOCOL" != "1" ]; then '
+        + 'echo "Unsupported or missing installed maintenance launcher protocol" >&2; exit 1; fi; '
+        + 'exec /broker maintenance-launcher "$DZ_TEMPORAL_PAYLOAD"'
     )
     if len(result) > 100_000:
         raise ValueError("Maintenance hook exceeds safe command argument size")

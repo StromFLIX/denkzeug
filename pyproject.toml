@@ -2,13 +2,13 @@
 members = [
     "libs/nautionette",
     "services/backend",
-    "services/docker-broker",
     "services/workflow-mcp",
     "services/worker",
 ]
 
 [dependency-groups]
 dev = [
+    "docker>=7.1", # Disposable Temporal deployment rehearsal only; no Python broker.
     "ruff>=0.9",
     "pytest>=8.3",
     "pytest-asyncio>=0.25",

@@ -154,9 +154,9 @@ No backend provider key or persistent sandbox credentials are introduced.
 
 ## Verification
 
-- `uv run pytest tests/backend/test_chat_sessions.py tests/backend/test_chat_queue.py tests/backend/test_chat_recovery.py tests/broker/test_chat_sessions.py`
+- `uv run pytest tests/backend/test_chat_sessions.py tests/backend/test_chat_queue.py tests/backend/test_chat_recovery.py`
 - `node --test tests/agent/test_chat_session.mjs tests/agent/test_chat_session_rpc.mjs`
-- `NAUTIONETTE_DOCKER_TESTS=1 uv run pytest tests/broker/test_chat_sessions_docker.py`
+- `services/docker-broker-rust/tests/run-local-conformance.sh --docker` (prepared disposable Docker host; see the Rust broker README)
 
 RPC tests use the real production runner and a loopback-only fake model: original
 full tool evidence survives fresh processes, summaries request the pinned model

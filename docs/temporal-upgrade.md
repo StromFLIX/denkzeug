@@ -53,10 +53,11 @@ with bounded base64/gzip payload decoding, archive path validation, stack/revisi
 ownership checks and receipt-first cleanup. It is not exposed through HTTP.
 Coolify always uses `sh -c`, so the scratch deployment image includes only a
 static BusyBox shell for dispatch. Python and the Docker SDK remain solely in
-the temporary controller. The generated hook probes launcher protocol 1 and uses
-the original candidate-pinned Python launcher only when running in a pre-port
-compatibility image; this preserves first-rollout and rollback behavior.
-Unknown protocol versions fail before any deployment mutation. It has no published port, no HTTP execution API and no SSH key. This
+the temporary controller. Both active environments now support Rust launcher
+protocol 1; the Python launcher and fallback have been removed. Generated hooks
+fail closed for missing or unknown launchers. New deployments require v1.27.0 or
+later as the installed baseline; rollback targets must also support the Rust
+launcher. Historical Python code remains available in Git, not in current builds. It has no published port, no HTTP execution API and no SSH key. This
 is a temporary deployment-only Docker administrator, not an agent container or a
 new generic broker API. Its Docker socket and the two dedicated host maintenance
 directories are mounted explicitly; it does not mount the host root filesystem.

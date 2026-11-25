@@ -3,7 +3,6 @@
 import io
 import json
 import tarfile
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -16,9 +15,7 @@ from nautionette.temporal_state import (
     controller_state,
 )
 
-from scripts import temporal_deploy_hook
 from scripts import temporal_deploy_job as job
-from scripts.temporal_deploy_hook import retire
 
 COMMIT = "b" * 40
 
@@ -116,41 +113,8 @@ def test_archive_reader_rejects_oversize_paths_links_and_invalid_json(archive):
         completed_receipt(controller(archive=archive))
 
 
-def test_retirement_requires_receipt_before_changing_restart_policy():
-    container = controller(status="running")
-    with pytest.raises(RuntimeError, match="without its completion receipt"):
-        retire(container, completed_receipt)
-    container.update.assert_not_called()
-    container.stop.assert_not_called()
-    container = controller({"status": "completed", "commit": COMMIT}, status="running")
-    retire(container, completed_receipt)
-    container.update.assert_called_once_with(restart_policy={"Name": "no"})
-    container.stop.assert_called_once_with(timeout=5)
-
-
-def test_duplicate_post_hook_reads_stopped_receipt_without_starting_or_executing_controller(monkeypatch):
-    own = SimpleNamespace(
-        labels={"com.docker.compose.project": "app", "com.docker.compose.service": "docker-broker"}
-    )
-    container = controller({"status": "completed", "commit": COMMIT})
-    container.labels["nautionette.temporal.project"] = "app"
-    client = SimpleNamespace(
-        containers=SimpleNamespace(get=lambda name: own if name == "self" else container)
-    )
-    monkeypatch.setattr(temporal_deploy_hook.docker, "from_env", lambda: client)
-    monkeypatch.setenv("HOSTNAME", "self")
-    source = Path(__file__).resolve().parents[1] / "libs/nautionette/src/nautionette/temporal_state.py"
-    payload = {
-        "app": "app",
-        "commit": COMMIT,
-        "mode": "finish",
-        "files": {"temporal_state.py": source.read_text()},
-    }
-    temporal_deploy_hook.hook(payload)
-    temporal_deploy_hook.hook(payload)
-    container.exec_run.assert_not_called()
-    container.stop.assert_not_called()
-    assert container.update.call_count == 2
+# Retirement and duplicate finish are native launcher tests in
+# src/parity_tests/maintenance_cases.rs. The controller's shared reader stays here.
 
 
 def test_post_hook_waits_for_service_startup_without_repeating_migrations(monkeypatch):

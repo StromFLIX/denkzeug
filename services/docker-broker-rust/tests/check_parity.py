@@ -3,9 +3,10 @@
 
 A checked mapping is NOT proof that two implementations are equivalent. With
 --evidence, this gate additionally requires passing executions of every mapped
-Rust scenario and every unchanged shared Python invariant. It refuses to certify
-logs containing failures, unmapped reference functions, source drift or skipped
-mapped scenarios. Keep full logs from the same checkout when comparing results.
+Rust scenario and retained shared invariant. The Python broker and SDK mocks
+have been retired; their immutable non-executable inventory/source hashes are
+preserved at a Git commit. Coverage cannot shrink silently when files disappear.
+Keep full logs from the same checkout when comparing results.
 """
 
 import argparse
@@ -22,15 +23,11 @@ CRATE = ROOT / "services/docker-broker-rust"
 
 
 def inventory():
-    found = set()
-    hashes = {}
-    for path in sorted((ROOT / "tests/broker").glob("test*.py")):
-        name = path.relative_to(ROOT).as_posix()
-        hashes[name] = hashlib.sha256(path.read_bytes()).hexdigest()
-        for item in ast.parse(path.read_text()).body:
-            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and item.name.startswith("test_"):
-                found.add(f"{name}::{item.name}")
-    return found, hashes
+    data = (CRATE / "tests/reference-inventory.json").read_bytes()
+    if hashlib.sha256(data).hexdigest() != "b0130531445ff4ef998d892ca5ed4f54b186379ab1443e25468a35c5a323e01c":
+        raise ValueError("Retired reference inventory changed; review its frozen Git baseline")
+    snapshot = json.loads(data)
+    return set(snapshot["functions"]), snapshot["files"]
 
 
 def rust_passes(paths):
@@ -56,6 +53,7 @@ def rust_passes(paths):
 
 def shared_passes(paths):
     result = set()
+    skipped = set()
     for path in paths:
         data = path.read_bytes()
         if b"<!DOCTYPE" in data or b"<!ENTITY" in data:
@@ -64,11 +62,14 @@ def shared_passes(paths):
         for case in root.iter("testcase"):
             if any(case.find(name) is not None for name in ("failure", "error")):
                 raise ValueError(f"failing Python reference case in {path}")
-            if case.find("skipped") is not None:
-                continue
             module = case.attrib["classname"].replace(".", "/") + ".py"
-            result.add(f"{module}::{case.attrib['name'].split('[', 1)[0]}")
-    return result
+            reference = f"{module}::{case.attrib['name'].split('[', 1)[0]}"
+            if case.find("skipped") is not None:
+                skipped.add(reference)
+            else:
+                result.add(reference)
+    # One passing parametrization cannot mask skipped siblings.
+    return result - skipped
 
 
 def main():
@@ -91,7 +92,23 @@ def main():
             f"mapping drift: missing={sorted(found - rows.keys())}, stale={sorted(rows.keys() - found)}"
         )
     if hashes != manifest["reference_files"]:
-        errors.append("Python source changed; review all affected scenario and parameter mappings")
+        errors.append("Frozen Python reference hashes changed; review all affected scenario mappings")
+    relocated = json.loads((CRATE / "tests/shared-tests.json").read_text())
+    if relocated.keys() != {ref for ref, row in rows.items() if row["shared"]}:
+        errors.append("Retained shared invariant mapping changed")
+    for ref, target in relocated.items():
+        if target is None:
+            if not rows[ref]["rust"]:
+                errors.append(f"no native replacement for shared invariant: {ref}")
+            continue
+        path, name = target.split("::", 1)
+        functions = {
+            item.name
+            for item in ast.parse((ROOT / path).read_text()).body
+            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        if name not in functions:
+            errors.append(f"missing retained shared test: {target}")
     rust_source = "\n".join(
         path.read_text() for base in [CRATE / "src", CRATE / "tests"] for path in base.rglob("*.rs")
     )
@@ -106,8 +123,9 @@ def main():
     if args.evidence:
         for row in rows.values():
             if row["shared"]:
-                if row["reference"] not in shared:
-                    errors.append(f"no passing shared execution: {row['reference']}")
+                target = relocated.get(row["reference"])
+                if target is not None and target not in shared:
+                    errors.append(f"no passing shared execution: {row['reference']} -> {target}")
             for name in row["rust"]:
                 if not any(actual == name or actual.endswith("::" + name) for actual in passed):
                     errors.append(f"no passing Rust execution: {row['reference']} -> {name}")
@@ -124,8 +142,12 @@ def main():
             CRATE / "compose.local.yaml",
             CRATE / "tests/parity-map.json",
             ROOT / "images/source-fingerprints.json",
+            ROOT / "scripts/image_context.py",
             ROOT / "images/pi-base/artcraft/catalog.json",
-            ROOT / "services/docker-broker/nautionette_docker_broker/artcraft_offline.py",
+            ROOT / "services/docker-broker-rust/runtime/artcraft_offline.py",
+            CRATE / "tests/reference-inventory.json",
+            CRATE / "tests/shared-tests.json",
+            *[ROOT / target.split("::", 1)[0] for target in relocated.values() if target],
             ROOT / "tests/agent/fixtures/chat-model.mjs",
             ROOT / "tests/agent/fixtures/chat-provider.ts",
         }
@@ -138,7 +160,8 @@ def main():
         "candidate_source_sha256": candidate.hexdigest(),
         "scope": manifest["scope"],
         "reference_functions": len(found),
-        "shared_unchanged_invariants": sum(row["shared"] for row in rows.values()),
+        "retained_shared_invariants": sum(target is not None for target in relocated.values()),
+        "reference_commit": "a340fe9fcd649a78f088fd517c597a0f49875423",
         "mapped_rust_scenarios": len({name for row in rows.values() for name in row["rust"]}),
         "passing_rust_executions": len(passed),
         "execution_evidence_required": args.evidence,

@@ -18,7 +18,6 @@ RUN apt-get update \
 
 # Workspace root: every member's manifest is needed to resolve the lock.
 COPY pyproject.toml uv.lock ./
-COPY services/docker-broker/pyproject.toml services/docker-broker/
 COPY services/workflow-mcp/pyproject.toml services/workflow-mcp/
 COPY services/worker/pyproject.toml services/worker/
 COPY libs/ libs/
