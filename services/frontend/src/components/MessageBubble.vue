@@ -26,10 +26,10 @@
           <span class="material-icons" aria-hidden="true">compress</span>
           {{ part.state === 'started' ? 'Compacting context…' : part.aborted || part.error ? 'Context compaction did not complete' : 'Context compacted · original history retained' }}
         </div>
-        <MarkdownBody v-else-if="part.kind === 'text' && part.text.trim()" :text="part.text" @copy-code="copy($event, 'Code')" />
+        <MarkdownBody v-else-if="part.kind === 'text' && part.text.trim() && !workflowAppResult" :text="part.text" @copy-code="copy($event, 'Code')" />
       </template>
       <p v-if="meta.app_diagnostic" class="caption dim" role="status">The interactive view was unavailable when this result was saved. The original run data is retained.</p>
-      <McpAppView v-for="app in meta.apps || []" :key="app.id" :instance="app" :chat-id="chatId" />
+      <McpAppView v-for="app in meta.apps || []" :key="app.id" :instance="app" :chat-id="chatId" :fallback-text="workflowAppResult ? content : ''" />
       <OutputRow v-for="output in meta.outputs || []" :key="`${output.id}:${output.revision}`" :chat-id="chatId" :output="output" @open="$emit('open-output', $event)" />
       <div v-if="status" class="bubble__status caption">
         <span class="material-icons bubble__spinner">autorenew</span>{{ status }}
@@ -131,6 +131,7 @@ const { copy, copyStatus } = useCopyStatus()
 
 const hasTools = computed(() => steps.value.some((step) => step.kind === 'tool'))
 const origin = computed(() => messageOrigin(props.meta, props.role))
+const workflowAppResult = computed(() => !steps.value.length && props.meta.apps?.length > 0 && origin.value?.kind === 'workflow' && origin.value.relation === 'result')
 // The backend folds a failure into the body too, so only add it when it is new.
 const error = computed(() => {
   const detail = props.meta?.error || ''

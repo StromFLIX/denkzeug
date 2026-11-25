@@ -175,7 +175,10 @@ with the result/outbox. Schema regexes and combinatorial validation never execut
 unbounded on the shared backend thread.
 
 Delivery attaches a saved app-instance reference to chat metadata and uses
-`summary` as readable message text. Opening a chat or retrying interface loading
+`summary` as readable message text. Chat and run details show the app first,
+with the Markdown summary under **Original result** instead of duplicating it
+outside the card. This fallback is collapsed by default and opens automatically
+if the interface fails to load. Opening a chat or retrying interface loading
 never repeats a workflow. Outbox retries cannot choose a newer UI revision.
 A missing/archived app or invalid envelope/data produces a safe diagnostic and
 text fallback without changing successful run status or blocking delivery.

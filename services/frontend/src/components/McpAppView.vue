@@ -8,7 +8,11 @@
     </div>
     <iframe v-if="document && visible && !failure" ref="frame" class="mcp-app__frame" :title="title" :style="{ height: `${height}px` }" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" />
     <p v-if="pendingLink" class="mcp-app__notice caption"><a :href="pendingLink" target="_blank" rel="noopener noreferrer" @click="pendingLink = ''">Open {{ linkHost }} in a new tab</a></p>
-    <details v-if="fallback" class="mcp-app__fallback"><summary class="caption">Original result</summary><pre>{{ fallback }}</pre></details>
+    <details v-if="fallbackText.trim() || fallback" class="mcp-app__fallback" :open="Boolean(failure)">
+      <summary class="caption">Original result</summary>
+      <MarkdownBody v-if="fallbackText.trim()" :text="fallbackText" />
+      <pre v-else>{{ fallback }}</pre>
+    </details>
   </section>
 </template>
 
@@ -17,13 +21,15 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { request, isNative } from '../api'
 import { connectApp } from '../mcp-apps'
 import { currentTokens } from '../preferences'
+import MarkdownBody from './MarkdownBody.vue'
 
 const props = defineProps({
   app: { type: Object, default: null },
   instance: { type: Object, default: null },
   chatId: { type: String, default: '' },
   workflowId: { type: String, default: '' },
-  sandboxUrl: { type: String, default: '' }
+  sandboxUrl: { type: String, default: '' },
+  fallbackText: { type: String, default: '' }
 })
 const root = ref(null), frame = ref(null), document = ref(null), visible = ref(false)
 const loading = ref(false), failure = ref(''), height = ref(320), pendingLink = ref('')

@@ -1,10 +1,10 @@
 <template>
   <div v-if="text || app || appDiagnostic || !preview" class="execution-output">
-    <MarkdownBody v-if="text" :text="text" collapsible @copy-code="copy($event, 'Code')" />
+    <MarkdownBody v-if="text && !app" :text="text" collapsible @copy-code="copy($event, 'Code')" />
     <p v-else-if="!app && !preview" class="caption dim">{{ result == null ? 'No output.' : 'No text output.' }}</p>
     <div class="caption dim" aria-live="polite" aria-atomic="true">{{ copyStatus }}</div>
     <p v-if="appDiagnostic" class="caption dim" role="status">The interactive view was unavailable when this result was saved. The original run data is retained.</p>
-    <McpAppView v-if="app" :key="app.id" :instance="app" :workflow-id="workflowId" />
+    <McpAppView v-if="app" :key="app.id" :instance="app" :workflow-id="workflowId" :fallback-text="hasSummary ? result.summary : ''" />
     <details v-if="hasRawOutput && !preview" class="execution-output__raw">
       <summary>Raw output</summary>
       <pre class="code">{{ JSON.stringify(result, null, 2) }}</pre>

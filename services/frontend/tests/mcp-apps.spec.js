@@ -150,8 +150,14 @@ test('saved workflow results and tool results share the inline host without repl
   await page.goto('/chats/alpha')
   const view = page.frameLocator('iframe[title="Release notes"]').frameLocator('iframe')
   await expect(view.locator('#result')).toHaveText('# A useful release')
+  const summary = page.getByText('Release prepared.', { exact: true })
+  await expect(summary).toHaveCount(1)
+  await expect(summary).toBeHidden()
+  await page.getByText('Original result', { exact: true }).click()
+  await expect(summary).toBeVisible()
   await page.reload()
   await expect(view.locator('#result')).toHaveText('# A useful release')
+  await expect(summary).toBeHidden()
   expect(loads).toBe(2)
   expect(mutations).toEqual([])
   await page.screenshot({ path: '/workspace/mcp-app-chat.png', fullPage: true })
@@ -160,6 +166,19 @@ test('saved workflow results and tool results share the inline host without repl
   await page.reload()
   await expect(view.locator('#result')).toHaveText('# A useful release')
   expect(mutations).toEqual([])
+})
+
+test('a workflow app fetch failure opens the only copy of the chat summary', async ({ page, context }) => {
+  const state = await mockAgents(context)
+  const descriptor = { id: 'missing-app', title: 'Digest', app_id: 'digest', revision: 1 }
+  state.data.messages = [{ id: 'result', role: 'assistant', content: '**Digest fallback**', created_at: Date.now() / 1000, meta: { apps: [descriptor], origin: { kind: 'workflow', workflow: 'digest', relation: 'result' } } }]
+  await context.route('**/api/chats/alpha/apps/missing-app', route => route.fulfill({ status: 404, json: { detail: 'App not found' } }))
+
+  await page.goto('/chats/alpha')
+  const card = page.getByRole('region', { name: 'Digest', exact: true })
+  await expect(card.getByRole('button', { name: 'Reload interface' })).toBeVisible()
+  await expect(card.locator('details strong').filter({ hasText: 'Digest fallback' })).toBeVisible()
+  await expect(page.getByText('Digest fallback', { exact: true })).toHaveCount(1)
 })
 
 test('latest execution and run details open the saved app independently of chat', async ({ page, context }) => {
@@ -176,11 +195,19 @@ test('latest execution and run details open the saved app independently of chat'
   })
   await page.goto('/workflows/digest')
   const view = page.frameLocator('iframe[title="Release notes"]').frameLocator('iframe')
-  await expect(page.locator('.execution-output strong')).toHaveText('Release prepared.')
+  const summary = page.locator('.execution-output strong')
+  const original = page.getByText('Original result', { exact: true })
+  await expect(summary).toHaveText('Release prepared.')
+  await expect(summary).toBeHidden()
   await expect(view.locator('#result')).toHaveText('# Pinned release notes')
+  await original.click()
+  await expect(summary).toBeVisible()
   await page.getByRole('link', { name: 'View result' }).click()
   await expect(page.getByRole('heading', { name: 'Output', exact: true })).toBeVisible()
   await expect(view.locator('#result')).toHaveText('# Pinned release notes')
+  await expect(summary).toBeHidden()
+  await original.click()
+  await expect(summary).toBeVisible()
   expect(loads).toBe(2)
 })
 
