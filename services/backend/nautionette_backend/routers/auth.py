@@ -417,6 +417,14 @@ async def update_user(user_id: str, body: UserChange, request: Request, principa
                 )
         if status == "suspended" or (row["role"] == "admin" and role != "admin"):
             conn.execute("INSERT OR REPLACE INTO access_revocations VALUES(?,?)", (user_id, time.time()))
+            # Reinstating an account must not restart previously opted-in model calls.
+            conn.execute(
+                "UPDATE agent_dreams SET environment=NULL, at=NULL, timezone=NULL, enabled_at=NULL, "
+                "revision=revision+1, schedule_revision=schedule_revision+1 WHERE at IS NOT NULL "
+                "AND agent_id IN (SELECT resource_id FROM access_resources "
+                "WHERE kind='agent' AND owner_user_id=?)",
+                (user_id,),
+            )
         audit(conn, "user.access_changed", principal.user_id, user_id, f"role={role},status={status}")
     pending = False
     if status == "suspended" or (row["role"] == "admin" and role != "admin"):

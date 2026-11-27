@@ -144,6 +144,11 @@
     "authentication": "account",
     "resource": "agent:agent_id"
   },
+  "GET /api/agents/{agent_id}/dream": {
+    "scope": "agents:read",
+    "authentication": "session",
+    "resource": "agent:agent_id"
+  },
   "GET /api/artcraft/apps": {
     "scope": "artcraft:read",
     "authentication": "account",
@@ -1065,6 +1070,11 @@
     "scope": "access:manage",
     "authentication": "session",
     "resource": null
+  },
+  "PUT /api/agents/{agent_id}/dream": {
+    "scope": "agents:write",
+    "authentication": "session",
+    "resource": "agent:agent_id"
   },
   "PUT /api/artcraft/apps/{app}": {
     "scope": "artcraft:manage",

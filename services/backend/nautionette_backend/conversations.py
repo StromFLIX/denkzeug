@@ -10,7 +10,7 @@ from pathlib import Path
 from time import monotonic
 from typing import Any
 
-from . import chat_attachments, chat_sessions, git_authorship, projects, subagents
+from . import chat_attachments, chat_sessions, dreams, git_authorship, projects, subagents
 from .agent import Timeline, stream_agent
 from .background import is_draining, run_blocking, spawn
 from .chat_startup import ChatStartup
@@ -97,7 +97,14 @@ def resume_chat_queues() -> None:
         launch_next(row["chat_id"])
 
 
-async def control_turn(turn_id: str, chat_id: str, job: dict[str, Any], finished: asyncio.Event) -> None:
+async def control_turn(
+    turn_id: str,
+    chat_id: str,
+    job: dict[str, Any],
+    finished: asyncio.Event,
+    *,
+    dream: dreams.ChatDream | None = None,
+) -> None:
     sent = set()
     while not finished.is_set():
         turn = db.one("SELECT * FROM chat_turns WHERE id = ? AND state = 'running'", (turn_id,))
@@ -156,6 +163,10 @@ async def control_turn(turn_id: str, chat_id: str, job: dict[str, Any], finished
                         break
                     if pending["id"] in sent:
                         continue
+                    if dreams.chat_dream(chat_id, candidate) != dream:
+                        # Steering cannot change a live process's system prompt.
+                        # Run separately if the notes changed or this input can't use them.
+                        break
                     if not await broker.control_agent(
                         chat_id,
                         turn_id,
@@ -299,7 +310,6 @@ async def _run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
                 message.update(chat_attachments.load_attachments(chat_id, attachments))
                 if job.get("supports_images") is False:
                     message["images"] = []
-        controller = spawn(control_turn(turn_id, chat_id, job, finished), name=f"chat-control-{turn_id}")
         if job.get("project_ids"):
             # Resolve on execution, not enqueue: queued/new turns see the latest settings.
             job["git_authorship"] = git_authorship.for_job()
@@ -320,7 +330,16 @@ async def _run_turn(turn_id: str, chat_id: str, job: dict[str, Any]) -> None:
         credential_renewal = asyncio.create_task(credentials.maintain(finished))
         agent_requested = True
         startup.mark("agent_dispatch")
-        async for event in stream_agent(job):
+        dream = dreams.chat_dream(chat_id, job)
+        controller = spawn(
+            control_turn(turn_id, chat_id, job, finished, dream=dream), name=f"chat-control-{turn_id}"
+        )
+        # Only the transient model job gets the note. Never store a dream in a
+        # turn job, chat transcript, profile, or subsequent workflow input.
+        outgoing = {key: value for key, value in job.items() if key != "dream_owner_id"}
+        if dream:
+            outgoing["system_prompt"] = job.get("system_prompt", "") + dream.context()
+        async for event in stream_agent(outgoing):
             if not db.one("SELECT id FROM chat_turns WHERE id = ?", (turn_id,)):
                 return
             kind = event.get("type")

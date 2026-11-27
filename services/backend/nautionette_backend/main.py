@@ -24,6 +24,7 @@ from . import (
     artcraft,
     auth,
     auth_mail,
+    dream_workflow,
     github_mentions,
     mcp_oauth,
     mcp_servers,
@@ -81,6 +82,7 @@ async def lifespan(_: FastAPI):
     spawn(bootstrap(), name="integration-bootstrap")
     runs.resume_unfinished()
     spawn(runs.reconcile_schedules(), name="schedule-reconciliation")
+    spawn(dream_workflow.serve(), name="dream-system-worker")
     spawn(runs.reconcile_deliveries(), name="workflow-result-delivery")
     bus.publish("system.start", {"version": settings.version})
     async with backend_mcp.http_app.router.lifespan_context(backend_mcp.http_app):

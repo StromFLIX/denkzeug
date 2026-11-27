@@ -10,7 +10,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 
-from .. import agent_images, agent_profiles, catalog
+from .. import agent_images, agent_profiles, catalog, dreams
 from ..db import db
 from ..events import bus
 from ..reasoning import validate_effort
@@ -141,6 +141,19 @@ async def update_agent(agent_id: str, payload: dict[str, Any] = Body(...)) -> di
         raise HTTPException(404, "Agent not found")
     _changed(agent_id)
     return _result(agent_profiles.get_agent(agent_id))
+
+
+@router.get("/api/agents/{agent_id}/dream")
+async def get_agent_dream(agent_id: str) -> dict[str, Any]:
+    """Read private rolling notes; only the owning administrator's user session can access them."""
+    dreams.require_owner(agent_id)
+    return dreams.view(agent_id)
+
+
+@router.put("/api/agents/{agent_id}/dream")
+async def update_agent_dream(agent_id: str, change: dreams.DreamUpdate) -> dict[str, Any]:
+    """Set the nightly schedule, edit the latest dream, or disable/clear either."""
+    return dreams.save(agent_id, change)
 
 
 @router.delete("/api/agents/{agent_id}")

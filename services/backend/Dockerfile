@@ -13,7 +13,7 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
-    && apt-get install -y --no-install-recommends git ca-certificates libgomp1 \
+    && apt-get install -y --no-install-recommends git ca-certificates libgomp1 tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Workspace root: every member's manifest is needed to resolve the lock.

@@ -296,6 +296,21 @@ CREATE TABLE IF NOT EXISTS agent_profiles (
     created_at REAL NOT NULL,
     updated_at REAL NOT NULL
 );
+-- Not part of the shared agent profile or the model-facing agent API.
+CREATE TABLE IF NOT EXISTS agent_dreams (
+    agent_id TEXT PRIMARY KEY REFERENCES agent_profiles(id) ON DELETE CASCADE,
+    environment TEXT,
+    at TEXT,
+    timezone TEXT,
+    enabled_at REAL,
+    schedule_revision INTEGER NOT NULL DEFAULT 0,
+    revision INTEGER NOT NULL DEFAULT 0,
+    dream TEXT NOT NULL DEFAULT '',
+    updated_at REAL,
+    last_window_end REAL,
+    last_attempt_at REAL,
+    last_status TEXT
+);
 CREATE TABLE IF NOT EXISTS pi_package_installations (
     id TEXT PRIMARY KEY,
     source TEXT NOT NULL,
@@ -378,6 +393,9 @@ _MIGRATIONS = (
     "ALTER TABLE chat_turns ADD COLUMN timing TEXT",
     "ALTER TABLE chat_turns ADD COLUMN job TEXT",
     "ALTER TABLE chat_turns ADD COLUMN stop_requested INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE chat_turns ADD COLUMN started_at REAL",
+    "ALTER TABLE chat_turns ADD COLUMN finished_at REAL",
+    "ALTER TABLE chat_turns ADD COLUMN steered_into TEXT REFERENCES chat_turns(id) ON DELETE CASCADE",
     "ALTER TABLE chats ADD COLUMN pi_session_id TEXT",
     "ALTER TABLE chats ADD COLUMN parent_chat_id TEXT",
     "ALTER TABLE chats ADD COLUMN parent_chat_title TEXT",
@@ -557,6 +575,15 @@ class Database:
             from .mcp_app_results import install_schema as install_mcp_app_schema
 
             install_mcp_app_schema(self._conn)
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS chat_turns_dream_window "
+                "ON chat_turns(json_extract(job,'$.agent_id'), coalesce(finished_at, 1e99)) "
+                "WHERE started_at IS NOT NULL AND steered_into IS NULL"
+            )
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS chat_turns_steered ON chat_turns(steered_into, started_at) "
+                "WHERE steered_into IS NOT NULL"
+            )
             # Ownership is migrated above; recent diagnostic pages should seek
             # directly into this account's ordering, not sort every owned chat.
             self._conn.execute(
@@ -1056,9 +1083,10 @@ class Database:
         """Commit the preceding answer and its consumed input as one transcript boundary."""
         with observed_lock(self._lock, "chat_consume"), self._conn:
             changed = self._conn.execute(
-                "UPDATE chat_turns SET state = 'steered' WHERE id = ? AND state = 'queued' "
+                "UPDATE chat_turns SET state = 'steered', steered_into = ?, started_at = ? "
+                "WHERE id = ? AND state = 'queued' "
                 "AND chat_id = (SELECT chat_id FROM chat_turns WHERE id = ? AND state = 'running')",
-                (message_id, turn_id),
+                (turn_id, time.time(), message_id, turn_id),
             ).rowcount
             if changed:
                 turn = self._conn.execute("SELECT * FROM chat_turns WHERE id = ?", (turn_id,)).fetchone()
@@ -1102,15 +1130,24 @@ class Database:
                     "UPDATE chat_turns SET context = ? WHERE id = ?",
                     (json.dumps(event["context"]), turn_id),
                 )
+            now = time.time()
+            # The broker's start event distinguishes running work from queued or
+            # rejected requests. Keep the first timestamp across retries.
             self._conn.execute(
-                "UPDATE chat_turns SET steps = ?, status = ?, timing = COALESCE(?, timing) WHERE id = ?",
-                (json.dumps(steps), status, json.dumps(timing) if timing is not None else None, turn_id),
+                "UPDATE chat_turns SET steps = ?, status = ?, timing = COALESCE(?, timing), "
+                "started_at = COALESCE(started_at, ?) WHERE id = ?",
+                (
+                    json.dumps(steps),
+                    status,
+                    json.dumps(timing) if timing is not None else None,
+                    now if event.get("type") == "started" else None,
+                    turn_id,
+                ),
             )
             self._conn.execute(
                 "INSERT INTO chat_turn_events (turn_id, payload) VALUES (?,?)",
                 (turn_id, json.dumps(event)),
             )
-            now = time.time()
             is_message = event.get("type") == "delta" and bool(event.get("text"))
             return bool(
                 self._conn.execute(
@@ -1129,7 +1166,10 @@ class Database:
             if not turn:
                 return
             message = self._append_chat_answer(turn, content, meta)
-            self._conn.execute("UPDATE chat_turns SET state = 'completed' WHERE id = ?", (turn_id,))
+            self._conn.execute(
+                "UPDATE chat_turns SET state = 'completed', finished_at = ? WHERE id = ?",
+                (message["created_at"], turn_id),
+            )
             # Only the full turn ending advances recency, not intermediate answer
             # segments saved while consuming queued/steering input.
             self._conn.execute(

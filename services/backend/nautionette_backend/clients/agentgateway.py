@@ -344,6 +344,11 @@ class GatewayClient:
         }
 
     async def chat_title(self, model: str, instructions: str, text: str) -> str:
+        return await self.text_completion(model, instructions, text, max_tokens=1024, timeout=30)
+
+    async def text_completion(
+        self, model: str, instructions: str, text: str, *, max_tokens: int, timeout: float
+    ) -> str:
         """One tool-free generation, without starting a coding-agent container."""
         use_responses = model.startswith("copilot/")
         endpoint = "responses" if use_responses else "chat/completions"
@@ -351,18 +356,18 @@ class GatewayClient:
             "model": model,
             "stream": False,
             **(
-                {"instructions": instructions, "input": text, "max_output_tokens": 1024}
+                {"instructions": instructions, "input": text, "max_output_tokens": max_tokens}
                 if use_responses
                 else {
                     "messages": [
                         {"role": "system", "content": instructions},
                         {"role": "user", "content": text},
                     ],
-                    "max_completion_tokens": 1024,
+                    "max_completion_tokens": max_tokens,
                 }
             ),
         }
-        response = await shared().post(f"{self.base_url}/v1/{endpoint}", json=request, timeout=30)
+        response = await shared().post(f"{self.base_url}/v1/{endpoint}", json=request, timeout=timeout)
         response.raise_for_status()
         payload = response.json()
         if use_responses:

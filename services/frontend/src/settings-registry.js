@@ -65,6 +65,7 @@ export const SETTINGS_SECTIONS = [
     entries: [
       entry('agent-profiles', 'Saved agents', 'Reusable configurations with their own image, system prompt, model, tools and projects.', 'profile preset defaults inherit override duplicate avatar portrait persona instructions grouping'),
       entry('agent-profiles', 'Allowed subagents', 'Per-agent allowlist, empty by default. Enable delegation separately in the Agents tool group.', 'call wait permissions delegation'),
+      entry('agent-profiles', 'Dreaming', 'Edit a saved agent to enable nightly reflection or review its private dream.', 'memory nightly reflection summaries learnings schedule'),
       entry('agent-sets', 'Agent sets', 'Available container environments and image readiness.', 'container docker runtime'),
       entry('model-integrations', 'Model integrations', 'Add, configure or test a model provider.', 'API key credentials OpenAI Anthropic OpenRouter gateway'),
       entry('available-models', 'Available models', 'Models discovered through your integrations.', 'catalog vendor provider refresh')

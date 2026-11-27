@@ -75,6 +75,56 @@ Duplicating an agent copies its image and prompt; removing either restores its
 fallback. Prompts are copied into chats and accepted turn jobs, so edits never
 rewrite running or queued work.
 
+## Dreaming
+
+In **Settings → Agents & models → Agents**, edit a saved agent and open **Dreaming**.
+It starts off. To enable it, enter a nightly local time and IANA timezone, then
+select **Save dreaming**. Use **Latest dream** to review, edit or clear the notes.
+Turning dreaming off keeps the last notes but stops using them in chats; deleting
+the agent removes them. Duplicating an agent does not copy the schedule or notes.
+
+A built-in Temporal schedule runs a tool-free reflection with the agent's resolved
+model. It uses the agent's current system prompt, the previous dream and bounded
+excerpts from turns actually started for that agent. It considers ongoing turns,
+finished outcomes and consumed steering messages; it excludes unconsumed queued
+messages, attachments, tool arguments and tool results. Tool names and statuses can
+inform learnings. The model replaces the notes rather than appending a daily log:
+it can keep durable preferences, revise older conclusions or remove stale details.
+Nights without eligible activity do not rewrite the notes. A failure retains the last
+note and is shown in settings. Concurrent edits never get overwritten by an in-flight run.
+
+Dreams are private to the saved profile's owning administrator. Sharing an agent
+does not share dreams or include anyone else's chats. Suspension or loss of the
+administrator role disables dreaming without deleting existing notes. The feature sends excerpts to
+the configured model provider. Common credential patterns are removed, but free text
+may still contain sensitive information.
+
+While enabled, the latest notes enter the system prompt under a labeled
+**Dreams.md** heading when the owner sends a message to that agent, including in
+existing chats. The prompt tells the model to treat them as fallible context, not
+instructions or permissions; the active system instructions and current user
+request take precedence. This is not a repository file. The backend loads the
+notes for a new native turn and does not write them into saved jobs, chat
+messages, agent catalogs, MCP tools or Temporal history. A queued message whose
+memory differs from the running turn starts a fresh turn instead of steering an
+old context. Automated/delegated submissions, GitHub issue chats and other
+accounts' chats never receive the private block.
+
+The local nightly cutoff comes from Temporal's scheduled instant. The first run
+starts no earlier than opt-in, and subsequent runs process activity since the last
+successful cutoff (at most seven days after downtime). Old turns without recorded
+start boundaries are not backfilled. A skipped or repeated daylight-saving hour
+is handled by Temporal's calendar and a once-per-local-date write guard. For busy
+agents the model sees a bounded sample, not an exhaustive transcript archive.
+
+Implementation: the backend reconciles the system schedules in Temporal and keeps
+its system activity on a separate queue from uploaded workflows. Only identifiers,
+cutoffs and outcome statuses go through Temporal. A copied staging database does
+not activate production dreaming settings. The session-only API is `GET` and `PUT`
+`/api/agents/{agent_id}/dream`. PUT accepts the current `revision`, a `schedule` of
+`{"at":"23:30","timezone":"Europe/Berlin"}` (or `null` to disable), and an optional
+`dream` string. An empty string clears the notes; stale revisions return HTTP 409.
+
 ## API
 
 All routes use the same authenticated backend API as other instance settings.

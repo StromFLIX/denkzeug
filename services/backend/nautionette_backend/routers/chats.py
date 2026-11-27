@@ -390,8 +390,14 @@ def discard_attachment(chat_id: str, image_id: str) -> dict[str, bool]:
 
 @router.post("/api/chats/{chat_id}/messages", response_model=None)
 async def send_message(chat_id: str, request: Request, payload: dict[str, Any] = Body(...)):
+    # A delegated agent can also reach this route. Only a signed-in human may
+    # opt a turn into its owner's private dream; never take identity from payload.
+    session = getattr(request.state, "auth_session", None)
     return await submit_message(
-        chat_id, payload, stream="application/json" not in request.headers.get("accept", "")
+        chat_id,
+        payload,
+        stream="application/json" not in request.headers.get("accept", ""),
+        dream_owner_id=session["user_id"] if session else None,
     )
 
 
@@ -409,6 +415,7 @@ async def submit_message(
     payload: dict[str, Any],
     *,
     stream: bool = False,
+    dream_owner_id: str | None = None,
     sender: dict[str, Any] | None = None,
     origin: dict[str, Any] | None = None,
     delegation: str | None = None,
@@ -546,6 +553,8 @@ async def submit_message(
             "format": model_info.get("reasoning_format", "openai"),
         },
     )
+    if dream_owner_id and chat.get("agent_id"):
+        job["dream_owner_id"] = dream_owner_id
     if project_ids:
         selected_projects = [
             db.one("SELECT * FROM projects WHERE id = ?", (project_id,)) for project_id in project_ids

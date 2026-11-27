@@ -10,9 +10,10 @@
       <button v-if="store.catalogError" class="btn btn--sm" type="button" @click="actions.loadCatalog(true)">Retry agents</button>
     </p>
 
-    <form v-if="editing" class="profile-editor" aria-label="Agent configuration" @submit.prevent="save">
+    <template v-if="editing">
+    <form class="profile-editor" aria-label="Agent configuration" @submit.prevent="save">
       <div class="row profile-editor__head"><strong class="grow">{{ draft.id ? 'Edit agent' : 'New agent' }}</strong>
-        <button class="btn btn--icon btn--sm" type="button" aria-label="Close agent editor" :disabled="busy" @click="close"><span class="material-icons" aria-hidden="true">close</span></button>
+        <button class="btn btn--icon btn--sm" type="button" aria-label="Close agent editor" :disabled="busy || dreamBusy" @click="close"><span class="material-icons" aria-hidden="true">close</span></button>
       </div>
       <label class="profile-editor__label" for="profile-name">Agent name</label>
       <input id="profile-name" ref="nameInput" v-model="draft.name" class="field" maxlength="80" required :disabled="busy" placeholder="e.g. Code review" />
@@ -51,10 +52,12 @@
       <AgentPackages :key="draft.id" :model-value="draft.config.packages || []" :disabled="busy" @update:model-value="draft.config.packages = $event" @busy="packageBusy = $event" />
       <div class="row profile-editor__actions">
         <span class="caption dim grow">Existing chats stay unchanged.</span>
-        <button class="btn" type="button" :disabled="busy" @click="close">Cancel</button>
-        <button class="btn btn--primary" type="submit" :disabled="busy || packageBusy || imageBusy || !draft.name.trim()">{{ busy ? 'Saving…' : 'Save agent' }}</button>
+        <button class="btn" type="button" :disabled="busy || dreamBusy" @click="close">Cancel</button>
+        <button class="btn btn--primary" type="submit" :disabled="busy || packageBusy || imageBusy || dreamBusy || !draft.name.trim()">{{ busy ? 'Saving…' : 'Save agent' }}</button>
       </div>
     </form>
+    <AgentDream v-if="draft.id" :key="draft.id" :id="draft.id" :disabled="busy" @busy="dreamBusy = $event" />
+    </template>
 
     <div v-else-if="store.catalogLoaded" class="profiles__list">
       <article class="profile-card">
@@ -88,6 +91,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import AgentConfigFields from './AgentConfigFields.vue'
+import AgentDream from './AgentDream.vue'
 import AgentAvatar from '../AgentAvatar.vue'
 import AgentPackages from './AgentPackages.vue'
 import { api } from '../../api'
@@ -97,7 +101,7 @@ import { copyConfig, globalChatConfig, resolveAgentConfig, toolLabel, projectLab
 const $q = useQuasar()
 const route = useRoute(), router = useRouter()
 const editing = ref(false)
-const busy = ref(false), packageBusy = ref(false)
+const busy = ref(false), packageBusy = ref(false), dreamBusy = ref(false)
 const error = ref('')
 const nameInput = ref(null)
 const draft = reactive({ id: null, name: '', description: '', image: '', config: {}, allowed_subagents: [] })
@@ -137,7 +141,7 @@ function summary (config) {
   return `${model} · ${toolLabel(config.tools)} · ${projectLabel(config.project_ids)}${config.packages?.length ? ` · ${config.packages.length} packages` : ''}`
 }
 function open (agent = null, duplicate = false) {
-  if (packageBusy.value) return
+  if (packageBusy.value || dreamBusy.value) return
   error.value = ''
   Object.assign(draft, {
     id: duplicate ? null : agent?.id ?? null,
@@ -157,7 +161,7 @@ watch([() => route.query.edit, () => store.catalogLoaded], ([id, loaded]) => {
   }
 }, { immediate: true })
 function close () {
-  if (packageBusy.value) return
+  if (packageBusy.value || dreamBusy.value) return
   imageGeneration++; imageBusy.value = false; editing.value = false; error.value = ''
   if (route.query.edit) {
     const query = { ...route.query }
@@ -166,7 +170,7 @@ function close () {
   }
 }
 async function save () {
-  if (busy.value || packageBusy.value || imageBusy.value || !draft.name.trim()) return
+  if (busy.value || packageBusy.value || imageBusy.value || dreamBusy.value || !draft.name.trim()) return
   busy.value = true
   error.value = ''
   try {

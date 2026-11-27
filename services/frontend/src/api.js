@@ -133,6 +133,8 @@ export const api = {
   compactOutputDatabase: () => request('/api/settings/storage/compact', { method: 'POST' }),
   agents: () => request('/api/agents'),
   agent: (id) => request(`/api/agents/${encodeURIComponent(id)}`),
+  agentDream: (id) => request(`/api/agents/${encodeURIComponent(id)}/dream`),
+  saveAgentDream: (id, payload) => request(`/api/agents/${encodeURIComponent(id)}/dream`, { method: 'PUT', ...json(payload) }),
   searchPackages: (query, offset = 0, signal) => request(`/api/pi-packages/search?q=${encodeURIComponent(query)}&offset=${offset}`, { signal }),
   apps: () => request('/api/apps'),
   app: id => request(`/api/apps/${encodeURIComponent(id)}`),
