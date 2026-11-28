@@ -18,6 +18,7 @@ import { MCP_TIMEOUT_TOOL, currentMcpTimeout, registerMcpTimeoutTool } from "./m
 import { AUTH_TRANSPORT_TOOLS, authControl, waitForMcpAuth } from "./mcp-auth.ts";
 import { modelLimits } from "./model-limits.ts";
 import { reasoningConfig, reasoningPayload } from "./reasoning.ts";
+import { toolSchemaPayload } from "./tool-schema.ts";
 import { allowedTools } from "./tool-selection.ts";
 import { registerMcpTools } from "./mcp-tools.ts";
 import { isOutputTransportTool, loadOutputGrant, registerOutputTools } from "./outputs.ts";
@@ -92,7 +93,7 @@ export default async function (pi: ExtensionAPI) {
 
   pi.on("before_provider_request", (event, ctx) => {
     if (ctx.model?.provider !== PROVIDER || ctx.model.id !== MODEL) return;
-    return reasoningPayload(event.payload as Record<string, any>, api, reasoning);
+    return toolSchemaPayload(reasoningPayload(event.payload as Record<string, any>, api, reasoning), MODEL, api);
   });
 
   // Local first-party tools hold a private, turn-scoped capability. The raw
